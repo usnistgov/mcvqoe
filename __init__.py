@@ -4,6 +4,8 @@ Created on Wed May 26 15:53:57 2021
 
 @author: marcus.zeender@nist.gov
 """
+from m2e_gui import M2eFrame
+
 
 import tkinter as tk
 from PIL import Image, ImageTk
