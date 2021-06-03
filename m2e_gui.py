@@ -10,22 +10,6 @@ import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
     
 
-defaults = {    'audio_file'      : "test.wav",
-                'bgnoise_file'    : "",
-                'bgnoise_volume'  : 0.1,
-                'blocksize'       : 512,
-                'buffersize'      : 20,
-                'fs'              : int(48e3),
-                'info'            : {},
-                'no_log'          : ['test', 'ri'],
-                'outdir'          : "",
-                'overplay'        : 1.0,
-                'ptt_wait'        : 0.68,
-                'radioport'       : "",
-                'ri'              : None,
-                'test'            : "m2e_1loc",
-                'trials'          : 100
-            }
 
 class M2eFrame(tk.Frame):
     """
