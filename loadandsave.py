@@ -8,6 +8,55 @@ Created on Tue Jun  1 15:29:51 2021
 import os
 from appdirs import user_data_dir as udd
 import json
+from tkinter import StringVar
+
+
+class StringVarDict(dict):
+    
+    """A dict of tk.StringVar's with initial values given
+    
+    Used to save, load, and get states of tkinter widgets
+    
+    
+    """
+    
+    def __init__(self, **initials):
+        for k, v in initials.items():
+            self[k] = StringVar(value=v)
+        
+    def set(self, dict_):
+        """sets the values of the StrVars to the values given
+        
+
+        Parameters
+        ----------
+        dict_ : dict
+            
+
+       
+        """
+        for k, v in dict_.items():
+            self[k].set(v)
+    
+    def get(self):
+        """converts the values back into a dict
+    
+
+        Returns
+        -------
+        dict_ : dict
+            
+
+        """
+        dict_ = {}
+        for k, v in self.items():
+            dict_[k] = v.get()
+        return dict_
+        
+
+        
+
+
 
 class Config(dict):
     
@@ -18,7 +67,7 @@ class Config(dict):
         
         self.filename = filename
         folder = udd(self.appinf['appname'], self.appinf['appauthor'])
-        self.filepath = folder + os.path.sep + filename
+        self.filepath = os.path.join(folder, filename)
         
         os.makedirs(folder, exist_ok=True)
         
