@@ -27,7 +27,7 @@ defaults = {    'audio_file'      : "test.wav",
                 'trials'          : 100
             }
 
-class M2EConfigFrame(tk.Frame):
+class M2eFrame(tk.Frame):
     """
     Gui to configure and run a M2E Latency Test
     
@@ -164,12 +164,3 @@ def blocksize(master, r):
     c.grid(column=1)
     
                                   
- 
-    
-
-        
-if __name__ == '__main__':
-    wn = tk.Tk()
-    lb = M2EConfigFrame(, master=wn)
-    lb.pack()
-    
