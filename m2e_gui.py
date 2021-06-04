@@ -32,7 +32,10 @@ class M2eFrame(tk.Frame):
             trials,
             bgnoise_file,
             bgnoise_volume,
-            ptt_wait
+            ptt_wait,
+            overplay,
+            outdir,
+            advanced
             )
         
         
@@ -40,6 +43,7 @@ class M2eFrame(tk.Frame):
         super().__init__(*args, **kwargs)
         #option functions will get and store their values in here
         self.btnvars = btnvars
+        
         
         
         for row in range(len(controls)):
@@ -57,18 +61,42 @@ class M2eFrame(tk.Frame):
     
     def choose_bgnoise_file(self):
         pass
+    def choose_outdir(self):
+        pass
+    
+    def show_advanced(self):
+        M2EAdvancedConfigGUI(btnvars=self.btnvars)
                         
       
             
             
-class _M2EAdvancedConfigGUI(tk.Toplevel):
+class M2EAdvancedConfigGUI(tk.Toplevel):
     """Advanced options for the M2E test
     
 
     """    
+    
+    padx=5
+    pady=10
     def __init__(self, btnvars, *args, **kwargs):
+        super().__init__()
+        
+        #sets the controls in this window
+        controls = (
+            radioport,
+            blocksize,
+            buffersize,
+            _advanced_submit
+            )
+        
         self.btnvars = btnvars
         
+        #Sets window on top of other windows
+        self.attributes('-topmost', True)
+        
+        #initializes controls
+        for row in range(len(controls)):
+            controls[row](master=self, r=row)
         
             
 
@@ -109,9 +137,9 @@ def radioport(master, r):
                 column=1, row=r, sticky='W',
                 padx=master.padx, pady=master.pady)
     
-def bgnoise_file(master, r):    
+def bgnoise_file(master, r):
     # bg noise File
-    ttk.Label(master, text='Background Noise File').grid(
+    ttk.Label(master, text='Background Noise File:').grid(
         column=0, row=r, sticky='E')
     
     ttk.Entry(master, textvariable=master.btnvars['bgnoise_file']).grid(
@@ -120,18 +148,18 @@ def bgnoise_file(master, r):
     ttk.Button(master, text='Browse...',
         command=master.choose_bgnoise_file).grid(column=2, row=r, sticky='W')
     
-def bgnoise_volume(master, r):    
+def bgnoise_volume(master, r):
     # bg noise volume
-    ttk.Label(master, text='Background Noise Volume').grid(
+    ttk.Label(master, text='Background Noise Volume:').grid(
         column=0, row=r, sticky='E')
     
-    ttk.Spinbox(master, textvariable=master.btnvars['bgnoise_volume'], increment=0.01,
-        from_=0, to=5).grid(column=1, row=r, sticky='W',
-                            padx=master.padx, pady=master.pady)
+    ttk.Spinbox(master, textvariable=master.btnvars['bgnoise_volume'],
+        increment=0.01, from_=0, to=5).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
                             
 def ptt_wait(master, r):                            
     # PTT Wait time
-    ttk.Label(master, text='PTT Wait Time (seconds)').grid(
+    ttk.Label(master, text='PTT Wait Time (sec):').grid(
         column=0, row=r, sticky='E')
     
     ttk.Spinbox(master, textvariable=master.btnvars['ptt_wait'], increment=0.01,
@@ -139,10 +167,47 @@ def ptt_wait(master, r):
                     padx=master.padx, pady=master.pady, sticky='W')
                   
 def blocksize(master, r):
-    ttk.Label(master, text='Block Size').grid(
+    ttk.Label(master, text='Block Size:').grid(
         column=0, row=r, sticky='E')
     
-    c = ttk.Entry(master, text='Block Size')
-    c.grid(column=1)
+    ttk.Entry(master, textvariable=master.btnvars['blocksize']).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
     
-                                  
+
+def buffersize(master, r):
+    ttk.Label(master, text='Buffer Size:').grid(
+        column=0, row=r, sticky='E')
+    
+    ttk.Entry(master, textvariable=master.btnvars['buffersize']).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
+
+def overplay(master, r):
+    ttk.Label(master, text='Overplay Time (sec):').grid(
+        column=0, row=r, sticky='E')
+    
+    ttk.Spinbox(master, textvariable=master.btnvars['overplay'],
+        increment=0.01, from_=0, to=2**15-1).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
+    
+    
+def outdir(master, r):
+    ttk.Label(master, text='Output Folder:').grid(
+        column=0, row=r, sticky='E')
+    
+    ttk.Entry(master, textvariable=master.btnvars['outdir']).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
+    
+    ttk.Button(master, text='Browse...', command=master.choose_outdir).grid(
+        column=2, row=r, sticky='W')
+    
+    
+
+
+def advanced(master, r):
+    ttk.Button(master, text='Advanced...', command=master.show_advanced).grid(
+        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
+    
+def _advanced_submit(master, r):
+    #closes the advanced window
+    ttk.Button(master, text='OK', command=master.destroy).grid(
+        column=2, row=r)
