@@ -38,6 +38,8 @@ DEFAULT_CONFIG = {
             }
     }
 
+
+
 class MCV_QoE_Gui(tk.Tk):
     """The main Gui
     
@@ -56,18 +58,20 @@ class MCV_QoE_Gui(tk.Tk):
         
         
         
-        LogoFrame(master=self).pack(side=tk.LEFT, fill=tk.Y)
+        
         
         #tk Variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
         
-        TestTypeFrame(master=self, padx=10, pady=10).pack(
-            side=tk.LEFT, fill=tk.Y)
+        
+        self.LeftFrame = LeftFrame(self, main_=self)
+        self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
+        
+        self.bind('<Configure>', self.LeftFrame.on_change_size)
+        
         
         self.frames = {}
-        
-        
         #Initialize test-specific frames for the window
         for F in (EmptyFrame, M2eFrame):
             #loads the default values of the controls
@@ -91,24 +95,89 @@ class MCV_QoE_Gui(tk.Tk):
         self.currentframe.pack(side=tk.RIGHT, fill=tk.BOTH, padx=10, pady=10)
 
         
+class LeftFrame(tk.Frame):
+    """Can show and hide the MenuFrame using the MenuButton
+    
+    Only applies when the main window is small enough
+    """
+    def __init__(self, master, main_, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        
+        self.DoMenu = False
+        self.MenuVisible = True
+        
+        self.MenuButton = MenuButton(self, command=self.on_button)
+        self.MenuButton.pack()
+        
+        #pass main_ down the chain to the TestTypeFrame
+        self.MenuFrame = MenuFrame(self, main_)
+        self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
+        
+    def on_change_size(self, event):
+        print(event.width)
+        if event.width < 600:
+            #potential case of invalid event
+            return
+        if event.width <= 850 and not self.DoMenu:
+            self.DoMenu = True
+            self.MenuVisible = False
+            self.MenuButton.show()
+            self.MenuFrame.pack_forget()
+        elif event.width > 850 and self.DoMenu:
+            self.MenuVisible = True
+            self.DoMenu = False
+            self.MenuButton.hide()
+            self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
+    
+    def on_button(self):
+        if self.MenuVisible:
+            self.MenuVisible = False
+            self.MenuFrame.pack_forget()
+        else:
+            self.MenuVisible = True
+            self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
+        
 
-class EmptyFrame(tk.Frame):
-    """An empty frame
+class MenuFrame(tk.Frame):
+    """Contains the Logo frame and the Choose Test Type frame
     
     """
-    def __init__(self, btnvars, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, master, main_, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         
+        LogoFrame(master=self).pack(side=tk.LEFT, fill=tk.Y)
+        
+        #pass main_ down the chain to the TestTypeFrame
+        
+        
+        TestTypeFrame(master=self, main_=main_, padx=10, pady=10).pack(
+            side=tk.LEFT, fill=tk.Y)
+
+class MenuButton(tk.Frame):
+    def __init__(self, master, *args, command=None, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        
+        self.btn = ttk.Button(self, text='menu', command=command) #image=Image.open('menu_icon.png'))
     
+    def show(self):
+        self.btn.pack()
+        
+    def hide(self):
+        self.btn.pack_forget()
+
+
 
 class TestTypeFrame(tk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    """Allows the user to choose hardware/sim and which test to perform
+    
+    """
+    def __init__(self, master, main_, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
-        self.master = master
+        self.main_ = main_
         
         #StringVars to determine what test to run and show config for
-        is_sim  = master.is_simulation
-        sel_txt = master.selected_test
+        is_sim  = main_.is_simulation
+        sel_txt = main_.selected_test
         
         
         
@@ -146,7 +215,7 @@ class TestTypeFrame(tk.Frame):
         
                 
     def change_frame(self):
-        self.master.show_frame(self.master.selected_test.get())
+        self.main_.show_frame(self.master.selected_test.get())
         
 
 class LogoFrame(tk.Canvas):
@@ -179,6 +248,15 @@ class LogoFrame(tk.Canvas):
             
             
 
+
+
+class EmptyFrame(tk.Frame):
+    """An empty frame: shown when no test is selected yet
+    
+    """
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
 def set_font(**cfg):
     """Globally changes the font on all tkinter windows.
     
