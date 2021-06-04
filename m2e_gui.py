@@ -153,10 +153,37 @@ def bgnoise_volume(master, r):
     ttk.Label(master, text='Background Noise Volume:').grid(
         column=0, row=r, sticky='E')
     
-    ttk.Spinbox(master, textvariable=master.btnvars['bgnoise_volume'],
-        increment=0.01, from_=0, to=5).grid(
+          
+    txtvar = _bgnoise_volume_percentage()
+    txtvar.set(master.btnvars['bgnoise_volume'].get())
+    
+    ttk.Label(master, textvariable=txtvar).grid(
+        column=2, row=r, sticky='W')
+    
+    ttk.Scale(master, variable=master.btnvars['bgnoise_volume'],
+        from_=0, to=1, command=txtvar.set).grid(
         column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-                            
+            
+
+class _bgnoise_volume_percentage(tk.StringVar):
+    """Displays a percentage instead of a float
+    
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    def set(self, value):
+        v = float(value) * 100
+        s = ''
+        
+        for char in str(v):
+            if char == '.':
+                break
+            s = f'{s}{char}'
+        
+                    
+        super().set(f'{s}%')
+            
 def ptt_wait(master, r):                            
     # PTT Wait time
     ttk.Label(master, text='PTT Wait Time (sec):').grid(
