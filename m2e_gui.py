@@ -76,7 +76,6 @@ class _M2EAdvancedConfigGUI(tk.Toplevel):
 def test(master, r):
     # Test Type
     c = ttk.Label(master, text='Test Type:')
-    c['font'] = master.font
     c.grid(column=0, row=r, sticky='E')
     
     ttk.OptionMenu(master, master.btnvars['test'],"",
@@ -144,7 +143,6 @@ def blocksize(master, r):
         column=0, row=r, sticky='E')
     
     c = ttk.Entry(master, text='Block Size')
-    c['font'] = master.font
     c.grid(column=1)
     
                                   
