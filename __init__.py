@@ -15,7 +15,9 @@ import tkinter.font as font
 TITLE_ = 'MCV QoE'
 FONT_SIZE = 14
 DEFAULT_CONFIG = {
-    'm2e': {    'audio_file'      : "test.wav",
+    'EmptyFrame': {},
+    
+    'M2eFrame': {    'audio_file'      : "test.wav",
                 'bgnoise_file'    : "",
                 'bgnoise_volume'  : 0.1,
                 'blocksize'       : 512,
@@ -56,7 +58,7 @@ class MCV_QoE_Gui(tk.Tk):
         #Initialize frames for the window
         for F in (EmptyFrame, M2eFrame):
             #loads the default values of the controls
-            svd = loadandsave.StringVarDict(DEFAULT_CONFIG[F.__name__])
+            svd = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
             
             #initializes the frame, with its key being its own classname
             self.frames[F.__name__] = F(master=self, btnvars=svd)
@@ -71,7 +73,7 @@ class MCV_QoE_Gui(tk.Tk):
         #hide the showing widget
         self.currentframe.pack_forget()
         
-        self.currentframe = self.frame[frame]
+        self.currentframe = self.frames[frame]
         self.currentframe.pack(fill=tk.BOTH)
 
 
@@ -90,8 +92,8 @@ class EmptyFrame(tk.Frame):
     """An empty frame
     
     """
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
     
     
