@@ -74,7 +74,8 @@ class MCV_QoE_Gui(tk.Tk):
             svd = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
             
             #initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=self, btnvars=svd)
+            self.frames[F.__name__] = F(master=self, btnvars=svd,
+                                        padx=10, pady=10)
         
         
         self.currentframe = self.frames['EmptyFrame']
@@ -87,7 +88,7 @@ class MCV_QoE_Gui(tk.Tk):
         self.currentframe.pack_forget()
         
         self.currentframe = self.frames[framename]
-        self.currentframe.pack(fill=tk.BOTH)
+        self.currentframe.pack(side=tk.RIGHT, fill=tk.BOTH, padx=10, pady=10)
 
         
 
