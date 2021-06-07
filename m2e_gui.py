@@ -19,10 +19,7 @@ class M2eFrame(tk.LabelFrame):
     loads and stores the values in the controls
     
     """
-    # Setting the padding (distance between controls)
-    pady = 10
-    padx = 5
-      
+       
     
     def __init__(self, btnvars, text='Mouth-to-Ear Latency Test',
                  *args, **kwargs):
@@ -46,9 +43,9 @@ class M2eFrame(tk.LabelFrame):
         self.btnvars = btnvars
         
         
-        #initialize controls
+        #initializes controls
         for row in range(len(controls)):
-            controls[row](self, row)
+            controls[row](master=self, row=row)
         
    
             
@@ -58,11 +55,9 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
 
     """    
     
-    padx=5
-    pady=10
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__()
-        
+        self.title('Advanced')
         #sets the controls in this window
         controls = (
             radioport,
@@ -78,10 +73,14 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
         
         #initializes controls
         for row in range(len(controls)):
-            controls[row](master=self, r=row)
+            controls[row](master=self, row=row)
         
-            
         
+        # return key closes window
+        self.bind('<Return>', lambda *args : self.destroy())
+        
+        #sets focus on the window
+        self.focus_force()
         
         
         
@@ -189,17 +188,6 @@ class radioport(LabeledControl):
     text = 'Radio Port:'
     
     
-    """
-                    
-def radioport2(master, r):                    
-    # Radio Port
-    ttk.Label(master, text='Radio Port:').grid(column=0, row=r, sticky='E')
-    
-    ttk.Entry(master, textvariable=master.btnvars['radioport']).grid(
-                column=1, row=r, sticky='W',
-                padx=master.padx, pady=master.pady)
-    
-    """
     
 class bgnoise_file(LabeledControl):
     text = 'Background Noise File:'
@@ -220,17 +208,17 @@ class bgnoise_volume(LabeledControl):
     RCtrl = None
     MCtrl = None
     
-    def __init__(self, master, r, *args, **kwargs):
-        super().__init__(master, r, *args, **kwargs)
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
         txtvar = _bgnoise_volume_percentage()
         txtvar.set(self.btnvar.get())
     
         ttk.Label(master, textvariable=txtvar).grid(
-            column=2, row=r, sticky='W')
+            column=2, row=row, sticky='W')
     
         ttk.Scale(master, variable=self.btnvar,
             from_=0, to=1, command=txtvar.set).grid(
-            column=1, row=r, padx=self.padx, pady=self.pady, sticky='WE')
+            column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
     
           
 
@@ -260,16 +248,7 @@ class ptt_wait(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'increment' : 0.01, 'from_' : 0, 'to' : 2**15 - 1}
 
-"""
-def ptt_wait2(master, r):                            
-    # PTT Wait time
-    ttk.Label(master, text='PTT Wait Time (sec):').grid(
-        column=0, row=r, sticky='E')
-    
-    ttk.Spinbox(master, textvariable=master.btnvars['ptt_wait'], increment=0.01,
-        from_=0, to=2**15-1).grid(column=1, row=r,
-                    padx=master.padx, pady=master.pady, sticky='W')
-"""                 
+              
                                   
 class blocksize(LabeledControl):
     text = 'Block Size:'
@@ -303,50 +282,18 @@ class advanced(LabeledControl):
     
     def on_button(self):
         M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
-            
-    
-    
-def blocksize2(master, r):
-    ttk.Label(master, text='Block Size:').grid(
-        column=0, row=r, sticky='E')
-    
-    ttk.Entry(master, textvariable=master.btnvars['blocksize']).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-    
 
-def buffersize2(master, r):
-    ttk.Label(master, text='Buffer Size:').grid(
-        column=0, row=r, sticky='E')
-    
-    ttk.Entry(master, textvariable=master.btnvars['buffersize']).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-
-def overplay2(master, r):
-    ttk.Label(master, text='Overplay Time (sec):').grid(
-        column=0, row=r, sticky='E')
-    
-    ttk.Spinbox(master, textvariable=master.btnvars['overplay'],
-        increment=0.01, from_=0, to=2**15-1).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-    
-    
-def outdir2(master, r):
-    ttk.Label(master, text='Output Folder:').grid(
-        column=0, row=r, sticky='E')
-    
-    ttk.Entry(master, textvariable=master.btnvars['outdir']).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-    
-    ttk.Button(master, text='Browse...', command=master.choose_outdir).grid(
-        column=2, row=r, sticky='W')
-    
     
 
 class _advanced_submit(LabeledControl):
     
     #closes the advanced window
+    MCtrl = None
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'OK'}
+    
+    def on_button(self):
+        self.master.destroy()
     
     
     
