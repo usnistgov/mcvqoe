@@ -48,35 +48,9 @@ class M2eFrame(tk.LabelFrame):
         
         #initialize controls
         for row in range(len(controls)):
-            controls[row](self, r=row)
+            controls[row](self, row)
         
    
- #button functions
-    def choose_audio_file(self):
-        fp = fdl.askopenfilename(parent=self,
-                initialfile=self.btnvars['audio_file'].get(),
-                filetypes=[('WAV files', '*.wav')])
-        if fp:
-            self.btnvars['audio_file'].set(fp)
-    
-    def choose_bgnoise_file(self):
-        fp = fdl.askopenfilename(parent=self,
-            initialfile=self.btnvars['bgnoise_file'].get(),
-            filetypes=[('WAV files', '*.wav')])
-        if fp:
-            self.btnvars['bgnoise_file'].set(fp)
-            
-            
-    def choose_outdir(self):
-        dirp = fdl.askdirectory(parent=self)
-        if dirp:
-            self.btnvars['outdir'].set(dirp)
-    
-    def show_advanced(self):
-        M2EAdvancedConfigGUI(btnvars=self.btnvars)
-                        
-      
-            
             
 class M2EAdvancedConfigGUI(tk.Toplevel):
     """Advanced options for the M2E test
@@ -107,37 +81,117 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
             controls[row](master=self, r=row)
         
             
+        
+        
+        
+        
+        
+        
+        
+        
+        #------------------ Controls ----------------------
+class LabeledControl():
+    
+    text = ''
+    
+    
+    MCtrl = ttk.Entry
+    MCtrlargs = []
+    MCtrlkwargs = {}
+    
+    variable_arg = 'textvariable'
+    
+    #usually the browse button
+    RCtrl = None
+    RCtrlkwargs = {}
+    
+    padx = 5
+    pady = 10
+    
+    def __init__(self, master, row):
+        self.master = master
+        
+    
+        ttk.Label(master, text=self.text).grid(
+            column=0, row=row, sticky='E')
+        
+        MCtrlkwargs = self.MCtrlkwargs.copy()
+        MCtrlargs = self.MCtrlargs.copy()
+        RCtrlkwargs = self.RCtrlkwargs.copy()
+        
+        try:
+            self.btnvar = master.btnvars[self.__class__.__name__]
+        except KeyError:
+            self.btnvar = None
+            
+            
+        # some controls require the textvariable=... to be positional
+        
+        #some controls require more flexibility, so they don't use self.MCtrl
+        if self.MCtrl:
+            if self.variable_arg:
+                MCtrlkwargs[self.variable_arg] = self.btnvar
+            
+            else:
+                MCtrlargs.insert(0, self.btnvar)
+                
+            self.MCtrl(master, *MCtrlargs, **MCtrlkwargs).grid(
+                column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
+        
+        
+        if self.RCtrl:
+            #add command to button
+            if self.RCtrl in (ttk.Button, tk.Button):
+                RCtrlkwargs['command'] = self.on_button
+            
+            self.RCtrl(master, **RCtrlkwargs).grid(
+                column=2, row=row, sticky='WE')
+            
+            
+            
+    def on_button(self):
+        pass
+            
 
-#controls
-def test(master, r):
-    # Test Type
-    c = ttk.Label(master, text='Test Type:')
-    c.grid(column=0, row=r, sticky='E')
+
+class test(LabeledControl):
+    text = 'Test Type:'
     
-    ttk.OptionMenu(master, master.btnvars['test'],"",
-                   'm2e_1loc', 'm2e_2loc_rx', 'm2e_2loc_tx').grid(
-                       column=1, row=r, pady=master.pady, padx=master.padx)
+    variable_arg = None # indicates the argument is positional
+    MCtrl = ttk.OptionMenu
+    MCtrlargs = ['', 'm2e_1loc', 'm2e_2loc_rx', 'm2e_2loc_tx']
     
-def audio_file(master, r):
-    # Audio File                
-    ttk.Label(master, text='Audio File:').grid(column=0, row=r, sticky='E')
     
-    ttk.Entry(master, textvariable=master.btnvars['audio_file']).grid(
-        column=1, row=r, pady=master.pady, padx=master.padx, sticky='W')
+class audio_file(LabeledControl):
     
-    ttk.Button(master, text='Browse...',
-        command=master.choose_audio_file).grid(column=2, row=r, sticky='W')
+    def on_button(self):
+        fp = fdl.askopenfilename(parent=self.master,
+                initialfile=self.btnvar.get(),
+                filetypes=[('WAV files', '*.wav')])
+        if fp:
+            self.btnvar.set(fp)
     
-def trials(master, r):
-    # Number of trials
-    ttk.Label(master, text='Number of Trials:').grid(
-        column=0, row=r, sticky='E')
     
-    ttk.Spinbox(master, textvariable=master.btnvars['trials'],
-                from_=1, to=2**15 - 1).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady)
+    text='Audio File:'
+    RCtrl = ttk.Button
+    RCtrlkwargs = {
+        'text'   : 'Browse...'
+        }
+    
+    
+class trials(LabeledControl):
+    text = 'Number of Trials:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
+    
+
+class radioport(LabeledControl):
+    text = 'Radio Port:'
+    
+    
+    """
                     
-def radioport(master, r):                    
+def radioport2(master, r):                    
     # Radio Port
     ttk.Label(master, text='Radio Port:').grid(column=0, row=r, sticky='E')
     
@@ -145,33 +199,40 @@ def radioport(master, r):
                 column=1, row=r, sticky='W',
                 padx=master.padx, pady=master.pady)
     
-def bgnoise_file(master, r):
-    # bg noise File
-    ttk.Label(master, text='Background Noise File:').grid(
-        column=0, row=r, sticky='E')
+    """
     
-    ttk.Entry(master, textvariable=master.btnvars['bgnoise_file']).grid(
-        column=1, row=r, sticky='W', padx=master.padx, pady=master.pady)
+class bgnoise_file(LabeledControl):
+    text = 'Background Noise File:'
     
-    ttk.Button(master, text='Browse...',
-        command=master.choose_bgnoise_file).grid(column=2, row=r, sticky='W')
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text' : 'Browse...'}
     
-def bgnoise_volume(master, r):
-    # bg noise volume
-    ttk.Label(master, text='Background Noise Volume:').grid(
-        column=0, row=r, sticky='E')
+    def on_button(self):
+        fp = fdl.askopenfilename(parent=self.master,
+            initialfile=self.btnvar.get(),
+            filetypes=[('WAV files', '*.wav')])
+        if fp:
+            self.btnvar.set(fp)
+
+
+class bgnoise_volume(LabeledControl):
+    text = 'Background Noise Volume:'
+    RCtrl = None
+    MCtrl = None
+    
+    def __init__(self, master, r, *args, **kwargs):
+        super().__init__(master, r, *args, **kwargs)
+        txtvar = _bgnoise_volume_percentage()
+        txtvar.set(self.btnvar.get())
+    
+        ttk.Label(master, textvariable=txtvar).grid(
+            column=2, row=r, sticky='W')
+    
+        ttk.Scale(master, variable=self.btnvar,
+            from_=0, to=1, command=txtvar.set).grid(
+            column=1, row=r, padx=self.padx, pady=self.pady, sticky='WE')
     
           
-    txtvar = _bgnoise_volume_percentage()
-    txtvar.set(master.btnvars['bgnoise_volume'].get())
-    
-    ttk.Label(master, textvariable=txtvar).grid(
-        column=2, row=r, sticky='W')
-    
-    ttk.Scale(master, variable=master.btnvars['bgnoise_volume'],
-        from_=0, to=1, command=txtvar.set).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
-            
 
 class _bgnoise_volume_percentage(tk.StringVar):
     """Displays a percentage instead of a float
@@ -192,7 +253,15 @@ class _bgnoise_volume_percentage(tk.StringVar):
                     
         super().set(f'{s}%')
             
-def ptt_wait(master, r):                            
+        
+class ptt_wait(LabeledControl):
+    text = 'PTT Wait Time (sec):'
+    
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'increment' : 0.01, 'from_' : 0, 'to' : 2**15 - 1}
+
+"""
+def ptt_wait2(master, r):                            
     # PTT Wait time
     ttk.Label(master, text='PTT Wait Time (sec):').grid(
         column=0, row=r, sticky='E')
@@ -200,8 +269,44 @@ def ptt_wait(master, r):
     ttk.Spinbox(master, textvariable=master.btnvars['ptt_wait'], increment=0.01,
         from_=0, to=2**15-1).grid(column=1, row=r,
                     padx=master.padx, pady=master.pady, sticky='W')
-                  
-def blocksize(master, r):
+"""                 
+                                  
+class blocksize(LabeledControl):
+    text = 'Block Size:'
+    
+
+class buffersize(LabeledControl):
+    text='Buffer Size:'
+    
+class overplay(LabeledControl):
+    text='Overplay Time (sec):'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
+
+class outdir(LabeledControl):
+    text='Output Folder:'
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Browse...'}
+    
+    def on_button(self):
+        dirp = fdl.askdirectory(parent=self.master)
+        if dirp:
+            self.btnvar.set(dirp)
+
+class advanced(LabeledControl):
+    text = ''
+    
+    MCtrl = None
+    RCtrl = ttk.Button       
+    RCtrlkwargs = {'text': 'Advanced...'}
+    
+    def on_button(self):
+        M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
+            
+    
+    
+def blocksize2(master, r):
     ttk.Label(master, text='Block Size:').grid(
         column=0, row=r, sticky='E')
     
@@ -209,14 +314,14 @@ def blocksize(master, r):
         column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
     
 
-def buffersize(master, r):
+def buffersize2(master, r):
     ttk.Label(master, text='Buffer Size:').grid(
         column=0, row=r, sticky='E')
     
     ttk.Entry(master, textvariable=master.btnvars['buffersize']).grid(
         column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
 
-def overplay(master, r):
+def overplay2(master, r):
     ttk.Label(master, text='Overplay Time (sec):').grid(
         column=0, row=r, sticky='E')
     
@@ -225,7 +330,7 @@ def overplay(master, r):
         column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
     
     
-def outdir(master, r):
+def outdir2(master, r):
     ttk.Label(master, text='Output Folder:').grid(
         column=0, row=r, sticky='E')
     
@@ -237,12 +342,13 @@ def outdir(master, r):
     
     
 
-
-def advanced(master, r):
-    ttk.Button(master, text='Advanced...', command=master.show_advanced).grid(
-        column=1, row=r, padx=master.padx, pady=master.pady, sticky='W')
+class _advanced_submit(LabeledControl):
     
-def _advanced_submit(master, r):
     #closes the advanced window
-    ttk.Button(master, text='OK', command=master.destroy).grid(
-        column=2, row=r)
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'OK'}
+    
+    
+    
+    
+    
