@@ -11,7 +11,7 @@ import tkinter.filedialog as fdl
     
 
 
-class M2eFrame(tk.Frame):
+class M2eFrame(tk.LabelFrame):
     """
     Gui to configure and run a M2E Latency Test
     
@@ -24,7 +24,8 @@ class M2eFrame(tk.Frame):
     padx = 5
       
     
-    def __init__(self, btnvars, *args, **kwargs):
+    def __init__(self, btnvars, text='Mouth-to-Ear Latency Test',
+                 *args, **kwargs):
         #sets what controls will be in this frame
         controls = (
             test,
@@ -40,12 +41,12 @@ class M2eFrame(tk.Frame):
         
         
         
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, text=text, **kwargs)
         #option functions will get and store their values in here
         self.btnvars = btnvars
         
         
-        
+        #initialize controls
         for row in range(len(controls)):
             controls[row](self, r=row)
         
@@ -53,16 +54,23 @@ class M2eFrame(tk.Frame):
  #button functions
     def choose_audio_file(self):
         fp = fdl.askopenfilename(parent=self,
-                initialfile=self.config['audio_file'],
-                title='Open File',
-                filetypes=[('WAV files','*.wav')])
-        if fp != None:
+                initialfile=self.btnvars['audio_file'].get(),
+                filetypes=[('WAV files', '*.wav')])
+        if fp:
             self.btnvars['audio_file'].set(fp)
     
     def choose_bgnoise_file(self):
-        pass
+        fp = fdl.askopenfilename(parent=self,
+            initialfile=self.btnvars['bgnoise_file'].get(),
+            filetypes=[('WAV files', '*.wav')])
+        if fp:
+            self.btnvars['bgnoise_file'].set(fp)
+            
+            
     def choose_outdir(self):
-        pass
+        dirp = fdl.askdirectory(parent=self)
+        if dirp:
+            self.btnvars['outdir'].set(dirp)
     
     def show_advanced(self):
         M2EAdvancedConfigGUI(btnvars=self.btnvars)
