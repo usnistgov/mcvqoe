@@ -225,7 +225,7 @@ class LogoFrame(tk.Canvas):
                          **kwargs)
 
         crest = self.crestinf['img']
-        if crest != None:
+        if crest is not None:
 
             img = Image.open(crest)
             img = img.resize(
