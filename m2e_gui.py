@@ -47,6 +47,7 @@ class M2eFrame(tk.LabelFrame):
         for row in range(len(controls)):
             controls[row](master=self, row=row)
         
+           
    
             
 class M2EAdvancedConfigGUI(tk.Toplevel):
@@ -55,8 +56,10 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
 
     """    
     
-    def __init__(self, btnvars, *args, **kwargs):
-        super().__init__()
+    def __init__(self, master, btnvars, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.master = master
+        
         self.title('Advanced')
         #sets the controls in this window
         controls = (
@@ -82,15 +85,19 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
         #sets focus on the window
         self.focus_force()
         
-        
-        
+            
         
         
         
         
         #------------------ Controls ----------------------
 class LabeledControl():
+    """A one-row grid consisting of a label, control, and optional 2nd control
     
+    row : int
+        the row that the controls should be gridded in
+    
+    """
     text = ''
     
     
@@ -134,6 +141,8 @@ class LabeledControl():
             else:
                 MCtrlargs.insert(0, self.btnvar)
                 
+            
+            # initialize the control
             self.MCtrl(master, *MCtrlargs, **MCtrlkwargs).grid(
                 column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
         
@@ -210,17 +219,21 @@ class bgnoise_volume(LabeledControl):
     
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, row, *args, **kwargs)
-        txtvar = _bgnoise_volume_percentage()
-        txtvar.set(self.btnvar.get())
+        self.txtvar = _bgnoise_volume_percentage()
+        self.on_change()
+        
+        self.btnvar.trace_add('write', self.on_change)
     
-        ttk.Label(master, textvariable=txtvar).grid(
+        ttk.Label(master, textvariable=self.txtvar).grid(
             column=2, row=row, sticky='W')
     
         ttk.Scale(master, variable=self.btnvar,
-            from_=0, to=1, command=txtvar.set).grid(
+            from_=0, to=1).grid(
             column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
     
-          
+    def on_change(self, *args, **kwargs):
+        #updates the percentage to match the value of the slider
+        self.txtvar.set(self.btnvar.get())
 
 class _bgnoise_volume_percentage(tk.StringVar):
     """Displays a percentage instead of a float
