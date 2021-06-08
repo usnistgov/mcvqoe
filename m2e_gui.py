@@ -56,9 +56,9 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
 
     """    
     
-    def __init__(self, master, btnvars, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-        self.master = master
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
         
         self.title('Advanced')
         #sets the controls in this window
