@@ -12,6 +12,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import tkinter.font as font
 import tkinter.filedialog as fdl
+import tkinter.messagebox as msb
 import json
 
 
@@ -43,7 +44,7 @@ DEFAULT_CONFIG = {
 
 
 class MCV_QoE_Gui(tk.Tk):
-    """The main Gui
+    """The main window
 
 
     """
@@ -53,7 +54,11 @@ class MCV_QoE_Gui(tk.Tk):
 
         set_font(size=FONT_SIZE)
 
-        self.title(TITLE_)
+        # the config starts unmodified
+        self.set_saved_state(True)
+        # when the user exits the program
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        
         # dimensions
         self.minsize(width=600, height=370)
         self.geometry(f'{WIN_SIZE[0]}x{WIN_SIZE[1]}')
@@ -73,12 +78,14 @@ class MCV_QoE_Gui(tk.Tk):
 
 
 
-
+        # keyboard shortcuts
         self.bind('<Configure>', self.LeftFrame.on_change_size)
         self.bind('<Control-s>', self.save)
+        self.bind('<Control-S>', self.save)
         self.bind('<Control-o>', self.open_)
+        self.bind('<Control-O>', self.open_)
         self.bind('<Control-Shift-s>', self.save_as)
-        
+        self.bind('<Control-Shift-S>', self.save_as)
         
         
         
@@ -89,12 +96,16 @@ class MCV_QoE_Gui(tk.Tk):
         # Initialize test-specific frames
         for F in (EmptyFrame, M2eFrame):
             # loads the default values of the controls
-            svd = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
+            btnvars = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
 
             # initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=self, btnvars=svd,
+            self.frames[F.__name__] = F(master=self, btnvars=btnvars,
                                         padx=10, pady=10)
-
+            
+            # when user changes a control
+            btnvars.on_change = self.on_change
+            
+            
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
@@ -120,23 +131,44 @@ class MCV_QoE_Gui(tk.Tk):
     
     
     def on_change(self, *args, **kwargs):
-        pass
+        self.set_saved_state(False)
+        
+    def on_close(self):
+        # blocks closing if user cancels the save
+        if not self.ask_save():
+            self.destroy()
+        
     
+    
+    def restore_defaults(self, *args, **kwargs):
+        if self.ask_save():
+            #cancelled
+            return
+        
+        for frame_name, frame in self.frames.items():
+            frame.btnvars.set(DEFAULT_CONFIG[frame_name])
+        
+        # user shouldn't be prompted to save the default config
+        self.set_saved_state(True)
+        
         
     def open_(self, *args, **kwargs):
         """Loads config from .json file
         """
+        if self.ask_save():
+            #cancelled
+            return
         
-        fpath = fdl.askopenfile(
-                'r',
-                filetypes=[('.json files','*.json')]
+        
+        fpath = fdl.askopenfilename(
+                filetypes=[('json files','*.json')]
                 )
         
-        if fpath is None:
+        if not fpath:
             #canceled by user
             return
         
-        with fpath as fp:
+        with open(fpath, 'r') as fp:
         
             dct = json.load(fp)
             for frame_name, frame in self.frames.items():
@@ -146,25 +178,44 @@ class MCV_QoE_Gui(tk.Tk):
             
             self.is_simulation.set(dct['is_simulation'])
             self.selected_test.set(dct['selected_test'])
+            
+            # the user has not modified the new config, so it is saved
+            self.set_saved_state(True)
+            
+            # 'save' will now save to this file
+            self.cnf_filepath = fpath
     
     
-    
-    def save_as(self, *args, **kwargs):
+    def save_as(self, *args, **kwargs) -> bool:
+        """
         
-        fp = fdl.asksaveasfilename(filetypes=[('.json files','*.json')])
-        if fp is not None:
-            self.cnf_filepath = fp
-            self.save()
+
         
-        
-        
-    def save(self, *args, **kwargs):
-        """Saves config to .json file
+        Returns
+        -------
+        cancelled : bool
+            True if the save was cancelled.
 
         """
-        if self.cnf_filepath is None:
-            self.save_as()
-            return
+        fp = fdl.asksaveasfilename(filetypes=[('json files','*.json')],
+                                   defaultextension='.json')
+        if fp:
+            self.cnf_filepath = fp
+            return self.save()
+        else:
+            return True
+        
+        
+        
+    def save(self, *args, **kwargs) -> bool:
+        """Saves config to .json file
+        
+        Returns True if the save was cancelled
+        """
+        # if user hasnt saved or loaded
+        if not self.cnf_filepath:
+            return self.save_as()
+            
         
         with open(self.cnf_filepath, mode='w') as fp:
             
@@ -178,9 +229,52 @@ class MCV_QoE_Gui(tk.Tk):
                 obj[framename] = frame.btnvars.get()
                 
             json.dump(obj, fp)
-        self.is_saved = True
+            self.set_saved_state(True)
+        return False
+            
+    def ask_save(self) -> bool:
+        """Prompts the user to save the config
+        
+
+        Returns
+        -------
+        cancel : bool
+            True if the user pressed 'cancel', indicating that the action
+            should be cancelled.
+
+        """
+        if self.is_saved:
+            #no need to ask!
+            return False
+        
+        out = msb.askyesnocancel(title='Warning',
+            message='Would you like to save unsaved changes?')
+        if out:
+            return self.save()
+        else:
+            # true if user cancelled
+            return out is None
+            
             
         
+        
+    def set_saved_state(self, is_saved:bool = True):
+        """changes whether or not the program considers the config unmodified
+        
+
+        Parameters
+        ----------
+        is_saved : bool, optional
+            Is the config yet unmodified by the user?. The default is True.
+
+        """
+        self.is_saved = is_saved
+        
+        # puts a star in the window title for unsaved file
+        if self.is_saved:
+            self.title(f'{TITLE_}')
+        else:
+            self.title(f'{TITLE_}*')
         
         
         
@@ -188,10 +282,27 @@ class MCV_QoE_Gui(tk.Tk):
     def run(self):
         pass
         
+    
+    
+    
+    
+    
+    
+    
+    
+    
         
 class BottomButtons(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
+        
+        ttk.Button(master=self, text = 'Run Test',
+            command = master.run).pack(
+            side=tk.RIGHT)
+                
+        ttk.Button(master=self, text='Restore Defaults',
+            command = master.restore_defaults).pack(
+            side=tk.RIGHT)      
         
         ttk.Button(master=self, text='Load Config',
             command = master.open_).pack(
@@ -201,9 +312,7 @@ class BottomButtons(tk.Frame):
             command = master.save).pack(
             side=tk.RIGHT)
         
-        ttk.Button(master=self, text = 'Run Test',
-            command = master.run).pack(
-            side=tk.RIGHT)
+        
         
     
         
@@ -364,6 +473,7 @@ class EmptyFrame(tk.Frame):
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.btnvars = btnvars
+
 
 
 def set_font(**cfg):
