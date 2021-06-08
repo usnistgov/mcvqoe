@@ -62,15 +62,25 @@ class MCV_QoE_Gui(tk.Tk):
         # tk Variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
+        
+        #change frame when this is changed
+        self.selected_test.trace_add('write', self.frame_update)
 
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
-
-        self.bind('<Configure>', self.LeftFrame.on_change_size)
-        
-        
         
         BottomButtons(master=self).pack(side=tk.BOTTOM, fill = tk.X)
+
+
+
+
+        self.bind('<Configure>', self.LeftFrame.on_change_size)
+        self.bind('<Control-s>', self.save)
+        self.bind('<Control-o>', self.open_)
+        self.bind('<Control-Shift-s>', self.save_as)
+        
+        
+        
         
         
         
@@ -88,20 +98,32 @@ class MCV_QoE_Gui(tk.Tk):
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
+        
+        
+    def frame_update(self, *args, **kwargs):
+        #indicates a change in the user's selected test
+        self.show_frame(self.selected_test.get())
 
     def show_frame(self, framename):
-        # hide the showing widget
+        # first hide the showing widget
         self.currentframe.pack_forget()
-
-        self.currentframe = self.frames[framename]
-        self.currentframe.pack(side=tk.RIGHT, fill=tk.BOTH, padx=10, pady=10)
+        try:
+            self.currentframe = self.frames[framename]
+        except KeyError:
+            raise KeyError(f"Frame '{framename}' is not defined")
+        finally:
+            self.currentframe.pack(side=tk.RIGHT,
+                                   fill=tk.BOTH, padx=10, pady=10)
 
     def is_empty(self):
         return self.currentframe == self.frames['EmptyFrame']
     
     
+    def on_change(self, *args, **kwargs):
+        pass
+    
         
-    def load(self):
+    def open_(self, *args, **kwargs):
         """Loads config from .json file
         """
         
@@ -127,7 +149,7 @@ class MCV_QoE_Gui(tk.Tk):
     
     
     
-    def save_as(self):
+    def save_as(self, *args, **kwargs):
         
         fp = fdl.asksaveasfilename(filetypes=[('.json files','*.json')])
         if fp is not None:
@@ -136,7 +158,7 @@ class MCV_QoE_Gui(tk.Tk):
         
         
         
-    def save(self):
+    def save(self, *args, **kwargs):
         """Saves config to .json file
 
         """
@@ -156,7 +178,7 @@ class MCV_QoE_Gui(tk.Tk):
                 obj[framename] = frame.btnvars.get()
                 
             json.dump(obj, fp)
-            
+        self.is_saved = True
             
         
         
@@ -172,7 +194,7 @@ class BottomButtons(tk.Frame):
         super().__init__(master, *args, **kwargs)
         
         ttk.Button(master=self, text='Load Config',
-            command = master.load).pack(
+            command = master.open_).pack(
             side=tk.RIGHT)
         
         ttk.Button(master=self, text='Save Config',
@@ -291,23 +313,20 @@ class TestTypeFrame(tk.Frame):
         # Choose Test
         ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
 
-        # Change test frame when user changes this option
-        cmd = self.change_frame
-
-        ttk.Radiobutton(self, text='M2E Latency', command=cmd,
+       
+        ttk.Radiobutton(self, text='M2E Latency',
                         variable=sel_txt, value='M2eFrame').pack(fill=tk.X)
 
-        ttk.Radiobutton(self, text='Access Delay', command=cmd,
+        ttk.Radiobutton(self, text='Access Delay',
                         variable=sel_txt, value='AccssDFrame').pack(fill=tk.X)
 
-        ttk.Radiobutton(self, text='PSuD', command=cmd,
+        ttk.Radiobutton(self, text='PSuD',
                         variable=sel_txt, value='PSuDFrame').pack(fill=tk.X)
 
-        ttk.Radiobutton(self, text='Intelligibility', command=cmd,
+        ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value='IntgblFrame').pack(fill=tk.X)
 
-    def change_frame(self):
-        self.main_.show_frame(self.main_.selected_test.get())
+    
 
 
 class LogoFrame(tk.Canvas):
