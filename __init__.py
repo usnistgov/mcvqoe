@@ -11,6 +11,8 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import tkinter.font as font
+import tkinter.filedialog as fdl
+import json
 
 
 # Basic configuration
@@ -35,7 +37,7 @@ DEFAULT_CONFIG = {
         'ptt_wait': 0.68,
         'radioport': "",
         'test': "m2e_1loc",
-                'trials': 100
+        'trials': 100
     }
 }
 
@@ -55,7 +57,8 @@ class MCV_QoE_Gui(tk.Tk):
         # dimensions
         self.minsize(width=600, height=370)
         self.geometry(f'{WIN_SIZE[0]}x{WIN_SIZE[1]}')
-
+        
+        
         # tk Variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
@@ -64,9 +67,16 @@ class MCV_QoE_Gui(tk.Tk):
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
 
         self.bind('<Configure>', self.LeftFrame.on_change_size)
+        
+        
+        
+        BottomButtons(master=self).pack(side=tk.BOTTOM, fill = tk.X)
+        
+        
+        
 
         self.frames = {}
-        # Initialize test-specific frames for the window
+        # Initialize test-specific frames
         for F in (EmptyFrame, M2eFrame):
             # loads the default values of the controls
             svd = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
@@ -77,6 +87,7 @@ class MCV_QoE_Gui(tk.Tk):
 
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
+        self.cnf_filepath = None
 
     def show_frame(self, framename):
         # hide the showing widget
@@ -87,7 +98,94 @@ class MCV_QoE_Gui(tk.Tk):
 
     def is_empty(self):
         return self.currentframe == self.frames['EmptyFrame']
+    
+    
+        
+    def load(self):
+        """Loads config from .json file
+        """
+        
+        fpath = fdl.askopenfile(
+                'r',
+                filetypes=[('.json files','*.json')]
+                )
+        
+        if fpath is None:
+            #canceled by user
+            return
+        
+        with fpath as fp:
+        
+            dct = json.load(fp)
+            for frame_name, frame in self.frames.items():
+                frame.btnvars.set(dct[frame_name])
+                
+                
+            
+            self.is_simulation.set(dct['is_simulation'])
+            self.selected_test.set(dct['selected_test'])
+    
+    
+    
+    def save_as(self):
+        
+        fp = fdl.asksaveasfilename(filetypes=[('.json files','*.json')])
+        if fp is not None:
+            self.cnf_filepath = fp
+            self.save()
+        
+        
+        
+    def save(self):
+        """Saves config to .json file
 
+        """
+        if self.cnf_filepath is None:
+            self.save_as()
+            return
+        
+        with open(self.cnf_filepath, mode='w') as fp:
+            
+            obj = {
+                'is_simulation': self.is_simulation.get(),
+                'selected_test': self.selected_test.get()
+                }
+            
+            
+            for framename, frame in self.frames.items():
+                obj[framename] = frame.btnvars.get()
+                
+            json.dump(obj, fp)
+            
+            
+        
+        
+        
+        
+        
+    def run(self):
+        pass
+        
+        
+class BottomButtons(tk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        
+        ttk.Button(master=self, text='Load Config',
+            command = master.load).pack(
+            side=tk.RIGHT)
+        
+        ttk.Button(master=self, text='Save Config',
+            command = master.save).pack(
+            side=tk.RIGHT)
+        
+        ttk.Button(master=self, text = 'Run Test',
+            command = master.run).pack(
+            side=tk.RIGHT)
+        
+    
+        
+        
 
 class LeftFrame(tk.Frame):
     """Can show and hide the MenuFrame using the MenuButton
@@ -246,6 +344,7 @@ class EmptyFrame(tk.Frame):
 
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.btnvars = btnvars
 
 
 def set_font(**cfg):
