@@ -23,7 +23,7 @@ class StringVarDict(dict):
     def __init__(self, **initials):
         for k, v in initials.items():
             self[k] = StringVar(value=v)
-            self[k].trace_add('write', self.on_change)
+            self[k].trace_add('write', self._on_change_pre)
         
     def set(self, dict_):
         """sets the values of the StrVars to the values given
@@ -54,11 +54,14 @@ class StringVarDict(dict):
             dict_[k] = v.get()
         return dict_
         
-    def on_change(self, *args, **kwargs):
+    def on_change(self):
         # should be set by each instance
         pass
 
-
+    def _on_change_pre(self, *args, **kwargs):
+        self.on_change()
+        
+        
 
 class Config(dict):
     
