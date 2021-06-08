@@ -86,7 +86,8 @@ class MCV_QoE_Gui(tk.Tk):
         self.bind('<Control-O>', self.open_)
         self.bind('<Control-Shift-s>', self.save_as)
         self.bind('<Control-Shift-S>', self.save_as)
-        
+        self.bind('<Control-w>', self.restore_defaults)
+        self.bind('<Control-W>', self.restore_defaults)
         
         
         
