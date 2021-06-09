@@ -7,12 +7,14 @@ Created on Wed May 26 15:53:57 2021
 from m2e_gui import M2eFrame
 
 import loadandsave
+
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import tkinter.font as font
 import tkinter.filedialog as fdl
 import tkinter.messagebox as msb
+
 import json
 
 
@@ -74,7 +76,8 @@ class MCV_QoE_Gui(tk.Tk):
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
         
-        BottomButtons(master=self).pack(side=tk.BOTTOM, fill = tk.X)
+        BottomButtons(master=self).pack(side=tk.BOTTOM, fill = tk.X,
+                padx=10, pady=10)
 
 
 
