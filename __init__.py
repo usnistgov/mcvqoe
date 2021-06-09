@@ -346,8 +346,8 @@ class LeftFrame(tk.Frame):
 
     def on_change_size(self, event):
         w = self.MenuShowWidth
-        if event.width < 600:
-            # potential case of invalid event
+        if event.width < 600 or event.height < 370:
+            # unknown source of incorrect events
             return
         if event.width < w and not self.DoMenu:
             self.DoMenu = True
