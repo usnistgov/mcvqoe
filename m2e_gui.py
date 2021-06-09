@@ -10,6 +10,9 @@ import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
     
 
+PADX = 10
+PADY = 10
+
 
 class M2eFrame(tk.LabelFrame):
     """
@@ -28,8 +31,6 @@ class M2eFrame(tk.LabelFrame):
             test,
             audio_file,
             trials,
-            bgnoise_file,
-            bgnoise_volume,
             ptt_wait,
             overplay,
             outdir,
@@ -63,9 +64,9 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
         self.title('Advanced')
         #sets the controls in this window
         controls = (
+            BgNoise,
+            AudioSettings,
             radioport,
-            blocksize,
-            buffersize,
             _advanced_submit
             )
         
@@ -111,15 +112,15 @@ class LabeledControl():
     RCtrl = None
     RCtrlkwargs = {}
     
-    padx = 5
-    pady = 10
+    padx = PADX
+    pady = PADY
     
     def __init__(self, master, row):
         self.master = master
         
     
         ttk.Label(master, text=self.text).grid(
-            column=0, row=row, sticky='E')
+            padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
         
         MCtrlkwargs = self.MCtrlkwargs.copy()
         MCtrlargs = self.MCtrlargs.copy()
@@ -152,14 +153,16 @@ class LabeledControl():
             if self.RCtrl in (ttk.Button, tk.Button):
                 RCtrlkwargs['command'] = self.on_button
             
+            # initialize the control
             self.RCtrl(master, **RCtrlkwargs).grid(
-                column=2, row=row, sticky='WE')
+                padx=self.padx, pady=self.pady, column=2, row=row, sticky='WE')
             
             
             
     def on_button(self):
         pass
             
+
 
 
 class test(LabeledControl):
@@ -199,7 +202,7 @@ class radioport(LabeledControl):
     
     
 class bgnoise_file(LabeledControl):
-    text = 'Background Noise File:'
+    text = 'Noise File:'
     
     RCtrl = ttk.Button
     RCtrlkwargs = {'text' : 'Browse...'}
@@ -213,7 +216,7 @@ class bgnoise_file(LabeledControl):
 
 
 class bgnoise_volume(LabeledControl):
-    text = 'Background Noise Volume:'
+    text = 'Volume:'
     RCtrl = None
     MCtrl = None
     
@@ -309,6 +312,32 @@ class _advanced_submit(LabeledControl):
         self.master.destroy()
     
     
-    
-    
-    
+# advanced groups
+class BgNoise(tk.LabelFrame):
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, *args, text='Background Noise', **kwargs)
+        
+        self.btnvars = master.btnvars
+        
+        controls = (bgnoise_file, bgnoise_volume)
+        
+        for row_ in range(len(controls)):
+            controls[row_](master=self, row=row_)
+        
+        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
+                  sticky='WE')
+        
+
+class AudioSettings(tk.LabelFrame):
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, *args, text='Audio Settings', **kwargs)
+        
+        self.btnvars = master.btnvars
+        
+        controls = (blocksize, buffersize)
+        
+        for row_ in range(len(controls)):
+            controls[row_](master=self, row=row_)
+        
+        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
+                  sticky='WE')
