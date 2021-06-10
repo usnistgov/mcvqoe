@@ -5,17 +5,18 @@ Created on Wed Jun  2 08:52:09 2021
 @author: MkZee
 """
 
+
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
-import organization
-from organization import LabeledControl
 
-PADX = organization.PADX
-PADY = organization.PADY
-
+from shared import LabeledControl
+from shared import PADX
+from shared import PADY
+from shared import _SignalOverride
     
-
+import time
+import sys
 
 
 
@@ -53,8 +54,9 @@ class M2eFrame(tk.LabelFrame):
         for row in range(len(controls)):
             controls[row](master=self, row=row)
         
-           
-   
+        
+        
+            
             
 class M2EAdvancedConfigGUI(tk.Toplevel):
     """Advanced options for the M2E test
@@ -101,7 +103,7 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
 
 
 class test(LabeledControl):
-    text = 'Test Type:'
+    text = 'Location Type:'
     
     variable_arg = None # indicates the argument is positional
     MCtrl = ttk.OptionMenu
@@ -276,3 +278,123 @@ class AudioSettings(tk.LabelFrame):
         
         self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
                   sticky='WE')
+
+
+
+
+
+
+
+
+
+
+
+def run(cnf, is_simulation):
+    print(cnf,'\n', is_simulation)
+    
+     
+    import m2e_class
+    from mcvqoe.simulation.QoEsim import QoEsim
+     
+    o = m2e_class.M2E()
+     
+    for k, v in cnf.items():
+         if hasattr(o, k):
+             setattr(o, k, v)
+     
+    o.param_check()
+     
+    # Get start time and date
+    time_n_date = m2e_class.datetime.datetime.now().replace(microsecond=0)
+    o.info['Tstart'] = time_n_date
+
+    # Add test to info dictionary
+    o.info['test'] = o.test
+    
+    
+    
+    if is_simulation:
+        sim = QoEsim()
+        def get_sim(*args, **kwargs):
+            return sim
+        
+        #override these to simulate them
+        m2e_class.RadioInterface = get_sim
+        m2e_class.AudioPlayer = get_sim
+    
+    print('now')
+    # Open RadioInterface object for testing
+    o.ri = m2e_class.RadioInterface(o.radioport)
+    print('you')
+    # Fill 'Arguments' within info dictionary
+    o.info.update(m2e_class.write_log.fill_log(o))
+
+
+    m2e_class.test_info_gui.TestInfoGui.quit = lambda s=None : None
+    # Gather pretest notes and M2E parameters
+    o.info.update(m2e_class.test_info_gui.pretest(outdir=o.outdir))
+
+    # Write pretest notes and info to tests.log
+    m2e_class.write_log.pre(info=o.info)
+    
+    print('are')
+    # Run chosen M2E test
+    if (o.test == "m2e_1loc"):
+        o.m2e_1loc()
+    elif (o.test == "m2e_2loc_tx"):
+        o.m2e_2loc_tx()
+    elif (o.test == "m2e_2loc_rx"):
+        o.m2e_2loc_rx()
+    else:
+        raise ValueError("\nIncorrect test type")
+    
+    # Gather posttest notes and write to log
+    post_dict = m2e_class.test_info_gui.post_test()
+    m2e_class.write_log.post(info=post_dict, outdir=o.outdir)
+    
+    
+    print('done')
+     
+     
+     
+     
+     
+     
+     
+     
+     
+    return
+"""
+     # OLD CODE
+     # redefining args, which will be passed to the test
+     sys.argv = [sys.argv[0],
+         '--testtype',     cnf['test'],
+         '--audiofile',    cnf['audio_file'],
+         '--trials',       cnf['trials'],
+         '--pttwait',      cnf['ptt_wait'],
+         '--blocksize',    cnf['blocksize'],
+         '--buffersize',   cnf['buffersize'],
+         '--overplay',     cnf['overplay'],
+         '--outdir',       cnf['outdir']
+         ]
+     
+     if cnf['radioport']:
+         sys.argv.append('--radioport')
+         sys.argv.append(cnf['radioport'])
+        
+     if cnf['bgnoise_file']:
+         sys.argv.append('--bgnoisefile')
+         sys.argv.append(cnf['bgnoise_file'])
+         sys.argv.append('--bgnoisevolume')
+         sys.argv.append(cnf['bgnoise_volume'])
+     
+     # overriding the ability to call signal.signal
+     m2e_class.signal = _SignalOverride()
+     
+     m2e_class.main()
+     
+    """ 
+     
+     
+     
+     
