@@ -4,23 +4,14 @@ Created on Wed May 26 15:53:57 2021
 
 @author: marcus.zeender@nist.gov
 """
-from m2e_gui import M2eFrame
-
-import loadandsave
-
-import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
-import tkinter.font as font
-import tkinter.filedialog as fdl
-import tkinter.messagebox as msb
-
-import json
-
 
 # Basic configuration
+Reduced_Error_Messages = False
+
 TITLE_ = 'MCV QoE'
+
 FONT_SIZE = 13
+
 WIN_SIZE = (850, 700)
 
 # the initial values in all of the controls
@@ -45,7 +36,32 @@ DEFAULT_CONFIG = {
 }
 
 
-class MCV_QoE_Gui(tk.Tk):
+
+
+
+from m2e_gui import M2eFrame
+import m2e_gui
+
+import loadandsave
+
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
+import tkinter.font as font
+import tkinter.filedialog as fdl
+import tkinter.messagebox as msb
+
+import json
+from threading import Thread
+import sys
+import time
+import traceback
+
+
+
+
+
+class MCVQoEGui(tk.Tk):
     """The main window
 
 
@@ -58,8 +74,7 @@ class MCV_QoE_Gui(tk.Tk):
 
         # the config starts unmodified
         self.set_saved_state(True)
-        # when the user exits the program
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        
         
         # dimensions
         self.minsize(width=600, height=370)
@@ -91,7 +106,8 @@ class MCV_QoE_Gui(tk.Tk):
         self.bind('<Control-Shift-S>', self.save_as)
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
-        
+        # when the user exits the program
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
         
         
         
@@ -113,6 +129,11 @@ class MCV_QoE_Gui(tk.Tk):
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
+        
+        
+        
+        self.testThread = TestThread(daemon=True)
+        self.testThread.start()
         
         
     def frame_update(self, *args, **kwargs):
@@ -142,8 +163,7 @@ class MCV_QoE_Gui(tk.Tk):
         if not self.ask_save():
             self.destroy()
         
-    
-    
+        
     def restore_defaults(self, *args, **kwargs):
         if self.ask_save():
             #cancelled
@@ -223,14 +243,7 @@ class MCV_QoE_Gui(tk.Tk):
         
         with open(self.cnf_filepath, mode='w') as fp:
             
-            obj = {
-                'is_simulation': self.is_simulation.get(),
-                'selected_test': self.selected_test.get()
-                }
-            
-            
-            for framename, frame in self.frames.items():
-                obj[framename] = frame.btnvars.get()
+            obj = self.get_cnf()
                 
             json.dump(obj, fp)
             self.set_saved_state(True)
@@ -280,22 +293,47 @@ class MCV_QoE_Gui(tk.Tk):
         else:
             self.title(f'{TITLE_}*')
         
+    def get_cnf(self):
+        obj = {
+                'is_simulation': self.is_simulation.get(),
+                'selected_test': self.selected_test.get()
+            }
+            
+            
+        for framename, frame in self.frames.items():
+            obj[framename] = frame.btnvars.get()
         
+        return obj
         
-        
+    
+    
     def run(self):
-        pass
+        
+        main.queue.append(self.get_cnf())
+        return
+        
+        
+        
+        
+        #OLD CODE
+        if not self.testThread or not self.testThread.is_alive():
+            #(re)start the thread
+            self.testThread = TestThread()
+            self.testThread.start()
+        
+        #if self.testThread.is_running() and not tk.messagebox.askyesno(
+            #'Test Running',
+            #'Another test is already running. Would you like to run this test'+
+            #' after that one?'):
+            
+            ## add test to queue was canceled by user
+            #return
+        
+        self.testThread.add(self.get_cnf())
         
     
     
     
-    
-    
-    
-    
-    
-    
-        
 class BottomButtons(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -411,7 +449,7 @@ class TestTypeFrame(tk.Frame):
         sel_txt = main_.selected_test
 
         # Test Type
-        ttk.Label(self, text='Choose Test Type:').pack(fill=tk.X)
+        ttk.Label(self, text='Test Method:').pack(fill=tk.X)
 
         # hardware test
         ttk.Radiobutton(self, text='Hardware Test',
@@ -489,7 +527,128 @@ def set_font(**cfg):
     font.nametofont('TkDefaultFont').config(**cfg)
 
 
+def create_arg_list(cfg, arg_assoc) -> list:
+    """turns the configuration into command line arguments
+    
+
+    Parameters
+    ----------
+    cfg : dict
+        associates keys to values.
+    arg_assoc : dict
+        associates keys to argument identifiers. Should 
+
+    Returns
+    -------
+    list
+        the formatted arguments
+
+    """
+    out = []
+    for k, arg_prefix in arg_assoc.items():
+        if arg_prefix and cfg[k]:
+            out.append(arg_prefix)
+        if cfg[k] is not bool:
+            out.append(cfg[k])
+            
 
 
+og_args = sys.argv.copy()
+
+class TestThread(Thread):
+    """NOT USED: allows the test to be run in a new thread
+    
+    """
+    def __init__(self, *args, **kwargs):
+        kwargs['daemon'] = True
+        super().__init__(*args, **kwargs)
+        self.setName('Test_Worker')
+        
+        self.test_queue = []
+        self.current_test = None
+    
+    def run(self):
+        while True:
+            while not len(self.test_queue):
+                self.current_test = None
+                time.sleep(0.5)
+                
+            self.current_test = self.test_queue.pop(0)
+            run(self.current_test)        
+            
+
+                
+            
+    def add(self, test_config):
+        self.test_queue.append(test_config)
+    
+    def is_running(self) -> bool:
+        return bool(self.test_queue)
+
+
+
+class TestQueue(list):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        
+        self.current_test = None
+        self._break = False
+        
+        
+    def main_loop(self):
+        while not self._break:
+            
+            if not len(self):
+                time.sleep(0.2)
+                continue
+                
+            self.current_test = self.pop(0)
+            try:
+                run(self.current_test)     
+            except ValueError as e:
+                tk.messagebox.showerror('Value Error', str(e))
+            except Exception:
+                # prints exception without exiting main thread
+                traceback.print_exc()
+            
+    def is_running(self) -> bool:
+        return bool(self)
+
+    def stop(self):
+        self._break = True
+
+
+class Main():
+    def __init__(self):
+        global main
+        main = self
+        self.queue = TestQueue()
+        
+        # constructs gui in new thread
+        self.gui_thread = Thread(
+            target=self.gui_construct,
+            name='Gui_Thread',
+            daemon=True
+            )
+        self.gui_thread.start()
+        
+        self.queue.main_loop()
+    
+    
+    
+    def gui_construct(self):
+        self.win = MCVQoEGui()
+        self.win.mainloop()
+      
+    
+
+
+def run(cfg):
+    if cfg['selected_test'] == 'M2eFrame':
+        m2e_gui.run(cfg['M2eFrame'], cfg['is_simulation'])
+                
+                
+    ToDo = '' # implement other tests here
+    
 if __name__ == '__main__':
-    wn = MCV_QoE_Gui()
+    Main()
