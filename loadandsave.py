@@ -46,7 +46,8 @@ class StringVarDict(dict):
        
         """
         for k, v in dict_.items():
-            self[k].set(v)
+            if k in self:
+                self[k].set(v)
     
     def get(self):
         """converts the values back into a dict
