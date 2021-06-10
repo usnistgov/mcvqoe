@@ -14,6 +14,7 @@ from shared import LabeledControl
 from shared import PADX
 from shared import PADY
 from shared import _SignalOverride
+from tkinter.scrolledtext import ScrolledText
     
 import time
 import sys
@@ -35,7 +36,7 @@ class M2eFrame(tk.LabelFrame):
         #sets what controls will be in this frame
         controls = (
             test,
-            audio_file,
+            audio_files,
             trials,
             ptt_wait,
             overplay,
@@ -109,7 +110,25 @@ class test(LabeledControl):
     MCtrl = ttk.OptionMenu
     MCtrlargs = ['', 'm2e_1loc', 'm2e_2loc_rx', 'm2e_2loc_tx']
     
+
+class audio_files(LabeledControl):
+    text = 'Audio File(s):'
+    RCtrl = ttk.Button
+    RCtrlkwargs = {
+        'text' : 'Browse...'
+        }
     
+    def on_button(self):
+        fp = fdl.askopenfilenames(parent=self.master,
+                initialfile=self.btnvar.get(),
+                filetypes=[('WAV files', '*.wav')])
+        if fp:
+            str_ = ', '
+            self.btnvar.set(str_.join(fp))
+            
+            
+            
+            
 class audio_file(LabeledControl):
     
     def on_button(self):
@@ -297,7 +316,10 @@ def run(cnf, is_simulation):
     from mcvqoe.simulation.QoEsim import QoEsim
      
     o = m2e_class.M2E()
-     
+    
+    cnf['audio_file'] = cnf['audio_files'].split(', ')[0]
+    ToDo = '' # The above should change when we implement multiple audio files
+    
     for k, v in cnf.items():
          if hasattr(o, k):
              setattr(o, k, v)
