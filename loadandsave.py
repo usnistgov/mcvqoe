@@ -9,20 +9,29 @@ import os
 from appdirs import user_data_dir as udd
 import json
 from tkinter import StringVar
+import tkinter as tk
 
 
 class StringVarDict(dict):
     
-    """A dict of tk.StringVar's with initial values given
+    """A dict of tk variables with initial values given
     
     Used to save, load, and get states of tkinter widgets
     
+    'StringVarDict' is a misnomer because it actually takes all types
     
     """
     
     def __init__(self, **initials):
         for k, v in initials.items():
-            self[k] = StringVar(value=v)
+            if type(v) == str:
+                self[k] = StringVar(value=v)
+            elif type(v) == float:
+                self[k] = tk.DoubleVar(value=v)
+            elif type(v) == int:
+                self[k] = tk.IntVar(value=v)
+            else:
+                continue
             self[k].trace_add('write', self._on_change_pre)
         
     def set(self, dict_):
