@@ -5,9 +5,7 @@ Created on Wed May 26 15:53:57 2021
 @author: marcus.zeender@nist.gov
 """
 
-# Basic configuration
-Reduced_Error_Messages = False
-
+#basic configuration
 TITLE_ = 'MCV QoE'
 
 FONT_SIZE = 13
@@ -19,13 +17,12 @@ DEFAULT_CONFIG = {
     'EmptyFrame': {},
 
     'M2eFrame': {
+        'audio_files': '',
         'audio_file': "test.wav",
         'bgnoise_file': "",
         'bgnoise_volume': 0.1,
         'blocksize': 512,
         'buffersize': 20,
-        'fs': int(48e3),
-        'no_log': ['test', 'ri'],
         'outdir': "",
         'overplay': 1.0,
         'ptt_wait': 0.68,
