@@ -7,15 +7,22 @@ Created on Wed Jun  9 11:03:39 2021
 
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkFont
 
 import signal
 
 PADX = 10
 PADY = 10
 
+FONT_SIZE = 11
 
 class LabeledControl():
     """A one-row grid consisting of a label, control, and optional 2nd control
+    
+    Sub-classes should redefine any of the class variables, as well as the
+        setup() method
+    
+    
     
     row : int
         the row that the controls should be gridded in
@@ -23,6 +30,7 @@ class LabeledControl():
     """
     text = ''
     
+    do_font_scaling = True
     
     MCtrl = ttk.Entry
     MCtrlargs = []
@@ -37,8 +45,15 @@ class LabeledControl():
     padx = PADX
     pady = PADY
     
+    def setup(self):
+        pass
+    
+    
+    
     def __init__(self, master, row):
         self.master = master
+        
+        
         
     
         ttk.Label(master, text=self.text).grid(
@@ -54,8 +69,7 @@ class LabeledControl():
             self.btnvar = None
             
             
-        # some controls require the textvariable=... to be positional
-        
+        self.setup()
         #some controls require more flexibility, so they don't use self.MCtrl
         if self.MCtrl:
             if self.variable_arg:
@@ -63,6 +77,9 @@ class LabeledControl():
             
             else:
                 MCtrlargs.insert(0, self.btnvar)
+            
+            if self.do_font_scaling:
+                MCtrlkwargs['font'] = f'{FONT_SIZE}'
                 
             
             # initialize the control

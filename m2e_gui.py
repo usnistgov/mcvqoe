@@ -5,6 +5,8 @@ Created on Wed Jun  2 08:52:09 2021
 @author: MkZee
 """
 
+import m2e_class
+from mcvqoe.simulation.QoEsim import QoEsim
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -15,13 +17,14 @@ from shared import PADX
 from shared import PADY
 from shared import _SignalOverride
 from tkinter.scrolledtext import ScrolledText
+import shared
     
 import time
 import sys
 
 
 
-class M2eFrame(tk.LabelFrame):
+class M2eFrame(ttk.LabelFrame):
     """
     Gui to configure and run a M2E Latency Test
     
@@ -102,13 +105,29 @@ class M2EAdvancedConfigGUI(tk.Toplevel):
         #------------------ Controls ----------------------
 
 
+class _test(tk.Frame):
+    def __init__(self, *args, textvariable, **kwargs):
+        
+        # tk.frame does not accept font settings
+        if 'font' in kwargs:
+            del kwargs['font']
+        
+        super().__init__(*args, **kwargs)
+        
+        assoc = {
+            'm2e_1loc'   : '1 Location',
+            'm2e_2loc_tx': '2 Location (transmit)',
+            'm2e_2loc_rx': '2 Location (receive)'
+            }
+        
+        #initialize
+        for val, text in assoc.items():
+            ttk.Radiobutton(self, variable=textvariable, value=val,
+                text=text).pack(fill=tk.X)
 
 class test(LabeledControl):
     text = 'Location Type:'
-    
-    variable_arg = None # indicates the argument is positional
-    MCtrl = ttk.OptionMenu
-    MCtrlargs = ['', 'm2e_1loc', 'm2e_2loc_rx', 'm2e_2loc_tx']
+    MCtrl = _test
     
 
 class audio_files(LabeledControl):
@@ -175,6 +194,9 @@ class bgnoise_volume(LabeledControl):
     text = 'Volume:'
     RCtrl = None
     MCtrl = None
+    # slider does not accept font size
+    do_font_scaling = False    
+    
     
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, row, *args, **kwargs)
@@ -244,6 +266,13 @@ class outdir(LabeledControl):
         dirp = fdl.askdirectory(parent=self.master)
         if dirp:
             self.btnvar.set(dirp)
+            
+            
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        
+        
 
 class advanced(LabeledControl):
     text = ''
@@ -269,7 +298,7 @@ class _advanced_submit(LabeledControl):
     
     
 # advanced groups
-class BgNoise(tk.LabelFrame):
+class BgNoise(ttk.LabelFrame):
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, *args, text='Background Noise', **kwargs)
         
@@ -284,7 +313,7 @@ class BgNoise(tk.LabelFrame):
                   sticky='WE')
         
 
-class AudioSettings(tk.LabelFrame):
+class AudioSettings(ttk.LabelFrame):
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, *args, text='Audio Settings', **kwargs)
         
@@ -312,8 +341,7 @@ def run(cnf, is_simulation):
     print(cnf,'\n', is_simulation)
     
      
-    import m2e_class
-    from mcvqoe.simulation.QoEsim import QoEsim
+
      
     o = m2e_class.M2E()
     
@@ -352,7 +380,9 @@ def run(cnf, is_simulation):
     o.info.update(m2e_class.write_log.fill_log(o))
 
 
+    # override test_info_gui's ability to close all tkinter windows
     m2e_class.test_info_gui.TestInfoGui.quit = lambda s=None : None
+    m2e_class.test_info_gui.PostTestGui.quit = lambda s=None : None
     # Gather pretest notes and M2E parameters
     o.info.update(m2e_class.test_info_gui.pretest(outdir=o.outdir))
 
@@ -382,40 +412,12 @@ def run(cnf, is_simulation):
      
      
      
-     
-     
-     
-    return
-"""
-     # OLD CODE
-     # redefining args, which will be passed to the test
-     sys.argv = [sys.argv[0],
-         '--testtype',     cnf['test'],
-         '--audiofile',    cnf['audio_file'],
-         '--trials',       cnf['trials'],
-         '--pttwait',      cnf['ptt_wait'],
-         '--blocksize',    cnf['blocksize'],
-         '--buffersize',   cnf['buffersize'],
-         '--overplay',     cnf['overplay'],
-         '--outdir',       cnf['outdir']
-         ]
-     
-     if cnf['radioport']:
-         sys.argv.append('--radioport')
-         sys.argv.append(cnf['radioport'])
-        
-     if cnf['bgnoise_file']:
-         sys.argv.append('--bgnoisefile')
-         sys.argv.append(cnf['bgnoise_file'])
-         sys.argv.append('--bgnoisevolume')
-         sys.argv.append(cnf['bgnoise_volume'])
-     
-     # overriding the ability to call signal.signal
-     m2e_class.signal = _SignalOverride()
-     
-     m2e_class.main()
-     
-    """ 
+class _QoEsim_Override(QoEsim):
+    def play_record(*args, **kwargs):
+        if 'filename' in kwargs:
+            kwargs['out_name'] = kwargs['filename']
+            del kwargs['filename']
+        super().play_record(*args, **kwargs)
      
      
      

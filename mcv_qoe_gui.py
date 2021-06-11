@@ -8,9 +8,8 @@ Created on Wed May 26 15:53:57 2021
 #basic configuration
 TITLE_ = 'MCV QoE'
 
-FONT_SIZE = 13
 
-WIN_SIZE = (850, 700)
+WIN_SIZE = (870, 650)
 
 # the initial values in all of the controls
 DEFAULT_CONFIG = {
@@ -40,6 +39,7 @@ from m2e_gui import M2eFrame
 import m2e_gui
 
 import loadandsave
+import shared
 
 import tkinter as tk
 from tkinter import ttk
@@ -53,9 +53,10 @@ from threading import Thread
 import sys
 import time
 import traceback
+import ctypes
 
-
-
+if hasattr(ctypes, 'windll'):
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
 
 class MCVQoEGui(tk.Tk):
@@ -66,9 +67,33 @@ class MCVQoEGui(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        set_font(size=FONT_SIZE)
-
+        
+        
+        #dpi scaling
+        global dpi_scale
+        try:
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            if screen_height < screen_width:
+                dpi_scale = screen_height / 800
+            else:
+                dpi_scale = screen_width / 800
+            if dpi_scale < 1 or dpi_scale > 2.5:
+                raise Exception()
+        except: #in case of invalid dpi scale
+            dpi_scale = 1.2
+                
+        global WIN_SIZE
+        WIN_SIZE = (round(WIN_SIZE[0] * dpi_scale),
+                    round(WIN_SIZE[1] * dpi_scale))
+        
+        
+        shared.FONT_SIZE = round(shared.FONT_SIZE * dpi_scale)
+        shared.FNT = font.Font()
+        shared.FNT.configure(
+            size=shared.FONT_SIZE)
+        set_styles()
+        
         # the config starts unmodified
         self.set_saved_state(True)
         
@@ -116,8 +141,7 @@ class MCVQoEGui(tk.Tk):
             btnvars = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
 
             # initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=self, btnvars=btnvars,
-                                        padx=10, pady=10)
+            self.frames[F.__name__] = F(master=self, btnvars=btnvars)
             
             # when user changes a control
             btnvars.on_change = self.on_change
@@ -335,19 +359,19 @@ class BottomButtons(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         
-        ttk.Button(master=self, text = 'Run Test',
+        ttk.Button(master=self, text = 'Run Test', #style='MCV',
             command = master.run).pack(
             side=tk.RIGHT)
                 
-        ttk.Button(master=self, text='Restore Defaults',
+        ttk.Button(master=self, text='Restore Defaults', #style='MCV',
             command = master.restore_defaults).pack(
             side=tk.RIGHT)      
         
-        ttk.Button(master=self, text='Load Config',
+        ttk.Button(master=self, text='Load Config', #style='MCV',
             command = master.open_).pack(
             side=tk.RIGHT)
         
-        ttk.Button(master=self, text='Save Config',
+        ttk.Button(master=self, text='Save Config', #style='MCV',
             command = master.save).pack(
             side=tk.RIGHT)
         
@@ -362,14 +386,15 @@ class LeftFrame(tk.Frame):
 
     Only applies when the main window is small enough
     """
-    # The window's minimum width at which the menu is shown
-    MenuShowWidth = 850
-
+    
     def __init__(self, master, main_, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         # stores the main Tk window
         self.main_ = main_
-
+        
+        # The window's minimum width at which the menu is shown
+        self.MenuShowWidth = WIN_SIZE[0]
+        
         self.DoMenu = False
         self.MenuVisible = True
 
@@ -380,11 +405,12 @@ class LeftFrame(tk.Frame):
         self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
 
     def on_change_size(self, event):
+        w_ = self.main_.winfo_width()
         w = self.MenuShowWidth
         if event.width < 600 or event.height < 370:
             # unknown source of incorrect events
             return
-        if event.width < w and not self.DoMenu:
+        if w_ < w and not self.DoMenu:
             self.DoMenu = True
             self.MenuVisible = False
             self.MenuButton.pack(side=tk.LEFT, fill=tk.Y)
@@ -392,7 +418,7 @@ class LeftFrame(tk.Frame):
             if self.main_.is_empty():
                 self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
                 self.MenuVisible = True
-        elif event.width >= w and self.DoMenu:
+        elif w_ >= w and self.DoMenu:
             self.MenuButton.pack_forget()
             self.MenuVisible = True
             self.DoMenu = False
@@ -523,6 +549,11 @@ def set_font(**cfg):
     """
     font.nametofont('TkDefaultFont').config(**cfg)
 
+def set_styles():
+    
+    for style in ('TButton', 'TEntry', 'TLabel', 'TLabelframe.Label',
+            'TRadiobutton'):
+        ttk.Style().configure(style, font=('TkDefaultFont', shared.FONT_SIZE))
 
 def create_arg_list(cfg, arg_assoc) -> list:
     """turns the configuration into command line arguments
