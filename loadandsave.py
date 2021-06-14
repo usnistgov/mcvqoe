@@ -24,13 +24,16 @@ class StringVarDict(dict):
     
     def __init__(self, **initials):
         for k, v in initials.items():
-            if type(v) == str:
+            if type(v) == bool:
+                self[k] = tk.BooleanVar(value=v)
+            elif type(v) == str:
                 self[k] = StringVar(value=v)
             elif type(v) == float:
                 self[k] = tk.DoubleVar(value=v)
             elif type(v) == int:
                 self[k] = tk.IntVar(value=v)
             else:
+                print(k, 'has an invalid value. Ignoring.')
                 continue
             self[k].trace_add('write', self._on_change_pre)
         
