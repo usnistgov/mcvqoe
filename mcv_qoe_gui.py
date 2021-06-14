@@ -32,14 +32,14 @@ from m2e_gui import M2eFrame
 TITLE_ = 'MCV QoE'
 
 
-WIN_SIZE = (870, 600)
+WIN_SIZE = (900, 600)
 
 # the initial values in all of the controls
 DEFAULT_CONFIG = {
     'EmptyFrame': {},
 
     'M2eFrame': {
-        'audio_files': '',
+        'audio_files': "",
         'bgnoise_file': "",
         'bgnoise_volume': 0.1,
         'blocksize': 512,
@@ -53,9 +53,8 @@ DEFAULT_CONFIG = {
     },
 
     'AccssDFrame': {
-        'audio_files': [],
+        'audio_files': "",
         'audio_path': "",
-        'audio_player': None,
         'auto_stop': False,
         'bgnoise_file': "",
         'bgnoise_volume': 0.1,
@@ -64,7 +63,7 @@ DEFAULT_CONFIG = {
         'data_file': "",
         'dev_dly': float(31e-3),
         'outdir': "",
-        '_ptt_delay_min': 0.0,
+        '_ptt_delay_min': 0.00,
         '_ptt_delay_max': 'auto',
         'ptt_gap': 3.1,
         'ptt_rep': 30,
@@ -75,7 +74,8 @@ DEFAULT_CONFIG = {
         'stop_rep': 10,
         '_time_expand_i': float(100e-3 - 0.11e-3),
         '_time_expand_f': float(0.11e-3),
-        'trials': 100,
+        '_limited_trials': True,
+        'trials': '100', #this is a string because it may be 'inf'
 
     },
 }
@@ -552,6 +552,9 @@ def dpi_scaling(root):
             dpi_scale = screen_height / 800
         else:
             dpi_scale = screen_width / 800
+        
+        dpi_scale = dpi_scale ** 0.5
+        
         if dpi_scale < 1 or dpi_scale > 2.5:
             raise Exception()
     except:  # in case of invalid dpi scale
@@ -628,7 +631,7 @@ class TestQueue(list):
                 
                 
             except ValueError as e:
-                tk.messagebox.showerror('Value Error', str(e))
+                tk.messagebox.showerror('Invalid Option', str(e))
                 
             except Abort_by_User:
                 print('Test Aborted by User')
@@ -645,7 +648,8 @@ class TestQueue(list):
                 traceback.print_exc()
             finally:
                 if not len(self):
-                    self.update_run_btn(True)
+                    try:self.update_run_btn(True)
+                    except RuntimeError:pass
 
     def is_running(self) -> bool:
         return bool(self) or bool(self.current_test)
