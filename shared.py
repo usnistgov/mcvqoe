@@ -26,8 +26,7 @@ class TestCfgFrame(ttk.LabelFrame):
     text = ''
        
     
-    def __init__(self, btnvars,
-                 *args, **kwargs):
+    def __init__(self, btnvars, *args, **kwargs):
         kwargs['text'] = self.text
         super().__init__(*args, **kwargs)
         #option functions will get and store their values in here
@@ -45,10 +44,21 @@ class TestCfgFrame(ttk.LabelFrame):
         
     def get_controls() -> iter:
         """subclasses should override this
-        
-
-
         """
+
+
+
+class SubCfgFrame(TestCfgFrame):
+    """Makes a subframe for controls grouped together
+    
+    """
+    text = ''
+    
+    def __init__(self, master, row, *args, **kwargs):
+        super.__init__(self, master.btnvars, *args, **kwargs)
+        
+        self.grid(column=0, row=row, columnspan=3, sticky='NSEW',
+                  padx=PADX, pady=PADY)
 
 
 
@@ -89,7 +99,9 @@ class AdvancedConfigGUI(tk.Toplevel):
     def get_controls():
         pass
     
-    
+
+
+        
     
 
 class LabeledControl():
@@ -155,8 +167,7 @@ class LabeledControl():
                 MCtrlargs.insert(0, self.btnvar)
             
             if self.do_font_scaling:
-                MCtrlkwargs['font'] = f'{FONT_SIZE}'
-                
+                MCtrlkwargs['font'] = (FONT_SIZE,)
             
             # initialize the control
             self.MCtrl(master, *MCtrlargs, **MCtrlkwargs).grid(
@@ -367,13 +378,5 @@ class AudioSettings(ttk.LabelFrame):
 
 
 
-
-class _SignalOverride():
-    """
-    Prevents test modules from using signal.signal, which breaks the
-    multithreading process
-    """
-    def signal(*args, **kwargs): pass
-    SIGINT = None
     
-    
+class CtrlC_Stop(Exception):pass
