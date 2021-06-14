@@ -12,7 +12,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
 
-from shared import PADX, PADY, TestCfgFrame, _SignalOverride, LabeledControl
+from shared import PADX, PADY, TestCfgFrame, LabeledControl
 import shared
 
 
@@ -89,19 +89,38 @@ class overplay(LabeledControl):
     MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
 
 
+class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
+    
+    
+    def get_controls(self):
+        return (
+            BgNoise,
+            AudioSettings,
+            radioport,
+            )
 
 
 
 
 
-
-
-
+class M2E_fromGui(m2e_class.M2E):
+    
+    def sig_handler(self, *args, **kwargs):
+        #override signal's ability to close the application
+        post_dict = m2e_class.test_info_gui.post_test()
+        m2e_class.write_log.post(info=post_dict, outdir=self.outdir)
+        raise shared.CtrlC_Stop()
 
 def run(cnf, is_simulation):
+    # override test_info_gui's ability to close all tkinter windows
+    m2e_class.test_info_gui.TestInfoGui.quit = lambda s=None : None
+    m2e_class.test_info_gui.PostTestGui.quit = lambda s=None : None
+    
+    
+    
     
      
-    o = m2e_class.M2E()
+    o = M2E_fromGui()
     
     cnf['audio_file'] = cnf['audio_files'].split(', ')[0]
     ToDo = '' # The above should change when we implement multiple audio files
@@ -136,9 +155,9 @@ def run(cnf, is_simulation):
     o.info.update(m2e_class.write_log.fill_log(o))
 
 
-    # override test_info_gui's ability to close all tkinter windows
-    m2e_class.test_info_gui.TestInfoGui.quit = lambda s=None : None
-    m2e_class.test_info_gui.PostTestGui.quit = lambda s=None : None
+
+    
+    
     # Gather pretest notes and M2E parameters
     o.info.update(m2e_class.test_info_gui.pretest(outdir=o.outdir))
 
@@ -167,7 +186,7 @@ def run(cnf, is_simulation):
      
      
 class _QoEsim_Override(QoEsim):
-    """ONLY TEMPORARY: makes QoEsim accept filename instead of 
+    """ONLY TEMPORARY: makes QoEsim accept filename instead of positional
     
     """
     def play_record(*args, **kwargs):
@@ -179,12 +198,3 @@ class _QoEsim_Override(QoEsim):
 
 from shared import BgNoise, AudioSettings, radioport
 
-class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
-    
-    
-    def get_controls(self):
-        return (
-            BgNoise,
-            AudioSettings,
-            radioport,
-            )
