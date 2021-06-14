@@ -5,26 +5,30 @@ Created on Wed May 26 15:53:57 2021
 @author: marcus.zeender@nist.gov
 """
 
-# basic configuration
 import ctypes
 import traceback
 import time
-import sys
 import _thread
 from threading import Thread
 import json
+
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
 from PIL import Image, ImageTk
 from tkinter import ttk
 import tkinter as tk
+
 import shared
+from shared import Abort_by_User
 import loadandsave
 import accesstime_gui
 from accesstime_gui import AccssDFrame
 import m2e_gui
 from m2e_gui import M2eFrame
+
+
+# basic config
 TITLE_ = 'MCV QoE'
 
 
@@ -619,8 +623,7 @@ class TestQueue(list):
                 
             except ValueError as e:
                 tk.messagebox.showerror('Value Error', str(e))
-            except shared.CtrlC_Stop:
-                print('Test Aborted')
+            except Abort_by_User:pass
             except SystemExit:
                 print('Test Failed')
             except KeyboardInterrupt:
@@ -665,8 +668,10 @@ def run(cfg):
     if cfg['selected_test'] == 'M2eFrame':
         m2e_gui.run(cfg['M2eFrame'], cfg['is_simulation'])
 
-    ToDo = ''  # implement other tests here
-
+    # TODO implement other tests here
+    
+    print('Test Complete')
+    main.win.focus_force()
 
 if __name__ == '__main__':
     Main()

@@ -305,11 +305,14 @@ class ptt_wait(LabeledControl):
                                   
 class blocksize(LabeledControl):
     text = 'Block Size:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
     
 
 class buffersize(LabeledControl):
     text='Buffer Size:'
-    
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
 
 
@@ -323,7 +326,8 @@ class advanced(LabeledControl):
     RCtrlkwargs = {'text': 'Advanced...'}
     
     def on_button(self):
-        M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
+        #M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
+        pass
 
     
 
@@ -379,4 +383,8 @@ class AudioSettings(ttk.LabelFrame):
 
 
     
-class CtrlC_Stop(Exception):pass
+class Abort_by_User(Exception):
+    """Raised when user presses 'Abort test'
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__('Test was aborted by the user', *args, **kwargs)
