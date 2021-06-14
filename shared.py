@@ -55,7 +55,7 @@ class SubCfgFrame(TestCfgFrame):
     text = ''
     
     def __init__(self, master, row, *args, **kwargs):
-        super.__init__(self, master.btnvars, *args, **kwargs)
+        super().__init__(master.btnvars, master, *args, **kwargs)
         
         self.grid(column=0, row=row, columnspan=3, sticky='NSEW',
                   padx=PADX, pady=PADY)
@@ -67,12 +67,13 @@ class AdvancedConfigGUI(tk.Toplevel):
     
 
     """    
+    text = ''
     
-    def __init__(self, btnvars, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, master, btnvars, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         
         
-        self.title('M2E Latency - Advanced')
+        self.title(self.text)
         #sets the controls in this window
         controls = list(self.get_controls())
         controls.append(_advanced_submit)
@@ -80,7 +81,9 @@ class AdvancedConfigGUI(tk.Toplevel):
         self.btnvars = btnvars
         
         #Sets window on top of other windows
-        self.attributes('-topmost', True)
+        self.focus_force()
+        self.grab_set()
+        #self.attributes('-topmost', True)
         
         #initializes controls
         for row in range(len(controls)):
@@ -92,8 +95,7 @@ class AdvancedConfigGUI(tk.Toplevel):
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
         
-        #sets focus on the window
-        self.focus_force()
+        
         
             
     def get_controls():
@@ -170,7 +172,8 @@ class LabeledControl():
                 MCtrlkwargs['font'] = (FONT_SIZE,)
             
             # initialize the control
-            self.MCtrl(master, *MCtrlargs, **MCtrlkwargs).grid(
+            self.m_ctrl = self.MCtrl(master, *MCtrlargs, **MCtrlkwargs)
+            self.m_ctrl.grid(
                 column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
         
         
@@ -324,10 +327,10 @@ class advanced(LabeledControl):
     MCtrl = None
     RCtrl = ttk.Button       
     RCtrlkwargs = {'text': 'Advanced...'}
+    toplevel = None
     
     def on_button(self):
-        #M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
-        pass
+        self.toplevel(master=self.master, btnvars=self.master.btnvars)
 
     
 
@@ -379,6 +382,8 @@ class AudioSettings(ttk.LabelFrame):
 
 
 
+
+# ------- Misc -------------
 
 
 

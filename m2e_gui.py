@@ -91,12 +91,10 @@ class overplay(LabeledControl):
     MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
 
 
-class advanced(shared.advanced):
-    def on_button(self):
-        M2EAdvancedConfigGUI(btnvars=self.master.btnvars)
+
 
 class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
-    
+    text = 'M2E Latency - Advanced'
     
     def get_controls(self):
         return (
@@ -106,7 +104,8 @@ class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
             )
 
 
-
+class advanced(shared.advanced):
+    toplevel = M2EAdvancedConfigGUI
 
 
 
@@ -138,7 +137,9 @@ class M2E_fromGui(m2e_class.M2E):
         #override signal's ability to close the application
         post_dict = m2e_class.test_info_gui.post_test()
         m2e_class.write_log.post(info=post_dict, outdir=self.outdir)
+        
         raise Abort_by_User()
+        
         
 
 def run(cnf, is_simulation):
