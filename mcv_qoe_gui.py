@@ -177,13 +177,16 @@ class MCVQoEGui(tk.Tk):
             # canceled by user
             return
 
-        if main.queue.is_running() and not tk.messagebox.askyesno(
+        if main.queue.is_running():
+            if tk.messagebox.askyesno(
                 'Abort Test?', 'A test is currently running. Abort?'):
-            # canceled by user
-            return
+                
+                self.abort()
+            else:
+                # canceled by user
+                return
 
         main.queue.stop()
-        self.abort()
         self.destroy()
 
     def restore_defaults(self, *args, **kwargs):
@@ -611,27 +614,38 @@ class TestQueue(list):
             try:
 
                 self.current_test = None
+                
                 if not len(self):
-                    self.update_run_btn(True)
-                while not len(self):
                     time.sleep(0.2)
+                    continue
                     
+                #change button to 'abort test'
                 self.update_run_btn(False)
+                
                 self.current_test = self.pop(0)
                 run(self.current_test)
                 
                 
+                
             except ValueError as e:
                 tk.messagebox.showerror('Value Error', str(e))
-            except Abort_by_User:pass
+                
+            except Abort_by_User:
+                print('Test Aborted by User')
+                
             except SystemExit:
                 print('Test Failed')
+                
             except KeyboardInterrupt:
                 if self.is_running():
                     print('Test Aborted')
+                    
             except:
                 # prints exception without exiting main thread
                 traceback.print_exc()
+            finally:
+                if not len(self):
+                    self.update_run_btn(True)
 
     def is_running(self) -> bool:
         return bool(self) or bool(self.current_test)

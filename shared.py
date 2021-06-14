@@ -383,8 +383,11 @@ class AudioSettings(ttk.LabelFrame):
 
 
     
-class Abort_by_User(Exception):
+class Abort_by_User(BaseException):
     """Raised when user presses 'Abort test'
+    
+    Inherits from BaseException because it is not an error and therefore
+    won't be treated as such
     """
     def __init__(self, *args, **kwargs):
         super().__init__('Test was aborted by the user', *args, **kwargs)

@@ -110,6 +110,28 @@ class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class M2E_fromGui(m2e_class.M2E):
     
     def sig_handler(self, *args, **kwargs):
@@ -117,6 +139,7 @@ class M2E_fromGui(m2e_class.M2E):
         post_dict = m2e_class.test_info_gui.post_test()
         m2e_class.write_log.post(info=post_dict, outdir=self.outdir)
         raise Abort_by_User()
+        
 
 def run(cnf, is_simulation):
     # override test_info_gui's ability to close all tkinter windows
