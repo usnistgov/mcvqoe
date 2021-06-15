@@ -81,7 +81,7 @@ DEFAULT_CONFIG = {
 }
 
 
-# on Windows, remove dpi scaling
+# on Windows, remove dpi scaling (otherwise text is blurry)
 if hasattr(ctypes, 'windll'):
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
@@ -618,9 +618,10 @@ class TestQueue(list):
 
                 self.current_test = None
                 
-                if not len(self):
+                while not len(self):
                     time.sleep(0.2)
-                    continue
+                    if self._break:
+                        return
                     
                 #change button to 'abort test'
                 self.update_run_btn(False)
