@@ -10,8 +10,7 @@ import tkinter.ttk as ttk
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
 from shared import radioport, audio_files, outdir
-
-global _trials_control_btn
+from shared import AudioSettings, BgNoise
 
 
 class AccssDFrame(TestCfgFrame):
@@ -19,14 +18,15 @@ class AccssDFrame(TestCfgFrame):
     
     def get_controls(self):
         return (
-            _limited_trials,
-            trials,
             audio_files,
-            PttDelay,
+            outdir,
             ptt_step,
             ptt_rep,
+            ptt_gap,
+            RadioCheck,
+            AutoStop,
+            PttDelay,
             #data_file,
-            outdir,
             advanced
             )
     
@@ -35,14 +35,32 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
     
     def get_controls(self):
         return (
+            BgNoise,
             DetectFailure,
             TimeExpand,
+            AudioSettings,
             dev_dly,
             radioport
             )
     
+class RadioCheck(SubCfgFrame):
+    text = 'Regular Radio Checks'
+    
+    def get_controls(self):
+        return (
+            _limited_trials,
+            trials,
+            )
     
     
+class AutoStop(SubCfgFrame):
+    text = 'Auto-Stop'
+    
+    def get_controls(self):
+        return (
+            auto_stop,
+            stop_rep,
+            )
 class PttDelay(SubCfgFrame):
     text = 'PTT Delay (sec)'
     
@@ -69,8 +87,6 @@ class DetectFailure(SubCfgFrame):
         return (
             s_thresh,
             s_tries,
-            auto_stop,
-            stop_rep,
             )
         
     
@@ -87,7 +103,7 @@ class _limited_trials(LabeledControl):
     previous = '100'
     
     def __init__(self, *args, **kwargs):
-        self.MCtrlkwargs = {'text': 'Limit Trials',
+        self.MCtrlkwargs = {'text': 'Enable Radio Checks',
                             'command': self.on_button}
         super().__init__(*args, **kwargs)
         
@@ -103,18 +119,17 @@ class _limited_trials(LabeledControl):
         self.master.btnvars['trials'].set(val)
         
 class trials(shared.trials):
-    pass
+    text = 'Trials between check:'
         
 class auto_stop(LabeledControl):
     
-    text = 'Success Streak behavior:'
     MCtrl = ttk.Checkbutton
-    MCtrlkwargs = {'text': 'Auto Stop Test'}
+    MCtrlkwargs = {'text': 'Enable Auto-Stop'}
     variable_arg = 'variable'
     do_font_scaling = False
     
 class stop_rep(LabeledControl):
-    text = 'Streak Length:'
+    text = 'Stop after __ successful:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 1, 'to': 2**15-1}
     
@@ -135,13 +150,13 @@ class ptt_step(LabeledControl):
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
 class ptt_gap(LabeledControl):
-    text = 'Pause Between Transmitions:'
+    text = 'Time Between Trials:'
     
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
 class ptt_rep(LabeledControl):
-    text = '# of Trials per Step:'
+    text = 'Repeats per Step:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
@@ -151,12 +166,12 @@ class dev_dly(LabeledControl):
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
     
 class _time_expand_i(LabeledControl):
-    text = 'Before Transmission:'
+    text = 'Front Expand:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
 class _time_expand_f(LabeledControl):
-    text = 'After Transmission:'
+    text = 'Back Expand:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
@@ -185,6 +200,10 @@ class advanced(shared.advanced):
 
 
 
- #TODO: convert _ptt_delay_* into ptt_delay, and multi-s into vectors
+ #TODO:...
+     #convert _ptt_delay_* into ptt_delay, and multi-s into vectors
+     #convert audio_files into audio_files and audio_path
+     #convert time_expand into vectors
+     #
 
 
