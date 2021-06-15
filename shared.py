@@ -12,7 +12,7 @@ import tkinter.filedialog as fdl
 PADX = 10
 PADY = 10
 
-FONT_SIZE = 11
+FONT_SIZE = 10
 
 class TestCfgFrame(ttk.LabelFrame):
     """

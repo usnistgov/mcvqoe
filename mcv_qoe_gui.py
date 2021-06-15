@@ -32,7 +32,7 @@ from m2e_gui import M2eFrame
 TITLE_ = 'MCV QoE'
 
 
-WIN_SIZE = (900, 600)
+WIN_SIZE = (900, 720)
 
 # the initial values in all of the controls
 DEFAULT_CONFIG = {
