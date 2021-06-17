@@ -193,7 +193,7 @@ class LabeledControl():
             
 
 
-#controls
+#---------------------------controls------------------------------------------
 class audio_files(LabeledControl):
     text = 'Audio File(s):'
     RCtrl = ttk.Button
@@ -386,7 +386,12 @@ class AudioSettings(ttk.LabelFrame):
 # ------- Misc -------------
 
 
-
+class SignalOverride():
+    
+    def sig_handler(self, *args, **kwargs):
+        #override signal's ability to close the application
+        
+        raise Abort_by_User()
     
 class Abort_by_User(BaseException):
     """Raised when user presses 'Abort test'
