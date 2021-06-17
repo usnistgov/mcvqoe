@@ -5,12 +5,16 @@ Created on Fri Jun 11 12:50:45 2021
 @author: MkZee
 """
 
+import Python_access_time as adly
+from mcvqoe.simulation.QoEsim import QoEsim
+
 import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
 from shared import radioport, audio_files, outdir
 from shared import AudioSettings, BgNoise
+from shared import Abort_by_User
 
 
 class AccssDFrame(TestCfgFrame):
@@ -200,10 +204,19 @@ class advanced(shared.advanced):
 
 
 
+
+class Access_fromGui(shared.SignalOverride, adly.Access):
+    
+    def run(self):
+        #TODO: implement recovery
+        self.test(recovery=False)
+    
+    
  #TODO:...
      #convert _ptt_delay_* into ptt_delay, and multi-s into vectors
      #convert audio_files into audio_files and audio_path
      #convert time_expand into vectors
      #
 
-
+    
+    
