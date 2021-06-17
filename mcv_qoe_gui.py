@@ -34,6 +34,8 @@ import accesstime_gui
 from accesstime_gui import AccssDFrame
 import m2e_gui
 from m2e_gui import M2eFrame
+import psud_gui
+from psud_gui import PSuDFrame
 
 
 # basic config
@@ -98,6 +100,26 @@ DEFAULT_CONFIG = {
         'trials': '100', #this is a string because it may be 'inf'
 
     },
+    
+    'PSuDFrame' : {
+        'audioFiles':'',
+        'audioPath' : '',
+        'overPlay':1.0,
+        'trials' : 100,
+        'blockSize':512,
+        'bufSize':20,
+        'outdir':'',
+        'ptt_wait':0.68,
+        'ptt_gap':3.1,
+        '_time_expand_i' : float(100e-3 - 0.11e-3),
+        '_time_expand_f' : float(0.11e-3),
+        'm2e_min_corr' : 0.76,
+        'intell_est':'trial',
+        
+        #TODO: ask about the following:
+        #'split_audio_dest':None,
+            
+    },
 }
 
 
@@ -120,6 +142,7 @@ class MCVQoEGui(tk.Tk):
             
             M2eFrame,
             AccssDFrame,
+            PSuDFrame,
     #TODO: add rest of frames
         ]
         
@@ -994,7 +1017,8 @@ def run(root_cfg):
     class_assoc = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
-        }
+        #'PSuDFrame' : psud_gui.
+            }
     
     
     # extract test configuration and notes from root_cfg
@@ -1040,13 +1064,16 @@ def run(root_cfg):
         # Gather pretest notes and M2E parameters
         my_obj.info.update(pre_notes)
     
-        # clear notes from window
-        main.gui_thread.callback(main.win.clear_notes)
     
         # Write pretest notes and info to tests.log
         write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
     
-    
+        # clear notes from window
+        main.gui_thread.callback(main.win.clear_notes)
+        
+        
+        
+        
         # in case of simulation test
         if is_sim:
             sim = QoEsim()
