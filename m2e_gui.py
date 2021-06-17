@@ -6,7 +6,6 @@ Created on Wed Jun  2 08:52:09 2021
 """
 
 import m2e_class
-from mcvqoe.simulation.QoEsim import QoEsim
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -14,7 +13,6 @@ import tkinter.filedialog as fdl
 
 from shared import TestCfgFrame, LabeledControl
 import shared
-from shared import Abort_by_User
 
 
 class M2eFrame(TestCfgFrame):
@@ -130,37 +128,37 @@ class advanced(shared.advanced):
 
 
 
+class M2E_fromGui(shared.SignalOverride, m2e_class.M2E):
+    
+    def run(self):
+              
+        
+        # Run chosen M2E test
+        if (self.test == "m2e_1loc"):
+            self.m2e_1loc()
+        elif (self.test == "m2e_2loc_tx"):
+            self.m2e_2loc_tx()
+        elif (self.test == "m2e_2loc_rx"):
+            self.m2e_2loc_rx()
+        else:
+            raise ValueError("\nIncorrect test type")
+    
+    
+        
+        
 
-class M2E_fromGui(m2e_class.M2E):
+def run(cnf, is_simulation, pretest,):
     
-    def sig_handler(self, *args, **kwargs):
-        #override signal's ability to close the application
-        post_dict = m2e_class.test_info_gui.post_test()
-        m2e_class.write_log.post(info=post_dict, outdir=self.outdir)
-        
-        raise Abort_by_User()
-        
-        
-
-def run(cnf, is_simulation):
-    # override test_info_gui's ability to close all tkinter windows
-    m2e_class.test_info_gui.TestInfoGui.quit = lambda s=None : None
-    m2e_class.test_info_gui.PostTestGui.quit = lambda s=None : None
-    
-    
-    
-    
-     
     o = M2E_fromGui()
     
-    cnf['audio_file'] = cnf['audio_files'].split(', ')[0]
+    cnf['audio_file'] = cnf['audio_files'][0]
     # TODO: The above should change when we implement multiple audio files
     
     
     for k, v in cnf.items():
          if hasattr(o, k):
              setattr(o, k, v)
-     
+    
     o.param_check()
      
     # Get start time and date
@@ -172,14 +170,6 @@ def run(cnf, is_simulation):
     
     
     
-    if is_simulation:
-        sim = QoEsim()
-        def get_sim(*args, **kwargs):
-            return sim
-        
-        #override these to simulate them
-        m2e_class.RadioInterface = get_sim
-        m2e_class.AudioPlayer = get_sim
     
     # Open RadioInterface object for testing
     o.ri = m2e_class.RadioInterface(o.radioport)
@@ -191,24 +181,11 @@ def run(cnf, is_simulation):
     
     
     # Gather pretest notes and M2E parameters
-    o.info.update(m2e_class.test_info_gui.pretest(outdir=o.outdir))
+    o.info.update(pretest(outdir=o.outdir))
 
     # Write pretest notes and info to tests.log
     m2e_class.write_log.pre(info=o.info)
     
-    # Run chosen M2E test
-    if (o.test == "m2e_1loc"):
-        o.m2e_1loc()
-    elif (o.test == "m2e_2loc_tx"):
-        o.m2e_2loc_tx()
-    elif (o.test == "m2e_2loc_rx"):
-        o.m2e_2loc_rx()
-    else:
-        raise ValueError("\nIncorrect test type")
-    
-    # Gather posttest notes and write to log
-    post_dict = m2e_class.test_info_gui.post_test()
-    m2e_class.write_log.post(info=post_dict, outdir=o.outdir)
     
     
 
