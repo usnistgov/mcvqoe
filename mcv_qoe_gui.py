@@ -7,10 +7,18 @@ Created on Wed May 26 15:53:57 2021
 
 import ctypes
 import traceback
+import sys
 import time
 import _thread
 from threading import Thread
 import json
+import datetime
+
+from mcvqoe import write_log
+from mcvqoe.simulation.QoEsim import QoEsim
+from mcvqoe import hardware
+
+
 
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
@@ -37,6 +45,18 @@ WIN_SIZE = (900, 720)
 # the initial values in all of the controls
 DEFAULT_CONFIG = {
     'EmptyFrame': {},
+    
+    'TestInfoGuiFrame': {
+            'Test Type': '',
+            'Tx Device': '',
+            'Rx Device': '',
+            'System': '',
+            'Test Loc': ''
+            },
+    
+    'PostTestGuiFrame': {},
+    
+    
 
     'M2eFrame': {
         'audio_files': "",
@@ -81,9 +101,6 @@ DEFAULT_CONFIG = {
 }
 
 
-# on Windows, remove dpi scaling (otherwise text is blurry)
-if hasattr(ctypes, 'windll'):
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
 
 class MCVQoEGui(tk.Tk):
@@ -94,7 +111,20 @@ class MCVQoEGui(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
+        
+        frame_types = [
+            EmptyFrame,
+            TestInfoGuiFrame,
+            PostTestGuiFrame,
+            
+            M2eFrame,
+            AccssDFrame,
+    #TODO: add rest of frames
+        ]
+        
+        
+        
         # dpi scaling
         dpi_scaling(self)
 
@@ -109,8 +139,9 @@ class MCVQoEGui(tk.Tk):
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
 
-        # change frame when this is changed
-        self.selected_test.trace_add('write', self.frame_update)
+        # change test frame when user selects a test
+        self.selected_test.trace_add(
+            'write', lambda a, b, c: self.frame_update())
 
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
@@ -133,7 +164,7 @@ class MCVQoEGui(tk.Tk):
 
         self.frames = {}
         # Initialize test-specific frames
-        for F in (EmptyFrame, M2eFrame, AccssDFrame):
+        for F in frame_types:
             # loads the default values of the controls
             btnvars = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
 
@@ -146,13 +177,13 @@ class MCVQoEGui(tk.Tk):
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
+        self.set_step(0)
 
-        self.testThread = TestThread(daemon=True)
-        self.testThread.start()
-
-    def frame_update(self, *args, **kwargs):
+        
+    def frame_update(self):
         # indicates a change in the user's selected test
         self.show_frame(self.selected_test.get())
+        self.set_step(1)
 
     def show_frame(self, framename):
         # first hide the showing widget
@@ -177,16 +208,11 @@ class MCVQoEGui(tk.Tk):
             # canceled by user
             return
 
-        if main.queue.is_running():
-            if tk.messagebox.askyesno(
-                'Abort Test?', 'A test is currently running. Abort?'):
-                
-                self.abort()
-            else:
-                # canceled by user
-                return
+        if main.is_running and not self.abort():
+            # abort was canceled by user
+            return
 
-        main.queue.stop()
+        main.stop()
         self.destroy()
 
     def restore_defaults(self, *args, **kwargs):
@@ -219,10 +245,12 @@ class MCVQoEGui(tk.Tk):
 
             dct = json.load(fp)
             for frame_name, frame in self.frames.items():
-                frame.btnvars.set(dct[frame_name])
+                if frame_name in dct:
+                    frame.btnvars.set(dct[frame_name])
 
             self.is_simulation.set(dct['is_simulation'])
             self.selected_test.set(dct['selected_test'])
+            self.set_step(1)
 
             # the user has not modified the new config, so it is saved
             self.set_saved_state(True)
@@ -315,17 +343,111 @@ class MCVQoEGui(tk.Tk):
 
         for framename, frame in self.frames.items():
             obj[framename] = frame.btnvars.get()
-
+        
+        txt_box = self.frames['TestInfoGuiFrame'].pre_notes
+        
+        # gets 'Pre Test Notes' from text widget
+        obj['TestInfoGuiFrame']['Pre Test Notes'] = txt_box.get(1.0, tk.END)
+        
+        
+        
         return obj
+    
+    def make_empty(self):
+        self.selected_test.set('EmptyFrame')
+        self.set_step(0)
+    
+    def pretest(self):
+        self.show_frame('TestInfoGuiFrame')
+        self.set_step(2)
 
     def run(self):
-
-        main.queue.append(self.get_cnf())
-        return
+        
+        #set step to 'running'
+        self.set_step(3)
+        
+        #retrieve configuration from controls
+        cnf = self.get_cnf()
+        
+        #runs the test in the main thread, passing cnf as configuration
+        main.callback(lambda: run(cnf))
+                
 
     def abort(self):
-        _thread.interrupt_main()
+        if tk.messagebox.askyesno('Abort Test',
+            'Are you sure you want to abort?'):
+            _thread.interrupt_main()
+            return False
+        else:
+            # indicates cancelled by user
+            return True
+        
+    def post_test(self, error):
+        self.set_step(4)
+        self.show_frame('PostTestGuiFrame')
+    
+        if error:
+            tk.messagebox.showerror('Error',
+                        f'An "{error.__name__}" was encountered.')
+        
+    def finish(self):
+        
+        txt_box = self.frames['PostTestGuiFrame'].post_test
+        
+        # retrieve post_notes
+        self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
+                
+        #back to config frame
+        self.frame_update()
+               
+        
+    def set_step(self, step):
+        self.step = step
+        if step == 0:
+            self.show_frame('EmptyFrame')
+            next_btn_txt = 'Next'
+            next_btn = None #disabled
+            back_btn = None
+        
+        elif step == 1:
+            next_btn_txt = 'Next'
+            next_btn = self.pretest
+            back_btn = self.make_empty
+        
+        elif step == 2:
+            next_btn_txt = 'Run Test'
+            next_btn = self.run
+            back_btn = self.frame_update
+        
+        elif step == 3:
+            #TODO: show running test frame
+            next_btn_txt = 'Abort Test'
+            next_btn = self.abort
+            back_btn = None
+            
+        elif step == 4:
+            #TODO: show post_test
+            next_btn_txt = 'Finish'
+            next_btn = self.finish
+            back_btn = None
+            
+        
+        #changes function and text of the next button
+        self.set_next_btn(next_btn_txt, next_btn)
+        
+        #changes back button
+        self.set_back_btn(back_btn)
+        
+    def clear_notes(self):
+        # clears pre_test and post_test notes
+        self.frames['TestInfoGuiFrame'].pre_notes.delete(1.0, tk.END)
+        self.frames['PostTestGuiFrame'].post_test.delete(1.0, tk.END)
 
+
+
+
+
+#-----------------------------Sub-frames of main gui--------------------------
 
 class BottomButtons(tk.Frame):
     def __init__(self, master, *args, **kwargs):
@@ -333,18 +455,28 @@ class BottomButtons(tk.Frame):
 
         self.master = master
         self.do_run = True
-        self.run_textvar = tk.StringVar(value='Run Test')
-
-        main.queue.update_run_btn = self.set_run_btn
-
-        ttk.Button(master=self, textvariable=self.run_textvar,
-                   command=self.stop_go).pack(
-            side=tk.RIGHT)
-
+        self.run_textvar = tk.StringVar()
+        
+        self.master.set_next_btn = self.set_next_btn
+        self.master.set_back_btn = self.set_back_btn
+        
+        # a text-changeable 'next', 'run' or 'abort' button
+        self._nxt_btn_wgt = ttk.Button(
+                   master=self, textvariable=self.run_textvar,
+                   command=self._next_btn)
+        self._nxt_btn_wgt.pack(side=tk.RIGHT)
+        
+        
+        # Back Button
+        self._bck_btn_wgt = ttk.Button(self, text='Back',
+                    command=self._back_btn)
+        self._bck_btn_wgt.pack(side=tk.RIGHT)
+        
+        
         ttk.Button(master=self, text='Restore Defaults',
                    command=master.restore_defaults).pack(
             side=tk.RIGHT)
-
+        
         ttk.Button(master=self, text='Load Config',
                    command=master.open_).pack(
             side=tk.RIGHT)
@@ -352,24 +484,31 @@ class BottomButtons(tk.Frame):
         ttk.Button(master=self, text='Save Config',
                    command=master.save).pack(
             side=tk.RIGHT)
-
-    def stop_go(self):
-        """Runs or aborts the test
-
-
-        """
-        if self.do_run:
-            main.queue.append(self.master.get_cnf())
+    
+    def set_back_btn(self, callback):
+        self._back_callback = callback
+        
+        if callback:
+            self._bck_btn_wgt.state(['!disabled'])
         else:
-            self.master.abort()
-
-    def set_run_btn(self, do_run):
-        self.do_run = do_run
-        if self.do_run:
-            self.run_textvar.set('Run Test')
+            self._bck_btn_wgt.state(['disabled'])
+    
+    def set_next_btn(self, text, callback):
+        self.run_textvar.set(text)
+        self._next_callback = callback
+        
+        if callback:
+            self._nxt_btn_wgt.state(['!disabled'])
         else:
-            self.run_textvar.set('Abort Test')
-
+            self._nxt_btn_wgt.state(['disabled'])
+        
+    def _next_btn(self):
+        if self._next_callback:
+            self._next_callback()
+            
+    def _back_btn(self):
+        if self._back_callback:
+            self._back_callback()
 
 class LeftFrame(tk.Frame):
     """Can show and hide the MenuFrame using the MenuButton
@@ -517,6 +656,14 @@ class LogoFrame(tk.Canvas):
             )
 
 
+
+
+
+
+
+
+#------------------------Top-Right Frames-------------------------------------
+
 class EmptyFrame(tk.Frame):
     """An empty frame: shown when no test is selected yet
 
@@ -525,7 +672,107 @@ class EmptyFrame(tk.Frame):
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.btnvars = btnvars
+        
+    def run(self, *args, **kwargs):
+        raise ValueError('Please select a test.')
 
+
+class TestInfoGuiFrame(ttk.Labelframe):
+    """Replacement for the TestInfoGui, to be compatible with this program
+    
+    Fits into the main window instead of its own window
+    
+    """
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Test Information', **kwargs)
+        
+        labels = {
+            'Test Type': 'Test Type',
+            'Tx Device': 'Transmit Device',
+            'Rx Device': 'Receive Device',
+            'System': 'System',
+            'Test Loc': 'Test Location'
+            }
+        
+        
+        self.btnvars = btnvars
+        
+        
+        
+        padx = shared.PADX
+        pady = shared.PADY
+        
+        ct = 0
+        for k, label in labels.items():
+            
+            
+            ttk.Label(self, text=label).grid(column=0, row=ct,
+                       sticky='W', padx=padx, pady=pady)
+            
+            ttk.Entry(self, textvariable=self.btnvars[k]).grid(
+                column=1, row=ct, sticky='WE', padx=padx, pady=pady)
+            
+            ct += 1
+        
+        ttk.Label(self, text='Please enter notes on pre-test conditions').grid(
+            columnspan=2, row=ct)
+        
+        ct += 1
+        
+        self.pre_notes = tk.Text(self)
+        self.pre_notes.grid(
+            sticky='NSEW', columnspan=2, row=ct, padx=padx, pady=pady)
+        
+        #text widget expand to fit frame
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(ct, weight=1)
+        
+        
+        #TODO: check audio button
+        #self.check_audio_btn = ttk.Button(text='Check Audio',
+                #command=self._check_audio)
+        
+class PostTestGuiFrame(ttk.Labelframe):
+    """Replacement for PostTestGui
+    
+    """
+    
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Test Information', **kwargs)
+        self.btnvars = btnvars
+        
+        ttk.Label(self, text='Please enter post-test notes').grid(row=0,
+            padx=shared.PADX, pady=shared.PADY, sticky='E')
+        
+        self.post_test = tk.Text(self)
+        self.post_test.grid(padx=shared.PADX, pady=shared.PADY,
+            sticky='NSEW', row=2)
+        self.rowconfigure(2, weight=1)
+        self.columnconfigure(0, weight=1)
+        
+class _test_info_gui_override:
+    """Container for test_info_gui overrides
+    """
+            
+    def pretest(self, outdir='', check_function=None):
+        pass
+    
+    def post_test(self, error_only=False):
+        return get_post_notes(error_only)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+#------------------------------  Appearance ----------------------------------
 
 def set_font(**cfg):
     """Globally changes the font on all tkinter windows.
@@ -570,34 +817,12 @@ def dpi_scaling(root):
     set_styles()
 
 
-class TestThread(Thread):
-    """NOT USED: allows the test to be run in a new thread
 
-    """
 
-    def __init__(self, *args, **kwargs):
-        kwargs['daemon'] = True
-        super().__init__(*args, **kwargs)
-        self.setName('Test_Worker')
 
-        self.test_queue = []
-        self.current_test = None
 
-    def run(self):
-        while True:
-            while not len(self.test_queue):
-                self.current_test = None
-                time.sleep(0.5)
 
-            self.current_test = self.test_queue.pop(0)
-            run(self.current_test)
-
-    def add(self, test_config):
-        self.test_queue.append(test_config)
-
-    def is_running(self) -> bool:
-        return bool(self.test_queue)
-
+#-------------------------------- Main ---------------------------------------
 
 class TestQueue(list):
     def __init__(self, *args, **kwargs):
@@ -606,91 +831,291 @@ class TestQueue(list):
         self.current_test = None
         self._break = False
     
-    def append(self, *args, **kwargs):
-        #only allows 1 item in queue
-        if not self.is_running():
-            super().append(*args, **kwargs)
-            
-            
-    def main_loop(self):
-        while not self._break:
-            try:
 
-                self.current_test = None
-                
-                while not len(self):
-                    time.sleep(0.2)
-                    if self._break:
-                        return
-                    
-                #change button to 'abort test'
-                self.update_run_btn(False)
-                
-                self.current_test = self.pop(0)
-                run(self.current_test)
-                
-                
-                
-            except ValueError as e:
-                tk.messagebox.showerror('Invalid Option', str(e))
-                
-            except Abort_by_User:
-                print('Test Aborted by User')
-                
-            except SystemExit:
-                print('Test Failed')
-                
-            except KeyboardInterrupt:
-                if self.is_running():
-                    print('Test Aborted')
-                    
-            except:
-                # prints exception without exiting main thread
-                traceback.print_exc()
-            finally:
-                if not len(self):
-                    try:self.update_run_btn(True)
-                    except RuntimeError:pass
-
-    def is_running(self) -> bool:
-        return bool(self) or bool(self.current_test)
-
-    def stop(self):
-        self._break = True
+class GuiThread(Thread):
+   
+    def callback(self, function):
+        """Calls a function in the GUI_Thread
         
-    def update_run_btn(self, *args, **kwargs): pass
-    #overridden for a callback to change the text on the 'run'/'abort' btn
+
+        Parameters
+        ----------
+        function : callable
+        
+        """
+        self._callbacks.insert(0, function)
+    
+     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.setName('Gui_Thread')
+        self.setDaemon(True)
+        self._callbacks = []
+        
+    
+    
+    def run(self):
+        
+        main.win = MCVQoEGui()
+        main.win.after(500, self._main_loop_ext)
+        main.win.mainloop()
+
+    def _main_loop_ext(self):
+        
+        try:
+            #grab a function
+            f = self._callbacks.pop()
+        except IndexError:pass
+        else:
+            try:
+                f()
+            except:
+                #don't crash in case of error
+                traceback.print_exc()
+                
+                
+        #run this function again
+        main.win.after(200, self._main_loop_ext)
 
 
 class Main():
     def __init__(self):
         global main
         main = self
-        self.queue = TestQueue()
+        self._break = False
+        self._callbacks = []
+        self.is_running = False
 
         # constructs gui in new thread
-        self.gui_thread = Thread(
-            target=self.gui_construct,
-            name='Gui_Thread',
-            daemon=True
-        )
+        self.gui_thread = GuiThread()
         self.gui_thread.start()
-
-        self.queue.main_loop()
-
-    def gui_construct(self):
-        self.win = MCVQoEGui()
-        self.win.mainloop()
+        
+        self.main_loop()
 
 
-def run(cfg):
-    if cfg['selected_test'] == 'M2eFrame':
-        m2e_gui.run(cfg['M2eFrame'], cfg['is_simulation'])
-
-    # TODO implement other tests here
     
-    print('Test Complete')
-    main.win.focus_force()
+    def callback(self, function):
+        """Calls a function in the main thread.
+        
+
+        Parameters
+        ----------
+        function : callable
+            
+
+        Returns
+        -------
+        None.
+
+        """
+        self._callbacks.insert(0, function)
+        
+        
+        
+    def main_loop(self):
+        while True:
+            try:
+                try:
+                    f = self._callbacks.pop()
+                except IndexError:
+                    #if no callbacks to be called
+                    if self._break:
+                        return
+                    self.is_running = False
+                    time.sleep(0.2)
+                else:
+                    self.is_running = True
+                    f()
+                
+                
+                
+            except ValueError as e:
+                tk.messagebox.showerror('Invalid Option', str(e))
+                
+                # go back to config screen
+                main.gui_thread.callback(main.win.frame_update)
+                
+            except Abort_by_User:
+                print('Test Aborted by User')
+                
+                post_dict = get_post_notes()
+                write_log.post(info=post_dict)
+                
+            except SystemExit:
+                print('Test Failed')
+                
+            except KeyboardInterrupt:
+                if self.is_running:
+                    print('Test Aborted')
+                    
+            except:
+                # prints exception without exiting main thread
+                traceback.print_exc()
+            
+
+    def stop(self):
+        self._break = True
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+#----------------------- Running the tests -----------------------------------
+
+def run(root_cfg):
+    
+    # TODO implement other tests here
+    class_assoc = {
+        'M2eFrame': m2e_gui.M2E_fromGui,
+        'AccssDFrame': accesstime_gui.Access_fromGui,
+        }
+    
+    
+    # extract test configuration and notes from root_cfg
+    sel_tst = root_cfg['selected_test']
+    is_sim = root_cfg['is_simulation']
+    cfg = root_cfg[sel_tst]
+    pre_notes = root_cfg['TestInfoGuiFrame']
+    
+    if sel_tst == 'EmptyFrame':
+        raise ValueError('Select a Test')
+    
+    
+    #translate cfg items as necessary
+    param_modify(cfg, is_sim)
+    
+    
+    #initialize object
+    my_obj = class_assoc[sel_tst]()
+    
+    # put config into object
+    for k, v in cfg.items():
+         if hasattr(my_obj, k):
+             setattr(my_obj, k, v)
+             
+             
+             
+    #TODO: change this
+    my_obj.audio_file = cfg['audio_files'][0]
+    
+    # Check for value errors with M2E instance variables
+    my_obj.param_check()
+    
+    # Get start time and date
+    time_n_date = datetime.datetime.now().replace(microsecond=0)
+    my_obj.info['Tstart'] = time_n_date
+    
+    # Add test to info dictionary
+    my_obj.info['test'] = my_obj.test
+    
+    # Fill 'Arguments' within info dictionary
+    my_obj.info.update(write_log.fill_log(my_obj))
+    
+    # Gather pretest notes and M2E parameters
+    my_obj.info.update(pre_notes)
+    
+    # clear notes from window
+    main.gui_thread.callback(main.win.clear_notes)
+    
+    # Write pretest notes and info to tests.log
+    write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
+    
+    
+    # in case of simulation test
+    if is_sim:
+        sim = QoEsim()
+                
+        #override these to simulate them
+        RadioInterface = lambda *args, **kwargs : sim
+        AudioPlayer = lambda *args, **kwargs : sim
+        
+        #TODO: the following is a workaround
+        m2e_gui.m2e_class.AudioPlayer = AudioPlayer
+        
+    else:
+        RadioInterface = hardware.RadioInterface
+        AudioPlayer = hardware.AudioPlayer
+        
+    
+    # open audio_player
+    my_obj.audio_player = AudioPlayer(fs=my_obj.fs,
+                                      blocksize=my_obj.blocksize,
+                                      buffersize=my_obj.buffersize)
+    my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
+    my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+    
+    try:
+        # Open RadioInterface object
+        with RadioInterface(my_obj.radioport) as my_obj.ri:
+        
+            #run test
+            my_obj.run()
+    
+    except Abort_by_User:pass
+    finally:
+        # Gather posttest notes and write to log
+        post_dict = get_post_notes()
+        write_log.post(info=post_dict, outdir=my_obj.outdir)
+    
+    
+    
+    print('Test Complete\n\n\n')
+    
+def param_modify(cfg, is_simulation):
+    
+    
+    if 'audio_files' in cfg:
+        # turns comma-separated list into list
+        cfg['audio_files'] = [x.strip() for x in cfg['audio_files'].split(',')]
+    
+        #must enter at least 1 audio file
+        if not cfg['audio_files'][0]:
+            raise ValueError('Please select an audio file')
+        
+        
+def get_post_notes(error_only=False):
+    
+    #get current error status, will be None if we are not handling an error
+    error=sys.exc_info()[0]
+    
+    #check if there is no error and we should only show on error
+    if( (not error) and error_only):
+        #nothing to do, bye!
+        return {}
+    
+    
+    # call post_test in Gui_Thread
+    main.gui_thread.callback(lambda : main.win.post_test(error))
+    
+    # wait for completion
+    main.win.post_test_info = None
+    while main.win.post_test_info is None:
+        time.sleep(0.1)
+        
+    return main.win.post_test_info
+    
+    
+
+        
 
 if __name__ == '__main__':
+    
+    # on Windows, remove dpi scaling (otherwise text is blurry)
+    if hasattr(ctypes, 'windll'):
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+
+    #override test_info_gui in each module
+    #TODO: add rest of modules
+    for module in [m2e_gui.m2e_class, accesstime_gui.adly]:
+        module.test_info_gui = _test_info_gui_override
+    
+    
     Main()
