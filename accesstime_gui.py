@@ -5,8 +5,7 @@ Created on Fri Jun 11 12:50:45 2021
 @author: MkZee
 """
 
-import Python_access_time as adly
-from mcvqoe.simulation.QoEsim import QoEsim
+import access_time as adly
 
 import tkinter.ttk as ttk
 
@@ -206,6 +205,14 @@ class advanced(shared.advanced):
 
 
 class Access_fromGui(shared.SignalOverride, adly.Access):
+    
+    def param_check(self):
+        if self.trials.lower() == 'inf':
+            self.trials = adly.np.inf
+        else:
+            self.trials = int(self.trials)
+        
+        super().param_check()
     
     def run(self):
         #TODO: implement recovery

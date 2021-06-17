@@ -87,7 +87,7 @@ DEFAULT_CONFIG = {
         '_ptt_delay_max': 'auto',
         'ptt_gap': 3.1,
         'ptt_rep': 30,
-        'ptt_step': float(20e-3),
+        'ptt_step': 0.02,
         'radioport': "",
         's_thresh': -50,
         's_tries': 3,
@@ -208,13 +208,22 @@ class MCVQoEGui(tk.Tk):
             # canceled by user
             return
 
-        if main.is_running and not self.abort():
+        if main.is_running and self.abort():
             # abort was canceled by user
             return
-
+        
         main.stop()
-        self.destroy()
-
+        
+        #waits for test to close gracefully, then destroys window
+        self.after(50, self._wait_to_destroy)
+        
+        
+    def _wait_to_destroy(self):
+        if main.is_running:
+            self.after(50, self._wait_to_destroy)
+        else:
+            self.destroy()
+            
     def restore_defaults(self, *args, **kwargs):
         if self.ask_save():
             # cancelled
@@ -374,6 +383,13 @@ class MCVQoEGui(tk.Tk):
                 
 
     def abort(self):
+        """Aborts the test by raising KeyboardInterrupt
+        
+        returns:
+            
+        cancel : bool
+            whether the user opted to cancel the abort
+        """
         if tk.messagebox.askyesno('Abort Test',
             'Are you sure you want to abort?'):
             _thread.interrupt_main()
@@ -921,7 +937,9 @@ class Main():
                 except IndexError:
                     #if no callbacks to be called
                     if self._break:
+                        self.is_running = False
                         return
+                    
                     self.is_running = False
                     time.sleep(0.2)
                 else:
@@ -930,17 +948,11 @@ class Main():
                 
                 
                 
-            except ValueError as e:
-                tk.messagebox.showerror('Invalid Option', str(e))
-                
-                # go back to config screen
-                main.gui_thread.callback(main.win.frame_update)
+            
                 
             except Abort_by_User:
                 print('Test Aborted by User')
                 
-                post_dict = get_post_notes()
-                write_log.post(info=post_dict)
                 
             except SystemExit:
                 print('Test Failed')
@@ -950,8 +962,14 @@ class Main():
                     print('Test Aborted')
                     
             except:
+                
                 # prints exception without exiting main thread
                 traceback.print_exc()
+        
+        
+        
+        #thread is ending
+        self.is_running = False
             
 
     def stop(self):
@@ -985,88 +1003,104 @@ def run(root_cfg):
     cfg = root_cfg[sel_tst]
     pre_notes = root_cfg['TestInfoGuiFrame']
     
-    if sel_tst == 'EmptyFrame':
-        raise ValueError('Select a Test')
     
-    
-    #translate cfg items as necessary
-    param_modify(cfg, is_sim)
     
     
     #initialize object
     my_obj = class_assoc[sel_tst]()
     
-    # put config into object
-    for k, v in cfg.items():
-         if hasattr(my_obj, k):
-             setattr(my_obj, k, v)
+    try:
+        #translate cfg items as necessary
+        param_modify(cfg, is_sim)
+    
+    
+        # put config into object
+        for k, v in cfg.items():
+            if hasattr(my_obj, k):
+                setattr(my_obj, k, v)
              
              
              
-    #TODO: change this
-    my_obj.audio_file = cfg['audio_files'][0]
+             #TODO: change this
+        my_obj.audio_file = cfg['audio_files'][0]
     
-    # Check for value errors with M2E instance variables
-    my_obj.param_check()
+        # Check for value errors with M2E instance variables
+        my_obj.param_check()
     
-    # Get start time and date
-    time_n_date = datetime.datetime.now().replace(microsecond=0)
-    my_obj.info['Tstart'] = time_n_date
+        # Get start time and date
+        time_n_date = datetime.datetime.now().replace(microsecond=0)
+        my_obj.info['Tstart'] = time_n_date
     
-    # Add test to info dictionary
-    my_obj.info['test'] = my_obj.test
+        # Add test to info dictionary
+        my_obj.info['test'] = my_obj.test
     
-    # Fill 'Arguments' within info dictionary
-    my_obj.info.update(write_log.fill_log(my_obj))
+        # Fill 'Arguments' within info dictionary
+        my_obj.info.update(write_log.fill_log(my_obj))
     
-    # Gather pretest notes and M2E parameters
-    my_obj.info.update(pre_notes)
+        # Gather pretest notes and M2E parameters
+        my_obj.info.update(pre_notes)
     
-    # clear notes from window
-    main.gui_thread.callback(main.win.clear_notes)
+        # clear notes from window
+        main.gui_thread.callback(main.win.clear_notes)
     
-    # Write pretest notes and info to tests.log
-    write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
+        # Write pretest notes and info to tests.log
+        write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
     
     
-    # in case of simulation test
-    if is_sim:
-        sim = QoEsim()
+        # in case of simulation test
+        if is_sim:
+            sim = QoEsim()
                 
-        #override these to simulate them
-        RadioInterface = lambda *args, **kwargs : sim
-        AudioPlayer = lambda *args, **kwargs : sim
+            #override these to simulate them
+            RadioInterface = lambda *args, **kwargs : sim
+            AudioPlayer = lambda *args, **kwargs : sim
         
-        #TODO: the following is a workaround
-        m2e_gui.m2e_class.AudioPlayer = AudioPlayer
+            #TODO: the following is a workaround
+            m2e_gui.m2e_class.AudioPlayer = AudioPlayer
         
-    else:
-        RadioInterface = hardware.RadioInterface
-        AudioPlayer = hardware.AudioPlayer
+        else:
+            RadioInterface = hardware.RadioInterface
+            AudioPlayer = hardware.AudioPlayer
         
     
-    # open audio_player
-    my_obj.audio_player = AudioPlayer(fs=my_obj.fs,
+        # open audio_player
+        my_obj.audio_player = AudioPlayer(fs=my_obj.fs,
                                       blocksize=my_obj.blocksize,
                                       buffersize=my_obj.buffersize)
-    my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
-    my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+        my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
+        my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
     
-    try:
+    
         # Open RadioInterface object
         with RadioInterface(my_obj.radioport) as my_obj.ri:
         
             #run test
             my_obj.run()
+        
+
+    
+    except ValueError as e:
+        tk.messagebox.showerror('Invalid Option', str(e))
+        
+                
+        # go back to config screen
+        main.gui_thread.callback(main.win.frame_update)
+        return
     
     except Abort_by_User:pass
-    finally:
+        #gathers posttest notes without showing error
+        
+    except Exception:
         # Gather posttest notes and write to log
+        traceback.print_exc()
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
+        return
+
     
-    
-    
+    # Gather posttest notes and write to log
+    post_dict = get_post_notes()
+    write_log.post(info=post_dict, outdir=my_obj.outdir)
     print('Test Complete\n\n\n')
     
 def param_modify(cfg, is_simulation):
@@ -1079,7 +1113,15 @@ def param_modify(cfg, is_simulation):
         #must enter at least 1 audio file
         if not cfg['audio_files'][0]:
             raise ValueError('Please select an audio file')
-        
+            
+    if '_ptt_delay_min' in cfg:
+        cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
+        try:
+            cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
+        except ValueError:pass
+    
+    if '_time_expand_i' in cfg:
+        cfg['time_expand'] = [cfg['_time_expand_i'], cfg['_time_expand_f']]
         
 def get_post_notes(error_only=False):
     
@@ -1095,7 +1137,7 @@ def get_post_notes(error_only=False):
     # call post_test in Gui_Thread
     main.gui_thread.callback(lambda : main.win.post_test(error))
     
-    # wait for completion
+    # wait for completion or program close
     main.win.post_test_info = None
     while main.win.post_test_info is None:
         time.sleep(0.1)
