@@ -231,7 +231,34 @@ class outdir(LabeledControl):
         
         super().__init__(*args, **kwargs)
         
-        
+
+
+
+class overplay(LabeledControl):
+    text='Overplay Time (sec):'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
+
+class ptt_gap(LabeledControl):
+    text = 'Time Between Trials:'
+    
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
+class _time_expand_i(LabeledControl):
+    text = 'Front Expand:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+class _time_expand_f(LabeledControl):
+    text = 'Back Expand:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
+
+
+
+
 
 
 class radioport(LabeledControl):
@@ -252,8 +279,8 @@ class bgnoise_file(LabeledControl):
             self.btnvar.set(fp)
 
 
-class bgnoise_volume(LabeledControl):
-    text = 'Volume:'
+class LabeledSlider(LabeledControl):
+    
     RCtrl = None
     MCtrl = None
     # slider does not accept font size
@@ -262,7 +289,7 @@ class bgnoise_volume(LabeledControl):
     
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, row, *args, **kwargs)
-        self.txtvar = _bgnoise_volume_percentage()
+        self.txtvar = self._percentage()
         self.on_change()
         
         self.btnvar.trace_add('write', self.on_change)
@@ -278,26 +305,56 @@ class bgnoise_volume(LabeledControl):
         #updates the percentage to match the value of the slider
         self.txtvar.set(self.btnvar.get())
 
-class _bgnoise_volume_percentage(tk.StringVar):
-    """Displays a percentage instead of a float
+    class _percentage(tk.StringVar):
+        """Displays a percentage instead of a float
     
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        """
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
         
-    def set(self, value):
-        v = float(value) * 100
-        s = ''
+        def set(self, value):
+            v = float(value) * 100
+            s = ''
         
-        for char in str(v):
-            if char == '.':
-                break
-            s = f'{s}{char}'
+            for char in str(v):
+                if char == '.':
+                    break
+                s = f'{s}{char}'
         
                     
-        super().set(f'{s}%')
+            super().set(f'{s}%')
             
+
+
+class _MultiChoice_Frame(tk.Frame):
+    def __init__(self, *args, association, textvariable, **kwargs):
         
+        super().__init__(*args, **kwargs)
+        
+        
+        #initialize
+        for val, text in association.items():
+            ttk.Radiobutton(self, variable=textvariable, value=val,
+                text=text).pack(fill=tk.X)
+
+class MultiChoice(LabeledControl):
+    association = {}
+    do_font_scaling = False
+    MCtrl = _MultiChoice_Frame
+    
+    def __init__(self, *args, **kwargs):
+        self.MCtrlkwargs = self.MCtrlkwargs.copy()
+        self.MCtrlkwargs['association'] = self.association
+        
+        super().__init__(*args, **kwargs)
+
+
+
+
+
+class bgnoise_volume(LabeledSlider):
+    text = 'Volume:'
+
 class ptt_wait(LabeledControl):
     text = 'PTT Wait Time (sec):'
     
@@ -375,7 +432,14 @@ class AudioSettings(ttk.LabelFrame):
         self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
                   sticky='WE')
 
-
+class TimeExpand(SubCfgFrame):
+    text = 'Time Expand'
+    
+    def get_controls(self):
+        return (
+            _time_expand_i,
+            _time_expand_f,
+            )
 
 
 

@@ -35,29 +35,14 @@ class M2eFrame(TestCfgFrame):
         #------------------ Controls ----------------------
 
 
-class _test(tk.Frame):
-    def __init__(self, *args, textvariable, **kwargs):
-        
-        # tk.frame does not accept font settings
-        if 'font' in kwargs:
-            del kwargs['font']
-        
-        super().__init__(*args, **kwargs)
-        
-        assoc = {
+class test(shared.MultiChoice):
+    text = 'Location Type:'
+    
+    association = {
             'm2e_1loc'   : '1 Location',
             'm2e_2loc_tx': '2 Location (transmit)',
             'm2e_2loc_rx': '2 Location (receive)'
             }
-        
-        #initialize
-        for val, text in assoc.items():
-            ttk.Radiobutton(self, variable=textvariable, value=val,
-                text=text).pack(fill=tk.X)
-
-class test(LabeledControl):
-    text = 'Location Type:'
-    MCtrl = _test
     
 
 from shared import audio_files
@@ -81,13 +66,7 @@ class audio_file(LabeledControl):
         }
     
     
-from shared import trials, ptt_wait, outdir
-
-class overplay(LabeledControl):
-    text='Overplay Time (sec):'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
-
+from shared import trials, ptt_wait, outdir, overplay
 
 
 

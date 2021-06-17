@@ -11,9 +11,9 @@ import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
-from shared import radioport, audio_files, outdir
+from shared import radioport, audio_files, outdir, ptt_gap
+from shared import TimeExpand
 from shared import AudioSettings, BgNoise
-from shared import Abort_by_User
 
 
 class AccssDFrame(TestCfgFrame):
@@ -74,14 +74,7 @@ class PttDelay(SubCfgFrame):
             )
     
     
-class TimeExpand(SubCfgFrame):
-    text = 'Time Expand'
-    
-    def get_controls(self):
-        return (
-            _time_expand_i,
-            _time_expand_f,
-            )
+
         
 class DetectFailure(SubCfgFrame):
     text = 'Detecting Failed Transmission'   
@@ -152,11 +145,7 @@ class ptt_step(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
-class ptt_gap(LabeledControl):
-    text = 'Time Between Trials:'
-    
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
 
 class ptt_rep(LabeledControl):
     text = 'Repeats per Step:'
@@ -168,15 +157,7 @@ class dev_dly(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
     
-class _time_expand_i(LabeledControl):
-    text = 'Front Expand:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-    
-class _time_expand_f(LabeledControl):
-    text = 'Back Expand:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
     
 class s_thresh(LabeledControl):
     text = 'Min Allowed Volume (db):'
@@ -207,6 +188,8 @@ class advanced(shared.advanced):
 class Access_fromGui(shared.SignalOverride, adly.Access):
     
     def param_check(self):
+        
+        #change trials from str to int_or_inf
         if self.trials.lower() == 'inf':
             self.trials = adly.np.inf
         else:
