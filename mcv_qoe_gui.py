@@ -1071,11 +1071,15 @@ def run(root_cfg):
         # clear notes from window
         main.gui_thread.callback(main.win.clear_notes)
         
+        # set post_notes callback
+        my_obj.get_post_notes=get_post_notes
+        
         
         
         
         # in case of simulation test
         if is_sim:
+            # create simulator
             sim = QoEsim()
                 
             #override these to simulate them
@@ -1091,9 +1095,17 @@ def run(root_cfg):
         
     
         # open audio_player
-        my_obj.audio_player = AudioPlayer(fs=my_obj.fs,
-                                      blocksize=my_obj.blocksize,
-                                      buffersize=my_obj.buffersize)
+        ap = AudioPlayer(fs=my_obj.fs,
+                         blocksize=my_obj.blocksize,
+                         buffersize=my_obj.buffersize)
+        
+        if hasattr(my_obj, 'audioInterface'):
+            my_obj.audioInterface = ap
+        elif hasattr(my_obj, 'audio_player'):
+            my_obj.audio_player = ap
+        
+        
+        
         my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
         my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
     
