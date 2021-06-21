@@ -13,6 +13,7 @@ import _thread
 from threading import Thread
 import json
 import datetime
+import sys
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -115,6 +116,7 @@ DEFAULT_CONFIG = {
         '_time_expand_f' : float(0.11e-3),
         'm2e_min_corr' : 0.76,
         'intell_est':'trial',
+        'radioport': ''
         
         #TODO: ask about the following:
         #'split_audio_dest':None,
@@ -146,7 +148,8 @@ class MCVQoEGui(tk.Tk):
     #TODO: add rest of frames
         ]
         
-        
+        # when the user exits the program
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
         
         # dpi scaling
         dpi_scaling(self)
@@ -182,8 +185,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-Shift-S>', self.save_as)
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
-        # when the user exits the program
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+ 
 
         self.frames = {}
         # Initialize test-specific frames
@@ -200,6 +202,7 @@ class MCVQoEGui(tk.Tk):
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
+        self.is_destroyed = False
         self.set_step(0)
 
         
@@ -213,8 +216,6 @@ class MCVQoEGui(tk.Tk):
         self.currentframe.pack_forget()
         try:
             self.currentframe = self.frames[framename]
-        except KeyError:
-            raise KeyError(f"Frame '{framename}' is not defined")
         finally:
             self.currentframe.pack(side=tk.RIGHT,
                                    fill=tk.BOTH, padx=10, pady=10)
@@ -226,17 +227,13 @@ class MCVQoEGui(tk.Tk):
         self.set_saved_state(False)
 
     def on_close(self):
-
         if self.ask_save():
             # canceled by user
             return
-
         if main.is_running and self.abort():
             # abort was canceled by user
             return
-        
         main.stop()
-        
         #waits for test to close gracefully, then destroys window
         self.after(50, self._wait_to_destroy)
         
@@ -246,6 +243,11 @@ class MCVQoEGui(tk.Tk):
             self.after(50, self._wait_to_destroy)
         else:
             self.destroy()
+            sys.exit()
+            
+    def destroy(self, *args, **kwargs):
+        super().destroy(*args, **kwargs)
+        self.is_destroyed = True
             
     def restore_defaults(self, *args, **kwargs):
         if self.ask_save():
@@ -424,10 +426,11 @@ class MCVQoEGui(tk.Tk):
     def post_test(self, error):
         self.set_step(4)
         self.show_frame('PostTestGuiFrame')
-    
-        if error:
-            tk.messagebox.showerror('Error',
-                        f'An "{error.__name__}" was encountered.')
+        
+        err_class, err_msg, trace = error
+        if err_class:
+            tk.messagebox.showerror(
+               err_class.__name__, err_msg)
         
     def finish(self):
         
@@ -746,10 +749,10 @@ class TestInfoGuiFrame(ttk.Labelframe):
             
             
             ttk.Label(self, text=label).grid(column=0, row=ct,
-                       sticky='W', padx=padx, pady=pady)
+                       sticky='E', padx=padx, pady=pady)
             
             ttk.Entry(self, textvariable=self.btnvars[k]).grid(
-                column=1, row=ct, sticky='WE', padx=padx, pady=pady)
+                column=1, row=ct, sticky='W', padx=padx, pady=pady)
             
             ct += 1
         
@@ -954,16 +957,14 @@ class Main():
         
     def main_loop(self):
         while True:
+            if self._break:
+                self.is_running = False
+                return
             try:
                 try:
                     f = self._callbacks.pop()
                 except IndexError:
                     #if no callbacks to be called
-                    if self._break:
-                        self.is_running = False
-                        return
-                    
-                    self.is_running = False
                     time.sleep(0.2)
                 else:
                     self.is_running = True
@@ -973,16 +974,14 @@ class Main():
                 
             
                 
-            except Abort_by_User:
-                print('Test Aborted by User')
-                
+            except Abort_by_User:pass
                 
             except SystemExit:
-                print('Test Failed')
+                if self._break:
+                    return
                 
-            except KeyboardInterrupt:
-                if self.is_running:
-                    print('Test Aborted')
+            except KeyboardInterrupt:pass
+                
                     
             except:
                 
@@ -1009,6 +1008,7 @@ class Main():
         
         
         
+        
 #----------------------- Running the tests -----------------------------------
 
 def run(root_cfg):
@@ -1017,7 +1017,7 @@ def run(root_cfg):
     class_assoc = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
-        #'PSuDFrame' : psud_gui.
+        'PSuDFrame' : psud_gui.PSuD_fromGui
             }
     
     
@@ -1045,28 +1045,36 @@ def run(root_cfg):
              
              
              
-             #TODO: change this
-        my_obj.audio_file = cfg['audio_files'][0]
+        #TODO: change this when M2E implements multiple audio files
+        if 'audio_files' in cfg:
+            my_obj.audio_file = cfg['audio_files'][0]
     
-        # Check for value errors with M2E instance variables
+        # Check for value errors with instance variables
         my_obj.param_check()
+        
+        
+        
+        # PSuD handles this by itself
+        if sel_tst in ('M2eFrame', 'AccssDFrame'):
+            # Get start time and date
+            time_n_date = datetime.datetime.now().replace(microsecond=0)
+            my_obj.info['Tstart'] = time_n_date
+        
+            # Add test to info dictionary.
+            my_obj.info['test'] = my_obj.test
     
-        # Get start time and date
-        time_n_date = datetime.datetime.now().replace(microsecond=0)
-        my_obj.info['Tstart'] = time_n_date
+            # Fill 'Arguments' within info dictionary
+            my_obj.info.update(write_log.fill_log(my_obj))
     
-        # Add test to info dictionary
-        my_obj.info['test'] = my_obj.test
-    
-        # Fill 'Arguments' within info dictionary
-        my_obj.info.update(write_log.fill_log(my_obj))
-    
-        # Gather pretest notes and M2E parameters
-        my_obj.info.update(pre_notes)
+            # Gather pretest notes and M2E parameters
+            my_obj.info.update(pre_notes)
     
     
-        # Write pretest notes and info to tests.log
-        write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
+            # Write pretest notes and info to tests.log
+            write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
+            
+        else:
+            my_obj.info = pre_notes
     
         # clear notes from window
         main.gui_thread.callback(main.win.clear_notes)
@@ -1095,39 +1103,53 @@ def run(root_cfg):
         
     
         # open audio_player
+        if hasattr(my_obj, 'blocksize'):
+            bs = my_obj.blocksize
+        elif hasattr(my_obj, 'blockSize'):
+            bs = my_obj.blockSize
+            
+        if hasattr(my_obj, 'buffersize'):
+            bf = my_obj.buffersize
+        elif hasattr(my_obj, 'bufSize'):
+            bf = my_obj.bufSize
+            
         ap = AudioPlayer(fs=my_obj.fs,
-                         blocksize=my_obj.blocksize,
-                         buffersize=my_obj.buffersize)
+                         blocksize=bs,
+                         buffersize=bf)
+        
         
         if hasattr(my_obj, 'audioInterface'):
             my_obj.audioInterface = ap
         elif hasattr(my_obj, 'audio_player'):
             my_obj.audio_player = ap
         
-        
-        
-        my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
-        my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+            my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
+            my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
     
     
         # Open RadioInterface object
-        with RadioInterface(my_obj.radioport) as my_obj.ri:
+        with RadioInterface(cfg['radioport']) as my_obj.ri:
         
             #run test
             my_obj.run()
-        
+            
 
     
     except ValueError as e:
         tk.messagebox.showerror('Invalid Option', str(e))
         
-                
         # go back to config screen
         main.gui_thread.callback(main.win.frame_update)
         return
     
+    #gathers posttest notes without showing error
     except Abort_by_User:pass
-        #gathers posttest notes without showing error
+    
+    #gathers posttest notes without showing error
+    except KeyboardInterrupt:pass
+    
+    #indicates end of test
+    except SystemExit:return
         
     except Exception:
         # Gather posttest notes and write to log
@@ -1137,21 +1159,27 @@ def run(root_cfg):
         return
 
     
-    # Gather posttest notes and write to log
-    post_dict = get_post_notes()
-    write_log.post(info=post_dict, outdir=my_obj.outdir)
-    print('Test Complete\n\n\n')
+    #PSuD handles this internally
+    if sel_tst in ('M2eFrame', 'AccssDFrame'):
+        # Gather posttest notes and write to log
+        post_dict = get_post_notes()
+        write_log.post(info=post_dict, outdir=my_obj.outdir)
+    
+    # leave gap in console for next test
+    print('\n\n\n')
     
 def param_modify(cfg, is_simulation):
     
     
-    if 'audio_files' in cfg:
-        # turns comma-separated list into list
-        cfg['audio_files'] = [x.strip() for x in cfg['audio_files'].split(',')]
+    # convert audio files string into a list
+    for af in ('audio_files', 'audioFiles'):
+        if af in cfg:
+            # turns comma-separated list into list
+            cfg[af] = [x.strip() for x in cfg[af].split(',')]
     
-        #must enter at least 1 audio file
-        if not cfg['audio_files'][0]:
-            raise ValueError('Please select an audio file')
+            #must enter at least 1 audio file
+            if not cfg[af][0]:
+                raise ValueError('Please select an audio file')
             
     if '_ptt_delay_min' in cfg:
         cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
@@ -1165,7 +1193,8 @@ def param_modify(cfg, is_simulation):
 def get_post_notes(error_only=False):
     
     #get current error status, will be None if we are not handling an error
-    error=sys.exc_info()[0]
+    root_error=sys.exc_info()
+    error = root_error[0]
     
     #check if there is no error and we should only show on error
     if( (not error) and error_only):
@@ -1174,14 +1203,18 @@ def get_post_notes(error_only=False):
     
     
     # call post_test in Gui_Thread
-    main.gui_thread.callback(lambda : main.win.post_test(error))
+    main.gui_thread.callback(lambda : main.win.post_test(root_error))
     
     # wait for completion or program close
     main.win.post_test_info = None
-    while main.win.post_test_info is None:
+    while main.win.post_test_info is None and not main.win.is_destroyed:
         time.sleep(0.1)
-        
-    return main.win.post_test_info
+    
+    
+    nts = main.win.post_test_info
+    if nts is None:
+        nts = {}
+    return nts
     
     
 
