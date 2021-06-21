@@ -183,7 +183,9 @@ class LabeledControl():
                 RCtrlkwargs['command'] = self.on_button
             
             # initialize the control
-            self.RCtrl(master, **RCtrlkwargs).grid(
+            self.r_ctrl = self.RCtrl(master, **RCtrlkwargs)
+            
+            self.r_ctrl.grid(
                 padx=self.padx, pady=self.pady, column=2, row=row, sticky='WE')
             
             
@@ -246,12 +248,12 @@ class ptt_gap(LabeledControl):
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
 class _time_expand_i(LabeledControl):
-    text = 'Front Expand:'
+    text = 'Expand Before:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
 class _time_expand_f(LabeledControl):
-    text = 'Back Expand:'
+    text = 'Expand After:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
