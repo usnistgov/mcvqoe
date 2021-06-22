@@ -123,7 +123,7 @@ class _limited_trials(LabeledControl):
         self.master.btnvars['trials'].set(val)
         
 class trials(shared.trials):
-    """Number of trials to use for test."""
+    """Number of trials to run before pausing to perform a radio check."""
     
     text = 'Trials between check:'
         
