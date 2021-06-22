@@ -11,7 +11,7 @@ import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
-from shared import radioport, audio_files, outdir, ptt_gap
+from shared import radioport, outdir, ptt_gap
 from shared import TimeExpand
 from shared import AudioSettings, BgNoise
 
@@ -91,7 +91,15 @@ class DetectFailure(SubCfgFrame):
 #controls
 
 
+class audio_files(shared.audio_files):
+    """Audio files to use for testing.
+    The cutpoints for the file must exist in the same directory with
+    the same name and a .csv extension. If a multiple audio files
+    are given, then the test is run in succession for each file."""
+
 class _limited_trials(LabeledControl):
+    """When disabled, sets the number of trials to infinite"""
+    
     
     MCtrl = ttk.Checkbutton
     do_font_scaling = False
@@ -115,9 +123,12 @@ class _limited_trials(LabeledControl):
         self.master.btnvars['trials'].set(val)
         
 class trials(shared.trials):
+    """Number of trials to use for test."""
+    
     text = 'Trials between check:'
         
 class auto_stop(LabeledControl):
+    """Enable checking for access and stopping the test when it is detected."""
     
     MCtrl = ttk.Checkbutton
     MCtrlkwargs = {'text': 'Enable Auto-Stop'}
@@ -125,22 +136,30 @@ class auto_stop(LabeledControl):
     do_font_scaling = False
     
 class stop_rep(LabeledControl):
+    """Number of times that access must be detected in a row before the
+    test is completed."""
+    
     text = 'Stop after __ successful:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 1, 'to': 2**15-1}
     
     
 class _ptt_delay_min(LabeledControl):
+    """The smallest ptt_delay"""
     text = 'Min Delay Time:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
 class _ptt_delay_max(LabeledControl):
+    """The largest ptt_delay. By default, this will be set to the end
+    of the first word in the clip."""
+    
     text = 'Max Delay Time:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
 class ptt_step(LabeledControl):
+    """Time difference in seconds between successive ptt_delays."""
     text = 'Time Increase per Step:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
@@ -148,11 +167,17 @@ class ptt_step(LabeledControl):
 
 
 class ptt_rep(LabeledControl):
+    """Number of times to repeat a given PTT delay value. If auto_stop is
+    used, this must be greater than 15."""
+    
     text = 'Repeats per Step:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
 class dev_dly(LabeledControl):
+    """Delay in seconds of the audio path with no communication device
+    present."""
+    
     text = 'Device Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
@@ -160,11 +185,16 @@ class dev_dly(LabeledControl):
 
     
 class s_thresh(LabeledControl):
-    text = 'Min Allowed Volume (db):'
+    """The threshold of A-weight power for P2, in dB, below which a trial
+    is considered to have no audio."""
+    
+    text = 'Min Allowed Volume:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : -2**15 +1, 'to': 0, 'increment': 1}
 
 class s_tries(LabeledControl):
+    """Number of times to retry the test before giving up."""
+    
     text = 'Retry Attempts:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 1}

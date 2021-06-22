@@ -36,6 +36,9 @@ class M2eFrame(TestCfgFrame):
 
 
 class test(shared.MultiChoice):
+    """M2E test to perform. Options are: 1 Location (m2e_1loc), 
+    2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
+
     text = 'Location Type:'
     
     association = {
@@ -50,7 +53,7 @@ from shared import audio_files
 from shared import BgNoise, AudioSettings, radioport
             
 class audio_file(LabeledControl):
-    
+    """NOT USED - use audio_files instead"""
     def on_button(self):
         fp = fdl.askopenfilename(parent=self.master,
                 initialfile=self.btnvar.get(),

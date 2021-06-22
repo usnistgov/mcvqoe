@@ -272,128 +272,6 @@ class ToolTip(tk.Toplevel):
             padx=PADX, pady=PADY)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#---------------------------controls------------------------------------------
-class audio_files(LabeledControl):
-    text = 'Audio File(s):'
-    RCtrl = ttk.Button
-    RCtrlkwargs = {
-        'text' : 'Browse...'
-        }
-    
-    
-    
-    
-    
-    def on_button(self):
-        fp = fdl.askopenfilenames(parent=self.master,
-                initialfile=self.btnvar.get(),
-                filetypes=[('WAV files', '*.wav')])
-        if fp:
-            str_ = ', '
-            self.btnvar.set(str_.join(fp))
-            
-            
-class trials(LabeledControl):
-    """Number of trials to use for test."""
-    text = 'Number of Trials:'
-       
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
-    
-    
-class outdir(LabeledControl):
-    """Directory that is added to the output path for all files"""
-    
-    text='Output Folder:'
-    
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Browse...'}
-    
-    def on_button(self):
-        dirp = fdl.askdirectory(parent=self.master)
-        if dirp:
-            self.btnvar.set(dirp)
-            
-            
-    def __init__(self, *args, **kwargs):
-        
-        super().__init__(*args, **kwargs)
-        
-
-
-class overplay(LabeledControl):
-    """The number of seconds to play silence after the audio is complete.
-    This allows for all of the audio to be recorded when there is delay
-    in the system"""
-    
-    
-    text='Overplay Time (sec):'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
-    
-
-class ptt_gap(LabeledControl):
-    text = 'Time Between Trials:'
-    
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-
-class _time_expand_i(LabeledControl):
-    text = 'Expand Before:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-    
-class _time_expand_f(LabeledControl):
-    text = 'Expand After:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-
-
-
-
-
-
-
-class radioport(LabeledControl):
-    text = 'Radio Port:'
-    
-    
-class bgnoise_file(LabeledControl):
-    text = 'Noise File:'
-    
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text' : 'Browse...'}
-    
-    def on_button(self):
-        fp = fdl.askopenfilename(parent=self.master,
-            initialfile=self.btnvar.get(),
-            filetypes=[('WAV files', '*.wav')])
-        if fp:
-            self.btnvar.set(fp)
-
-
 class LabeledSlider(LabeledControl):
     
     RCtrl = None
@@ -410,11 +288,11 @@ class LabeledSlider(LabeledControl):
         self.btnvar.trace_add('write', self.on_change)
     
         ttk.Label(master, textvariable=self.txtvar).grid(
-            column=2, row=row, sticky='W')
+            column=3, row=row, sticky='W')
     
         ttk.Scale(master, variable=self.btnvar,
             from_=0, to=1).grid(
-            column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
+            column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
     
     def on_change(self, *args, **kwargs):
         #updates the percentage to match the value of the slider
@@ -467,10 +345,158 @@ class MultiChoice(LabeledControl):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#---------------------------controls------------------------------------------
+class audio_files(LabeledControl):
+    """Audio files to use for test"""
+    
+    text = 'Audio File(s):'
+    RCtrl = ttk.Button
+    RCtrlkwargs = {
+        'text' : 'Browse...'
+        }
+    
+    
+    
+    
+    
+    def on_button(self):
+        fp = fdl.askopenfilenames(parent=self.master,
+                initialfile=self.btnvar.get(),
+                filetypes=[('WAV files', '*.wav')])
+        if fp:
+            str_ = ', '
+            self.btnvar.set(str_.join(fp))
+            
+            
+class trials(LabeledControl):
+    """Number of trials to use for test."""
+    text = 'Number of Trials:'
+       
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
+    
+    
+class outdir(LabeledControl):
+    """Location to store all output files"""
+    
+    text='Output Folder:'
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Browse...'}
+    
+    def on_button(self):
+        dirp = fdl.askdirectory(parent=self.master)
+        if dirp:
+            self.btnvar.set(dirp)
+            
+            
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        
+
+
+class overplay(LabeledControl):
+    """The number of seconds to play silence after the audio is complete.
+    This allows for all of the audio to be recorded when there is delay
+    in the system"""
+    
+    
+    text='Overplay Time (sec):'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
+    
+
+class ptt_gap(LabeledControl):
+    """Time to pause after completing one trial and starting the next."""
+
+    text = 'Gap Between Trials:'
+    
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
+class _time_expand_i(LabeledControl):
+    """Length of time, in seconds, of extra
+    audio to send BEFORE the keyword to ABC_MRT16. Adding time protects
+    against inaccurate M2E latency calculations and misaligned audio."""
+    
+    text = 'Expand Before:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+class _time_expand_f(LabeledControl):
+    """Length of time, in seconds, of extra
+    audio to send AFTER the keyword to ABC_MRT16. Adding time protects
+    against inaccurate M2E latency calculations and misaligned audio."""
+    
+    text = 'Expand After:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+
+
+
+
+
+
+
+class radioport(LabeledControl):
+    """Port to use for radio interface. Defaults to the first
+    port where a radio interface is detected"""
+    
+    text = 'Radio Port:'
+    
+    
+class bgnoise_file(LabeledControl):
+    """This is used to read in a noise file to be mixed with the
+    test audio. Default is no background noise."""
+
+    text = 'Noise File:'
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text' : 'Browse...'}
+    
+    def on_button(self):
+        fp = fdl.askopenfilename(parent=self.master,
+            initialfile=self.btnvar.get(),
+            filetypes=[('WAV files', '*.wav')])
+        if fp:
+            self.btnvar.set(fp)
+
+
+
 class bgnoise_volume(LabeledSlider):
+    """Scale factor for background
+    noise."""
+
     text = 'Volume:'
 
 class ptt_wait(LabeledControl):
+    """The amount of time to wait in seconds between pushing the
+    push to talk button and starting playback. This allows time
+    for access to be granted on the system."""
+
     text = 'PTT Wait Time (sec):'
     
     MCtrl = ttk.Spinbox
@@ -479,12 +505,16 @@ class ptt_wait(LabeledControl):
               
                                   
 class blocksize(LabeledControl):
+    """Block size for transmitting audio, must be a power of 2"""
+    
     text = 'Block Size:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
     
 
 class buffersize(LabeledControl):
+    """Number of blocks used for buffering audio"""
+    
     text='Buffer Size:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
