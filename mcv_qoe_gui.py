@@ -243,7 +243,6 @@ class MCVQoEGui(tk.Tk):
             self.after(50, self._wait_to_destroy)
         else:
             self.destroy()
-            sys.exit()
             
     def destroy(self, *args, **kwargs):
         super().destroy(*args, **kwargs)
@@ -944,6 +943,8 @@ class Main():
         self.gui_thread.start()
         
         self.main_loop()
+        self.gui_thread.join()
+        
 
 
     
