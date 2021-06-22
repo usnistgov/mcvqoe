@@ -13,7 +13,7 @@ import _thread
 from threading import Thread
 import json
 import datetime
-import sys
+import pickle
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -1045,23 +1045,38 @@ def run(root_cfg):
     my_obj = class_assoc[sel_tst]()
     
     try:
+        
         #translate cfg items as necessary
         param_modify(cfg, is_sim)
-    
-    
-        # put config into object
-        for k, v in cfg.items():
-            if hasattr(my_obj, k):
-                setattr(my_obj, k, v)
+        
+        
+        # if recovery
+        if (cfg['data_file'] != ""):
+            my_obj.data_file = cfg['data_file']
+            with open(my_obj.data_file, "rb") as pkl:
+                my_obj.rec_file = pickle.load(pkl)
+            
+            
+            skippy = ['rec_file']
+            # load config from recovery file into object
+            for k, v in my_obj.rec_file.items():
+                if hasattr(my_obj, k) and (k not in skippy):
+                    setattr(my_obj, k, v)
+        
+        else:
+            # put config into object
+            for k, v in cfg.items():
+                if hasattr(my_obj, k):
+                    setattr(my_obj, k, v)
              
              
              
-        #TODO: change this when M2E implements multiple audio files
-        if 'audio_files' in cfg:
-            my_obj.audio_file = cfg['audio_files'][0]
+            #TODO: change this when M2E implements multiple audio files
+            if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
+                 my_obj.audio_file = cfg['audio_files'][0]
     
-        # Check for value errors with instance variables
-        my_obj.param_check()
+            # Check for value errors with instance variables
+            my_obj.param_check()
         
         
         
