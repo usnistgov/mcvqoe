@@ -43,7 +43,7 @@ from psud_gui import PSuDFrame
 TITLE_ = 'MCV QoE'
 
 
-WIN_SIZE = (900, 720)
+WIN_SIZE = (900, 800)
 
 # the initial values in all of the controls
 DEFAULT_CONFIG = {
@@ -983,7 +983,7 @@ class Main():
                 
                 
                 
-            
+                
                 
             except Abort_by_User:pass
                 
