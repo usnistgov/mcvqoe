@@ -227,12 +227,13 @@ class LabeledControl():
 
 
 class HelpIcon(ttk.Button):
-    
+    """Shows the control's doc when you hover over or select the icon"""
     def __init__(self, master, *args, tooltext, **kwargs):
         kwargs['text'] = '?'
         kwargs['style'] = 'McvHelpBtn.TLabel'
         super().__init__(master, *args, **kwargs)
         
+        # bind hover and selection events
         self.bind('<Enter>', self.enter)
         self.bind('<FocusIn>', self.enter)
         self.bind('<Leave>', self.leave)
@@ -244,14 +245,24 @@ class HelpIcon(ttk.Button):
     def enter(self, event):
         if self.tw:
             return
+        self.tw = ToolTip(self, self.tooltext)
         
+        # get location of help icon
         x, y, cx, cy = self.bbox("insert")
-        x = x + self.winfo_rootx() + 57
+        rootx = self._get_master().winfo_rootx()
+        
+        # calculate location of tooltip
+        x = x + self.winfo_rootx() - self.tw.winfo_width()
         y = y + cy + self.winfo_rooty() + 27
         
-        self.tw = ToolTip(self, self.tooltext)
-        self.tw.wm_overrideredirect(1)
+        #ensure tooltip does not fall off left edge of window
+        if x < rootx + 20: x = rootx + 20
+                
+        # set position of tooltip
         self.tw.wm_geometry("+%d+%d" % (x, y))
+        
+        #show tooltip
+        self.tw.show()
         
         
     def leave(self, event):
@@ -259,6 +270,13 @@ class HelpIcon(ttk.Button):
             return
         self.tw.destroy()
         self.tw = None
+        
+    def _get_master(self):
+        m = self
+        while hasattr(m, 'master'):
+            m = m.master
+            if isinstance(m, (tk.Tk, tk.Toplevel)):
+                return m
         
 
 class ToolTip(tk.Toplevel):
@@ -270,6 +288,17 @@ class ToolTip(tk.Toplevel):
         
         ttk.Label(lf, text=text, style='McvToolTip.TLabel').pack(
             padx=PADX, pady=PADY)
+        
+        #removes window title-bar, taskbar icon, etc
+        self.wm_overrideredirect(1)
+        
+        # temporarily hides window to prevent sudden movement
+        self.withdraw()
+        
+        # solidifies the window's size to ensure correct placement on screen
+        self.update_idletasks()
+    
+    def show(self):self.deiconify()
 
 
 class LabeledSlider(LabeledControl):
