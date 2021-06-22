@@ -5,8 +5,11 @@ Created on Fri Jun 11 12:50:45 2021
 @author: MkZee
 """
 
+import os
+
 import access_time as adly
 
+import tkinter as tk
 import tkinter.ttk as ttk
 
 import shared
@@ -29,7 +32,7 @@ class AccssDFrame(TestCfgFrame):
             RadioCheck,
             AutoStop,
             PttDelay,
-            #data_file,
+            data_file,
             advanced
             )
     
@@ -45,6 +48,14 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
             dev_dly,
             radioport
             )
+        
+    
+    
+    
+    
+    
+    
+    
     
 class RadioCheck(SubCfgFrame):
     text = 'Regular Radio Checks'
@@ -198,6 +209,26 @@ class s_tries(LabeledControl):
     text = 'Retry Attempts:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 1}
+    
+    
+class data_file(LabeledControl):
+    """A temporary datafile to use to restart a test. If this is
+    given all other parameters are ignored and the settings of the original
+    test are used."""
+    
+    text = 'Recovery File:'
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Browse...'}
+    
+    def on_button(self):
+        
+        outdir = self.master.btnvars['outdir'].get()
+        recovery = os.path.join(outdir,'data', 'recovery')
+        
+        fp = tk.filedialog.askopenfilename(initialdir=recovery)
+        if fp:
+            self.btnvar.set(fp)
 
 
 class advanced(shared.advanced):
