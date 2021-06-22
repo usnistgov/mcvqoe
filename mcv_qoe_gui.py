@@ -826,11 +826,21 @@ def set_font(**cfg):
 
 
 def set_styles():
+    
+    style_obj = ttk.Style()
 
     for style in ('TButton', 'TEntry.Label', 'TLabel', 'TLabelframe.Label',
                   'TRadiobutton', 'TCheckbutton'):
-        ttk.Style().configure(style, font=('TkDefaultFont', shared.FONT_SIZE))
-
+        style_obj.configure(style, font=('TkDefaultFont', shared.FONT_SIZE))
+    
+    
+    # help button and tooltip styles
+    style_obj.configure('McvHelpBtn.TLabel', font=('TkDefaultFont',
+                round(shared.FONT_SIZE * 0.75)), relief='groove')
+    style_obj.configure('McvToolTip.TLabel', 
+                background='white')
+    style_obj.configure('McvToolTip.TFrame',
+                background='white', relief='groove')
 
 def dpi_scaling(root):
     global dpi_scale

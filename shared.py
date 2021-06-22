@@ -14,6 +14,21 @@ PADY = 10
 
 FONT_SIZE = 10
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class TestCfgFrame(ttk.LabelFrame):
     """
     Base class to configure and run a  Test
@@ -135,6 +150,8 @@ class LabeledControl():
     padx = PADX
     pady = PADY
     
+    help_ = None
+    
     def setup(self):
         pass
     
@@ -158,6 +175,16 @@ class LabeledControl():
         except KeyError:
             self.btnvar = None
             
+        
+        
+        
+        # help button
+        if self.__class__.__doc__:
+            HelpIcon(master, tooltext=self.__class__.__doc__).grid(
+                column=1, row=row, padx=0, pady=self.pady, sticky='NW')
+            
+            
+            
             
         self.setup()
         #some controls require more flexibility, so they don't use self.MCtrl
@@ -174,9 +201,13 @@ class LabeledControl():
             # initialize the control
             self.m_ctrl = self.MCtrl(master, *MCtrlargs, **MCtrlkwargs)
             self.m_ctrl.grid(
-                column=1, row=row, padx=self.padx, pady=self.pady, sticky='WE')
+                column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
         
         
+        
+        
+        
+        # Right-most control
         if self.RCtrl:
             #add command to button
             if self.RCtrl in (ttk.Button, tk.Button):
@@ -186,13 +217,81 @@ class LabeledControl():
             self.r_ctrl = self.RCtrl(master, **RCtrlkwargs)
             
             self.r_ctrl.grid(
-                padx=self.padx, pady=self.pady, column=2, row=row, sticky='WE')
+                padx=self.padx, pady=self.pady, column=3, row=row, sticky='WE')
             
             
             
     def on_button(self):
         pass
             
+
+
+class HelpIcon(ttk.Button):
+    
+    def __init__(self, master, *args, tooltext, **kwargs):
+        kwargs['text'] = '?'
+        kwargs['style'] = 'McvHelpBtn.TLabel'
+        super().__init__(master, *args, **kwargs)
+        
+        self.bind('<Enter>', self.enter)
+        self.bind('<FocusIn>', self.enter)
+        self.bind('<Leave>', self.leave)
+        self.bind('<FocusOut>', self.leave)
+        
+        self.tw = None
+        self.tooltext = tooltext
+        
+    def enter(self, event):
+        if self.tw:
+            return
+        
+        x, y, cx, cy = self.bbox("insert")
+        x = x + self.winfo_rootx() + 57
+        y = y + cy + self.winfo_rooty() + 27
+        
+        self.tw = ToolTip(self, self.tooltext)
+        self.tw.wm_overrideredirect(1)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        
+        
+    def leave(self, event):
+        if not self.tw:
+            return
+        self.tw.destroy()
+        self.tw = None
+        
+
+class ToolTip(tk.Toplevel):
+    
+    def __init__(self, master, text):
+        super().__init__(master)
+        lf = ttk.Frame(self, style='McvToolTip.TFrame')
+        lf.pack()
+        
+        ttk.Label(lf, text=text, style='McvToolTip.TLabel').pack(
+            padx=PADX, pady=PADY)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #---------------------------controls------------------------------------------
@@ -202,6 +301,10 @@ class audio_files(LabeledControl):
     RCtrlkwargs = {
         'text' : 'Browse...'
         }
+    
+    
+    
+    
     
     def on_button(self):
         fp = fdl.askopenfilenames(parent=self.master,
@@ -213,11 +316,16 @@ class audio_files(LabeledControl):
             
             
 class trials(LabeledControl):
+    """Number of trials to use for test."""
     text = 'Number of Trials:'
+       
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
     
+    
 class outdir(LabeledControl):
+    """Directory that is added to the output path for all files"""
+    
     text='Output Folder:'
     
     RCtrl = ttk.Button
@@ -235,11 +343,16 @@ class outdir(LabeledControl):
         
 
 
-
 class overplay(LabeledControl):
+    """The number of seconds to play silence after the audio is complete.
+    This allows for all of the audio to be recorded when there is delay
+    in the system"""
+    
+    
     text='Overplay Time (sec):'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
+    
 
 class ptt_gap(LabeledControl):
     text = 'Time Between Trials:'
