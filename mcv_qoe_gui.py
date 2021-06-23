@@ -120,11 +120,41 @@ DEFAULT_CONFIG = {
         
         #TODO: ask about the following:
         #'split_audio_dest':None,
-            
+        
     },
+        
+    'SimSettings': {
+       #'sample_rate' : fs,
+        'channel_tech':'clean',
+        'channel_rate':'None', # none, str, or int. '<default>' should turn to None
+        'm2e_latency':21.1e-3,
+        'access_delay':0,
+        'rec_snr':60,
+        'PTT_sig_freq':409.6,
+        'PTT_sig_aplitude':0.7,
+    },
+    
+    'HdwSettings' : {}
 }
 
 
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 class MCVQoEGui(tk.Tk):
@@ -175,7 +205,7 @@ class MCVQoEGui(tk.Tk):
         BottomButtons(master=self).pack(side=tk.BOTTOM, fill=tk.X,
                                         padx=10, pady=10)
 
-        # keyboard shortcuts
+        # keyboard shortcuts/even handlers
         self.bind('<Configure>', self.LeftFrame.on_change_size)
         self.bind('<Control-s>', self.save)
         self.bind('<Control-S>', self.save)
@@ -198,6 +228,17 @@ class MCVQoEGui(tk.Tk):
 
             # when user changes a control
             btnvars.on_change = self.on_change
+        
+        
+        
+        # retrieve settings for 
+        self.global_settings = {
+            'SimSettings' : loadandsave.StringVarDict(
+                **DEFAULT_CONFIG['SimSettings']),
+            
+            'HdwSettings' : loadandsave.StringVarDict(
+                **DEFAULT_CONFIG['HdwSettings'])
+            }
 
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
@@ -651,7 +692,18 @@ class TestTypeFrame(tk.Frame):
         # simulation test
         ttk.Radiobutton(self, text='Simulation Test',
                         variable=is_sim, value=True).pack(fill=tk.X)
-
+        
+        
+        # hardware and simulation settings button
+        self.set_btn_txtvar = tk.StringVar(value='Hardware Settings')
+               
+        ttk.Button(self, textvariable=self.set_btn_txtvar,
+                   command=self.settings_btn).pack(fill=tk.X)
+        
+        #auto-update button text based on is_simulation
+        is_sim.trace_add('write', self.update_settings_btn)
+        
+        
         ttk.Separator(self).pack(fill=tk.X, pady=20)
 
         # Choose Test
@@ -668,7 +720,23 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value='IntgblFrame').pack(fill=tk.X)
-
+        
+    def update_settings_btn(self, *args, **kwargs):
+        if self.main_.is_simulation.get():
+            val = 'Simulation Settings'
+        else:
+            val = 'Hardware Settings'
+            
+        self.set_btn_txtvar.set(val)
+        
+    def settings_btn(self):
+        if self.main_.is_simulation.get():
+            shared.SimSettings(
+                self.main_, self.main_.global_settings['SimSettings'])
+        else:
+            shared.HdwSettings(
+                self.main_, self.main_.global_settings['HdwSettings'])
+        
 
 class LogoFrame(tk.Canvas):
 
@@ -801,6 +869,16 @@ class _test_info_gui_override:
     def post_test(self, error_only=False):
         return get_post_notes(error_only)
         
+
+
+
+
+    
+    
+
+
+
+
 
 
 

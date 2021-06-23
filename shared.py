@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 
+from mcvqoe.simulation.QoEsim import QoEsim
+
 PADX = 10
 PADY = 10
 
@@ -57,7 +59,7 @@ class TestCfgFrame(ttk.LabelFrame):
         
         
         
-    def get_controls() -> iter:
+    def get_controls(self) -> iter:
         """subclasses should override this
         """
 
@@ -81,7 +83,7 @@ class AdvancedConfigGUI(tk.Toplevel):
     """Advanced options for the M2E test
     
 
-    """    
+    """
     text = ''
     
     def __init__(self, master, btnvars, *args, **kwargs):
@@ -113,7 +115,7 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         
             
-    def get_controls():
+    def get_controls(self):
         pass
     
 
@@ -388,15 +390,23 @@ class MultiChoice(LabeledControl):
 
 
 
-
-
-
-
-
-
-
-
 #---------------------------controls------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class audio_files(LabeledControl):
     """Audio files to use for test"""
     
@@ -621,7 +631,110 @@ class TimeExpand(SubCfgFrame):
 
 
 
+
+
+
+
+
+
+
+
+
+
+#------------------------ Global settings for hdw/simulation------------------
+
+
+
+class HdwSettings(AdvancedConfigGUI):
+    text = 'Hardware Settings'
+    
+
+
+
+
+
+
+
+class SimSettings(AdvancedConfigGUI):
+    text = 'Simulation Settings'
+    
+    def get_controls(self):
+        return (
+            channel_tech,
+            channel_rate,        
+            )
+
+class channel_tech(LabeledControl):
+    
+
+    
+    def __init__(self, master, row):
+        
+        self.text = 'Channel Tech:'
+        self.MCtrl = ttk.Menubutton
+        self.do_font_scaling = False
+        
+        super().__init__(master, row)
+        
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        
+        self.m_ctrl.configure(menu=self.menu)
+        
+        # get channel_techs to use as menu options
+        for tech_ in QoEsim().get_channel_techs():
+            self.menu.add_command(label=tech_,
+                    command=tk._setit(self.btnvar, tech_))
+        
+        
+        
+    
+class channel_rate(LabeledControl):
+    
+    
+    def __init__(self, master, row):
+        
+        self.text = 'Channel Rate:'
+        self.MCtrl = ttk.Menubutton
+        
+        self.do_font_scaling = False
+        
+        super().__init__(master, row)
+        
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        self.m_ctrl.configure(menu=self.menu)
+        
+        #track selection of channel_tech
+        self.master.btnvars['channel_tech'].trace_add('write', self.update)
+        
+        #fill menu with options
+        self.update()
+        
+
+    
+    def update(self, *args, **kwargs):
+        
+        chan_tech = self.master.btnvars['channel_tech'].get()
+        
+        self.menu.delete(0, 'end')
+        
+        rates = QoEsim().get_channel_rates(chan_tech)
+        for rate in rates:
+                       
+            
+            #add a dropdown list option
+            self.menu.add_command(label=repr(rate),
+                        command=tk._setit(self.btnvar, repr(rate)))
+
+
+
+
+
+
+
+
+
 # ------- Misc -------------
+
 
 
 class SignalOverride():
