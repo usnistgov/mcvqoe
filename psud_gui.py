@@ -7,7 +7,7 @@ Created on Thu Jun 17 14:06:49 2021
 
 import shared
 
-import PSuD as psud
+import mcvqoe.psud as psud
 
 from tkinter import ttk
 from tkinter import filedialog
