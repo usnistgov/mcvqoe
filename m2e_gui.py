@@ -25,7 +25,6 @@ class M2eFrame(TestCfgFrame):
             audio_files,
             trials,
             ptt_wait,
-            overplay,
             outdir,
             advanced
             
@@ -69,7 +68,7 @@ class audio_file(LabeledControl):
         }
     
     
-from shared import trials, ptt_wait, outdir, overplay
+from shared import trials, ptt_wait, outdir
 
 
 

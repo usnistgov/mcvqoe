@@ -16,7 +16,7 @@ import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
 from shared import radioport, outdir, ptt_gap
 from shared import TimeExpand
-from shared import AudioSettings, BgNoise
+from shared import BgNoise
 
 
 class AccssDFrame(TestCfgFrame):
@@ -44,8 +44,6 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
             BgNoise,
             DetectFailure,
             TimeExpand,
-            AudioSettings,
-            dev_dly,
             radioport
             )
         
@@ -185,14 +183,7 @@ class ptt_rep(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
-class dev_dly(LabeledControl):
-    """Delay in seconds of the audio path with no communication device
-    present."""
-    
-    text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
-    
+  
 
     
 class s_thresh(LabeledControl):

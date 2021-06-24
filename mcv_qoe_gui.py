@@ -65,12 +65,8 @@ DEFAULT_CONFIG = {
         'audio_files': "",
         'bgnoise_file': "",
         'bgnoise_volume': 0.1,
-        'blocksize': 512,
-        'buffersize': 20,
         'outdir': "",
-        'overplay': 1.0,
         'ptt_wait': 0.68,
-        'radioport': "",
         'test': "m2e_1loc",
         'trials': 100
     },
@@ -81,17 +77,13 @@ DEFAULT_CONFIG = {
         'auto_stop': False,
         'bgnoise_file': "",
         'bgnoise_volume': 0.1,
-        'blocksize': 512,
-        'buffersize': 20,
         'data_file': "",
-        'dev_dly': float(31e-3),
         'outdir': "",
         '_ptt_delay_min': 0.00,
         '_ptt_delay_max': 'auto',
         'ptt_gap': 3.1,
         'ptt_rep': 30,
         'ptt_step': 0.02,
-        'radioport': "",
         's_thresh': -50,
         's_tries': 3,
         'stop_rep': 10,
@@ -105,10 +97,7 @@ DEFAULT_CONFIG = {
     'PSuDFrame' : {
         'audioFiles':'',
         'audioPath' : '',
-        'overPlay':1.0,
         'trials' : 100,
-        'blockSize':512,
-        'bufSize':20,
         'outdir':'',
         'ptt_wait':0.68,
         'ptt_gap':3.1,
@@ -116,7 +105,6 @@ DEFAULT_CONFIG = {
         '_time_expand_f' : float(0.11e-3),
         'm2e_min_corr' : 0.76,
         'intell_est':'trial',
-        'radioport': ''
         
         #TODO: ask about the following:
         #'split_audio_dest':None,
@@ -125,6 +113,7 @@ DEFAULT_CONFIG = {
         
     'SimSettings': {
        #'sample_rate' : fs,
+        'overplay':1.0,
         'channel_tech':'clean',
         'channel_rate':'None',
         'm2e_latency':str(21.1e-3),
@@ -134,7 +123,14 @@ DEFAULT_CONFIG = {
         'PTT_sig_aplitude':0.7,
     },
     
-    'HdwSettings' : {}
+    'HdwSettings' : {
+        
+        'overplay':1.0,
+        'radioport': '',
+        'dev_dly': float(31e-3),
+        'blocksize': 512,
+        'buffersize': 20,
+        }
 }
 
 

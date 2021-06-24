@@ -25,7 +25,6 @@ class PSuDFrame(shared.TestCfgFrame):
             audioFiles,
             _BrowseForFolder,
             trials,
-            overPlay,
             ptt_wait,
             ptt_gap,
             intell_est,
@@ -39,10 +38,8 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
     
     def get_controls(self):
         return (
-            AudioSettings,
             TimeExpand,
             m2e_min_corr,
-            radioport
             )
     
     
@@ -63,23 +60,12 @@ from shared import outdir
 from shared import ptt_wait
 from shared import ptt_gap
 from shared import TimeExpand
-from shared import radioport
 
 class audioFiles(shared.audio_files):
     """Path to audio files to use for test. Cutpoint files must also be present.
     If a folder is entered instead, all audio files in the folder will be used"""
     
-class overPlay(shared.overplay):
-    """The number of seconds to play silence after the audio is complete
-    This allows for all of the audio to be recorded when there is delay
-    in the system"""
     
-class blockSize(shared.blocksize):
-    """Block size for transmitting audio"""
-    
-class bufSize(shared.buffersize):
-    """Number of blocks used for buffering audio"""
-
 
 class _BrowseForFolder(shared.LabeledControl):
     text = ''
@@ -120,15 +106,6 @@ class intell_est(shared.MultiChoice):
 
     
 
-class AudioSettings(shared.SubCfgFrame):
-    
-    text = 'Audio Settings'
-    
-    def get_controls(self):
-        return (
-            blockSize,
-            bufSize,
-            )
     
 class advanced(shared.advanced):
     toplevel = PSuDAdvanced

@@ -74,7 +74,7 @@ class SubCfgFrame(TestCfgFrame):
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master.btnvars, master, *args, **kwargs)
         
-        self.grid(column=0, row=row, columnspan=3, sticky='NSEW',
+        self.grid(column=0, row=row, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
 
 
@@ -182,7 +182,7 @@ class LabeledControl():
         
         # help button
         if self.__class__.__doc__:
-            HelpIcon(master, tooltext=self.__class__.__doc__).grid(
+            HelpIcon(master, tooltext=self._get_help()).grid(
                 column=1, row=row, padx=0, pady=self.pady, sticky='NW')
             
             
@@ -222,7 +222,16 @@ class LabeledControl():
                 padx=self.padx, pady=self.pady, column=3, row=row, sticky='WE')
             
             
-            
+    def _get_help(self):
+        
+        lst = []
+        for line in self.__class__.__doc__.splitlines():
+            lst.append(line.strip())
+        
+        return '\n'.join(lst)
+        
+        
+        
     def on_button(self):
         pass
             
@@ -543,20 +552,7 @@ class ptt_wait(LabeledControl):
 
               
                                   
-class blocksize(LabeledControl):
-    """Block size for transmitting audio, must be a power of 2"""
-    
-    text = 'Block Size:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
-    
 
-class buffersize(LabeledControl):
-    """Number of blocks used for buffering audio"""
-    
-    text='Buffer Size:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
 
 
@@ -602,19 +598,6 @@ class BgNoise(ttk.LabelFrame):
                   sticky='WE')
         
 
-class AudioSettings(ttk.LabelFrame):
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, *args, text='Audio Settings', **kwargs)
-        
-        self.btnvars = master.btnvars
-        
-        controls = (blocksize, buffersize)
-        
-        for row_ in range(len(controls)):
-            controls[row_](master=self, row=row_)
-        
-        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
-                  sticky='WE')
 
 class TimeExpand(SubCfgFrame):
     text = 'Time Expand'
@@ -644,17 +627,67 @@ class TimeExpand(SubCfgFrame):
 #------------------------ Global settings for hdw/simulation------------------
 
 
-
+#HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
     
+    def get_controls(self):
+        return (
+            AudioSettings,
+            overplay,
+            dev_dly,
+            radioport,
+            )
+
+class AudioSettings(SubCfgFrame):
+    
+    text = 'Audio Settings'
+    
+    def get_controls(self):
+        return (blocksize, buffersize)
+    
+class AudioSettings2(ttk.LabelFrame):
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, *args, text='Audio Settings', **kwargs)
+        
+        self.btnvars = master.btnvars
+        
+        controls = (blocksize, buffersize)
+        
+        for row_ in range(len(controls)):
+            controls[row_](master=self, row=row_)
+        
+        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
+                  sticky='WE')
+        
+        
+class blocksize(LabeledControl):
+    """Block size for transmitting audio, must be a power of 2"""
+    
+    text = 'Block Size:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
+    
+
+class buffersize(LabeledControl):
+    """Number of blocks used for buffering audio"""
+    
+    text='Buffer Size:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2**15 -1}
+
+class dev_dly(LabeledControl):
+    """Delay in seconds of the audio path with no communication device
+    present."""
+    
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
 
 
 
 
-
-
-
+#SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
     text = 'Simulation Settings'
     
@@ -662,6 +695,9 @@ class SimSettings(AdvancedConfigGUI):
         return (
             channel_tech,
             channel_rate,
+            
+            overplay,
+            
             m2e_latency,
             access_delay,
             rec_snr,
@@ -671,7 +707,8 @@ class SimSettings(AdvancedConfigGUI):
             )
 
 class channel_tech(LabeledControl):
-    
+    """Technology to use for the simulated channel. Channel technologies are
+    handled by plugins. The only tech that is available by default is 'clean'."""
 
     def __init__(self, master, row):
         
@@ -694,7 +731,8 @@ class channel_tech(LabeledControl):
         
     
 class channel_rate(LabeledControl):
-    
+    """Rate to simulate channel at. Each channel tech handles this differently.
+    When set to None the default rate is used."""
     
     def __init__(self, master, row):
         
@@ -734,6 +772,7 @@ class channel_rate(LabeledControl):
 
 
 class m2e_latency(LabeledControl):
+    """Simulated mouth to ear latency for the channel in seconds."""
     
     text = 'Mouth-to-ear Latency:'
     MCtrl = ttk.Spinbox
@@ -741,6 +780,12 @@ class m2e_latency(LabeledControl):
     
     
 class access_delay(LabeledControl):
+    """Delay between the time that the simulated push to talk button is pushed
+    and when audio starts coming through the channel. If the 'ptt_delay'
+    method is called before play_record is called, then the time given to
+    'ptt_delay' is added to access_delay to get the time when access is
+    granted. Otherwise access is granted 'access_delay' seconds after the
+    clip starts."""
     
     text = 'Access Delay:'
     MCtrl = ttk.Spinbox
@@ -748,20 +793,20 @@ class access_delay(LabeledControl):
     
     
 class rec_snr(LabeledControl):
-    
-    text = 'Signal-Noise-Ratio:'
+    """Signal to noise ratio for audio channel."""
+    text = 'Channel SNR:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':1.0}
     
 
 class PTT_sig_freq(LabeledControl):
-    
+    """Frequency of the PTT signal from the play_record method."""
     text = 'PTT Signal Frequency:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
     
 class PTT_sig_aplitude(LabeledControl):
-    
+    """Amplitude of the PTT signal from the play_record method."""
     text = 'PTT Signal Amplitude:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
