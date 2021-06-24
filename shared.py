@@ -661,13 +661,18 @@ class SimSettings(AdvancedConfigGUI):
     def get_controls(self):
         return (
             channel_tech,
-            channel_rate,        
+            channel_rate,
+            m2e_latency,
+            access_delay,
+            rec_snr,
+            PTT_sig_freq,
+            PTT_sig_aplitude,
+            
             )
 
 class channel_tech(LabeledControl):
     
 
-    
     def __init__(self, master, row):
         
         self.text = 'Channel Tech:'
@@ -728,12 +733,55 @@ class channel_rate(LabeledControl):
 
 
 
+class m2e_latency(LabeledControl):
+    
+    text = 'Mouth-to-ear Latency:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+    
+    
+class access_delay(LabeledControl):
+    
+    text = 'Access Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
+    
+    
+class rec_snr(LabeledControl):
+    
+    text = 'Signal-Noise-Ratio:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':1.0}
+    
+
+class PTT_sig_freq(LabeledControl):
+    
+    text = 'PTT Signal Frequency:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
+    
+class PTT_sig_aplitude(LabeledControl):
+    
+    text = 'PTT Signal Amplitude:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
 
 
 
 
 
-# ------- Misc -------------
+
+
+
+
+
+
+
+
+
+
+
+# ---------------------------------- Misc ------------------------------------
 
 
 

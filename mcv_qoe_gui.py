@@ -126,11 +126,11 @@ DEFAULT_CONFIG = {
     'SimSettings': {
        #'sample_rate' : fs,
         'channel_tech':'clean',
-        'channel_rate':'None', # none, str, or int. '<default>' should turn to None
-        'm2e_latency':21.1e-3,
-        'access_delay':0,
-        'rec_snr':60,
-        'PTT_sig_freq':409.6,
+        'channel_rate':'None',
+        'm2e_latency':str(21.1e-3),
+        'access_delay':'0.000',
+        'rec_snr':str(60),
+        'PTT_sig_freq':'409.6',
         'PTT_sig_aplitude':0.7,
     },
     
@@ -1125,6 +1125,8 @@ def run(root_cfg):
     try:
         
         #translate cfg items as necessary
+        
+        #TODO: include modifications for sim- and hdwr-settings
         param_modify(cfg, is_sim)
         
         
