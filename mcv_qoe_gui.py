@@ -46,70 +46,7 @@ TITLE_ = 'MCV QoE'
 WIN_SIZE = (900, 800)
 
 # the initial values in all of the controls
-DEFAULT_CONFIG = {
-    'EmptyFrame': {},
-    
-    'TestInfoGuiFrame': {
-            'Test Type': '',
-            'Tx Device': '',
-            'Rx Device': '',
-            'System': '',
-            'Test Loc': ''
-            },
-    
-    'PostTestGuiFrame': {},
-    
-    
-
-    'M2eFrame': {
-        'audio_files': "",
-        'bgnoise_file': "",
-        'bgnoise_volume': 0.1,
-        'outdir': "",
-        'ptt_wait': 0.68,
-        'test': "m2e_1loc",
-        'trials': 100
-    },
-
-    'AccssDFrame': {
-        'audio_files': "",
-        'audio_path': "",
-        'auto_stop': False,
-        'bgnoise_file': "",
-        'bgnoise_volume': 0.1,
-        'data_file': "",
-        'outdir': "",
-        '_ptt_delay_min': 0.00,
-        '_ptt_delay_max': 'auto',
-        'ptt_gap': 3.1,
-        'ptt_rep': 30,
-        'ptt_step': 0.02,
-        's_thresh': -50,
-        's_tries': 3,
-        'stop_rep': 10,
-        '_time_expand_i': float(100e-3 - 0.11e-3),
-        '_time_expand_f': float(0.11e-3),
-        '_limited_trials': True,
-        'trials': '100', #this is a string because it may be 'inf'
-
-    },
-    
-    'PSuDFrame' : {
-        'audioFiles':'',
-        'audioPath' : '',
-        'trials' : 100,
-        'outdir':'',
-        'ptt_wait':0.68,
-        'ptt_gap':3.1,
-        '_time_expand_i' : float(100e-3 - 0.11e-3),
-        '_time_expand_f' : float(0.11e-3),
-        'm2e_min_corr' : 0.76,
-        'intell_est':'trial',
-        
-        #TODO: ask about the following:
-        #'split_audio_dest':None,
-        
-    },
+{
         
     'SimSettings': {
        #'sample_rate' : fs,
@@ -216,8 +153,8 @@ class MCVQoEGui(tk.Tk):
         self.frames = {}
         # Initialize test-specific frames
         for F in frame_types:
-            # loads the default values of the controls
-            btnvars = loadandsave.StringVarDict(**DEFAULT_CONFIG[F.__name__])
+            
+            btnvars = loadandsave.TkVarDict()
 
             # initializes the frame, with its key being its own classname
             self.frames[F.__name__] = F(master=self, btnvars=btnvars)
@@ -226,16 +163,10 @@ class MCVQoEGui(tk.Tk):
             btnvars.on_change = self.on_change
         
         
+        self.simulation_settings = loadandsave.TkVarDict()
+        self.hardware_settings = loadandsave.TkVarDict()
         
-        # retrieve settings for 
-        self.global_settings = {
-            'SimSettings' : loadandsave.StringVarDict(
-                **DEFAULT_CONFIG['SimSettings']),
-            
-            'HdwSettings' : loadandsave.StringVarDict(
-                **DEFAULT_CONFIG['HdwSettings'])
-            }
-
+        
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
         self.cnf_filepath = None
@@ -728,10 +659,10 @@ class TestTypeFrame(tk.Frame):
     def settings_btn(self):
         if self.main_.is_simulation.get():
             shared.SimSettings(
-                self.main_, self.main_.global_settings['SimSettings'])
+                self.main_, self.main_.simulation_settings)
         else:
             shared.HdwSettings(
-                self.main_, self.main_.global_settings['HdwSettings'])
+                self.main_, self.main_.hardware_settings)
         
 
 class LogoFrame(tk.Canvas):
@@ -788,6 +719,8 @@ class TestInfoGuiFrame(ttk.Labelframe):
     Fits into the main window instead of its own window
     
     """
+    
+    
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, text='Test Information', **kwargs)
         
@@ -809,6 +742,8 @@ class TestInfoGuiFrame(ttk.Labelframe):
         
         ct = 0
         for k, label in labels.items():
+            
+            self.btnvars.add_entry(k, value='')
             
             
             ttk.Label(self, text=label).grid(column=0, row=ct,

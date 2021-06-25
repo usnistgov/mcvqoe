@@ -17,10 +17,13 @@ from shared import LabeledControl, TestCfgFrame, SubCfgFrame
 from shared import radioport, outdir, ptt_gap
 from shared import TimeExpand
 from shared import BgNoise
+import loadandsave
 
 
 class AccssDFrame(TestCfgFrame):
     text = 'Access Delay Test'
+    
+    default_test_obj = adly.Access()
     
     def get_controls(self):
         return (
@@ -31,7 +34,7 @@ class AccssDFrame(TestCfgFrame):
             ptt_gap,
             RadioCheck,
             AutoStop,
-            PttDelay,
+            ptt_delay,
             data_file,
             advanced
             )
@@ -73,8 +76,13 @@ class AutoStop(SubCfgFrame):
             auto_stop,
             stop_rep,
             )
-class PttDelay(SubCfgFrame):
+    
+    
+class ptt_delay(SubCfgFrame):
     text = 'PTT Delay (sec)'
+    
+    no_default_value = False
+    variable_type = loadandsave.Vec1Or2Var
     
     def get_controls(self):
         return (
@@ -114,6 +122,7 @@ class _limited_trials(LabeledControl):
     do_font_scaling = False
     variable_arg = 'variable'
     previous = '100'
+    no_default_value = True
     
     def __init__(self, *args, **kwargs):
         self.MCtrlkwargs = {'text': 'Enable Radio Checks',
@@ -159,6 +168,15 @@ class _ptt_delay_min(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
+    no_default_value = True
+    
+    def __init__(self, master, row, default):
+        super().__init__(master, row, default)
+        
+        #it's part of a 2-part value, so this gets the proper tcl variable
+        self.m_ctrl.configure(
+            textvariable=master.btnvars['ptt_delay'].zero)
+    
 class _ptt_delay_max(LabeledControl):
     """The largest ptt_delay. By default, this will be set to the end
     of the first word in the clip."""
@@ -166,6 +184,15 @@ class _ptt_delay_max(LabeledControl):
     text = 'Max Delay Time:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+    no_default_value = True
+    
+    def __init__(self, master, row, default):
+        super().__init__(master, row, default)
+        
+        # it's part of a 2-part value
+        self.m_ctrl.configure(
+            textvariable=master.btnvars['ptt_delay'].one)
 
 class ptt_step(LabeledControl):
     """Time difference in seconds between successive ptt_delays."""

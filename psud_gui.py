@@ -19,6 +19,7 @@ class PSuDFrame(shared.TestCfgFrame):
     
     text = 'Probability of Successful Delivery Test'
     
+    default_test_obj = psud.measure()
     
     def get_controls(self):
         return (
@@ -72,9 +73,10 @@ class _BrowseForFolder(shared.LabeledControl):
     MCtrl = None
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'Browse for Folder...'}
+    no_default_value = True
     
-    def __init__(self, master, row):
-        super().__init__(master, row)
+    def __init__(self, master, row, default, *args, **kwargs):
+        super().__init__(master, row, default, *args, **kwargs)
         self.r_ctrl.grid_forget()
         self.r_ctrl.grid(columnspan=2,
                 padx=self.padx, pady=self.pady, column=1, row=row, sticky='E')

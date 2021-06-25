@@ -9,7 +9,10 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 
+import loadandsave
+
 from mcvqoe.simulation.QoEsim import QoEsim
+from mcvqoe.hardware.radio_interface import RadioInterface
 
 PADX = 10
 PADY = 10
@@ -30,17 +33,30 @@ FONT_SIZE = 10
 
 
 
+        
 
 class TestCfgFrame(ttk.LabelFrame):
     """
-    Base class to configure and run a  Test
+    Base class for frames to configure and run a test
     
-    btnvars : StringVarDict
+    btnvars : TkVarDict
     loads and stores the values in the controls
+    
+    
+    
+    ATTRIBUTES
+    
+    text : str
+        The caption of the frame
+    
+    default_test_obj : Any
+        The object whose attributes determine the default values in the controls
     
     """
     
     text = ''
+    
+    default_test_obj = None # set by subclasses
        
     
     def __init__(self, btnvars, *args, **kwargs):
@@ -55,7 +71,9 @@ class TestCfgFrame(ttk.LabelFrame):
         
         #initializes controls
         for row in range(len(controls)):
-            controls[row](master=self, row=row)
+            default = extract_defaults(controls[row], self.default_test_obj)
+            
+            controls[row](master=self, row=row, default=default)
         
         
         
@@ -70,9 +88,19 @@ class SubCfgFrame(TestCfgFrame):
     
     """
     text = ''
+    no_default_value = True
+    variable_type = None
     
-    def __init__(self, master, row, *args, **kwargs):
+    def __init__(self, master, row, default, *args, **kwargs):
+        
+        if not self.no_default_value:
+            self.btnvar = master.btnvars.add_entry(self.__class__.__name__,
+                    value=default, var_type = self.variable_type)
+        
+        
+        self.default_test_obj = master.default_test_obj
         super().__init__(master.btnvars, master, *args, **kwargs)
+        
         
         self.grid(column=0, row=row, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
@@ -80,13 +108,19 @@ class SubCfgFrame(TestCfgFrame):
 
 
 class AdvancedConfigGUI(tk.Toplevel):
-    """Advanced options for the M2E test
+    """A Toplevel window containing advanced options for the test
     
 
     """
     text = ''
     
+    default_test_obj = None
+    
     def __init__(self, master, btnvars, *args, **kwargs):
+        
+        if self.default_test_obj is None:
+            self.default_test_obj = master.default_test_obj
+        
         super().__init__(master, *args, **kwargs)
         
         
@@ -104,7 +138,8 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         #initializes controls
         for row in range(len(controls)):
-            controls[row](master=self, row=row)
+            controls[row](master=self, row=row,
+                default=extract_defaults(controls[row], self.default_test_obj))
             
         
         
@@ -133,11 +168,15 @@ class LabeledControl():
     
     row : int
         the row that the controls should be gridded in
+        
+    default : Any
+        the default value that will start inside the control
     
     """
     text = ''
     
     do_font_scaling = True
+    no_default_value = False
     
     MCtrl = ttk.Entry
     MCtrlargs = []
@@ -152,14 +191,14 @@ class LabeledControl():
     padx = PADX
     pady = PADY
     
-    help_ = None
+    variable_type = None #if None, set automatically based on default value
     
     def setup(self):
         pass
     
     
     
-    def __init__(self, master, row):
+    def __init__(self, master, row, default):
         self.master = master
         
         
@@ -172,10 +211,13 @@ class LabeledControl():
         MCtrlargs = self.MCtrlargs.copy()
         RCtrlkwargs = self.RCtrlkwargs.copy()
         
-        try:
-            self.btnvar = master.btnvars[self.__class__.__name__]
-        except KeyError:
-            self.btnvar = None
+        
+        
+        # get tkinter variable 
+        
+        self.btnvar = master.btnvars.add_entry(self.__class__.__name__,
+                    value=default, var_type = self.variable_type)
+        
             
         
         
@@ -320,8 +362,8 @@ class LabeledSlider(LabeledControl):
     do_font_scaling = False    
     
     
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, row, *args, **kwargs)
+    def __init__(self, master, row, default, *args, **kwargs):
+        super().__init__(master, row, default, *args, **kwargs)
         self.txtvar = self._percentage()
         self.on_change()
         
@@ -425,17 +467,14 @@ class audio_files(LabeledControl):
         'text' : 'Browse...'
         }
     
-    
-    
-    
+    variable_type = loadandsave.CommaSepList 
     
     def on_button(self):
         fp = fdl.askopenfilenames(parent=self.master,
                 initialfile=self.btnvar.get(),
                 filetypes=[('WAV files', '*.wav')])
         if fp:
-            str_ = ', '
-            self.btnvar.set(str_.join(fp))
+            self.btnvar.set(fp)
             
             
 class trials(LabeledControl):
@@ -565,6 +604,7 @@ class advanced(LabeledControl):
     RCtrl = ttk.Button       
     RCtrlkwargs = {'text': 'Advanced...'}
     toplevel = None
+    no_default_value = True
     
     def on_button(self):
         self.toplevel(master=self.master, btnvars=self.master.btnvars)
@@ -577,26 +617,22 @@ class _advanced_submit(LabeledControl):
     MCtrl = None
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'OK'}
+    no_default_value = True
     
     def on_button(self):
         self.master.destroy()
     
     
 # advanced groups
-class BgNoise(ttk.LabelFrame):
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, *args, text='Background Noise', **kwargs)
-        
-        self.btnvars = master.btnvars
-        
-        controls = (bgnoise_file, bgnoise_volume)
-        
-        for row_ in range(len(controls)):
-            controls[row_](master=self, row=row_)
-        
-        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
-                  sticky='WE')
-        
+
+class BgNoise(SubCfgFrame):
+    text = 'Background Noise'
+    
+    def get_controls(self):
+        return (bgnoise_file,
+                bgnoise_volume)
+
+       
 
 
 class TimeExpand(SubCfgFrame):
@@ -631,9 +667,11 @@ class TimeExpand(SubCfgFrame):
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
     
+    #default_test_obj = RadioInterface()
+    
     def get_controls(self):
         return (
-            AudioSettings,
+            #AudioSettings,
             overplay,
             dev_dly,
             radioport,
@@ -646,19 +684,6 @@ class AudioSettings(SubCfgFrame):
     def get_controls(self):
         return (blocksize, buffersize)
     
-class AudioSettings2(ttk.LabelFrame):
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, *args, text='Audio Settings', **kwargs)
-        
-        self.btnvars = master.btnvars
-        
-        controls = (blocksize, buffersize)
-        
-        for row_ in range(len(controls)):
-            controls[row_](master=self, row=row_)
-        
-        self.grid(column=0, row=row, padx=PADX, pady=PADY, columnspan=3,
-                  sticky='WE')
         
         
 class blocksize(LabeledControl):
@@ -689,6 +714,9 @@ class dev_dly(LabeledControl):
 
 #SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
+    
+    default_test_obj = QoEsim()
+    
     text = 'Simulation Settings'
     
     def get_controls(self):
@@ -710,13 +738,13 @@ class channel_tech(LabeledControl):
     """Technology to use for the simulated channel. Channel technologies are
     handled by plugins. The only tech that is available by default is 'clean'."""
 
-    def __init__(self, master, row):
+    def __init__(self, master, row, default, *args, **kwargs):
         
         self.text = 'Channel Tech:'
         self.MCtrl = ttk.Menubutton
         self.do_font_scaling = False
         
-        super().__init__(master, row)
+        super().__init__(master, row, default, *args, **kwargs)
         
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         
@@ -734,14 +762,16 @@ class channel_rate(LabeledControl):
     """Rate to simulate channel at. Each channel tech handles this differently.
     When set to None the default rate is used."""
     
-    def __init__(self, master, row):
+    variable_type = tk.StringVar
+    
+    def __init__(self, master, row, default, *args, **kwargs):
         
         self.text = 'Channel Rate:'
         self.MCtrl = ttk.Menubutton
         
         self.do_font_scaling = False
         
-        super().__init__(master, row)
+        super().__init__(master, row, default, *args, **kwargs)
         
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
@@ -760,10 +790,11 @@ class channel_rate(LabeledControl):
         
         self.menu.delete(0, 'end')
         
-        rates = QoEsim().get_channel_rates(chan_tech)
+        default, rates = QoEsim().get_channel_rates(chan_tech)
+        
+        self.btnvar.set(default)
+        
         for rate in rates:
-                       
-            
             #add a dropdown list option
             self.menu.add_command(label=repr(rate),
                         command=tk._setit(self.btnvar, repr(rate)))
@@ -828,6 +859,15 @@ class PTT_sig_aplitude(LabeledControl):
 
 # ---------------------------------- Misc ------------------------------------
 
+
+def extract_defaults(control, default_test_obj):
+    # get default value
+    if control.no_default_value:
+        default = None
+    else:
+        default = getattr(
+                        default_test_obj, control.__name__)
+    return default
 
 
 class SignalOverride():

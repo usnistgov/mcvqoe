@@ -19,6 +19,8 @@ class M2eFrame(TestCfgFrame):
     
     text = 'Mouth-to-Ear Latency Test'
     
+    default_test_obj = m2e_class.M2E()
+    
     def get_controls(self):
         return (
             test,
@@ -29,6 +31,10 @@ class M2eFrame(TestCfgFrame):
             advanced
             
             )
+    
+    
+# TODO: remove this when M2E support multiple audio files
+M2eFrame.default_test_obj.audio_files = ''
         
         
         #------------------ Controls ----------------------
