@@ -23,7 +23,7 @@ class PSuDFrame(shared.TestCfgFrame):
     
     def get_controls(self):
         return (
-            audioFiles,
+            audio_files,
             _BrowseForFolder,
             trials,
             ptt_wait,
@@ -39,7 +39,7 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
     
     def get_controls(self):
         return (
-            TimeExpand,
+            time_expand,
             m2e_min_corr,
             )
     
@@ -60,9 +60,9 @@ from shared import trials
 from shared import outdir
 from shared import ptt_wait
 from shared import ptt_gap
-from shared import TimeExpand
+from shared import time_expand
 
-class audioFiles(shared.audio_files):
+class audio_files(shared.audio_files):
     """Path to audio files to use for test. Cutpoint files must also be present.
     If a folder is entered instead, all audio files in the folder will be used"""
     
@@ -79,12 +79,12 @@ class _BrowseForFolder(shared.LabeledControl):
         super().__init__(master, row, default, *args, **kwargs)
         self.r_ctrl.grid_forget()
         self.r_ctrl.grid(columnspan=2,
-                padx=self.padx, pady=self.pady, column=1, row=row, sticky='E')
+                padx=self.padx, pady=self.pady, column=2, row=row, sticky='E')
     
     def on_button(self):
         fp = filedialog.askdirectory()
         if fp:
-            self.master.btnvars['audioFiles'].set(fp)
+            self.master.btnvars['audio_files'].set([fp])
     
 class m2e_min_corr(shared.LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
