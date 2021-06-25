@@ -45,44 +45,6 @@ TITLE_ = 'MCV QoE'
 
 WIN_SIZE = (900, 800)
 
-# the initial values in all of the controls
-{
-        
-    'SimSettings': {
-       #'sample_rate' : fs,
-        'overplay':1.0,
-        'channel_tech':'clean',
-        'channel_rate':'None',
-        'm2e_latency':str(21.1e-3),
-        'access_delay':'0.000',
-        'rec_snr':str(60),
-        'PTT_sig_freq':'409.6',
-        'PTT_sig_aplitude':0.7,
-    },
-    
-    'HdwSettings' : {
-        
-        'overplay':1.0,
-        'radioport': '',
-        'dev_dly': float(31e-3),
-        'blocksize': 512,
-        'buffersize': 20,
-        }
-}
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     
@@ -102,35 +64,40 @@ class MCVQoEGui(tk.Tk):
         
         
         
-        # when the user exits the program
+        # when the user closes the window
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         
         # dpi scaling
         dpi_scaling(self)
 
-        # the config starts unmodified
+        # indicates that the user does not need to save the configuration
         self.set_saved_state(True)
 
         # dimensions
         self.minsize(width=600, height=370)
         self.geometry(f'{WIN_SIZE[0]}x{WIN_SIZE[1]}')
 
-        # tk Variables to determine what test to run and show config for
+        # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
 
         # change test frame when user selects a test
         self.selected_test.trace_add(
             'write', lambda a, b, c: self._select_test())
-
+        
+        # initiate left frame with logo and test selections
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
-
+        
+        
+        # initiate row of buttons on bottom of window
         BottomButtons(master=self).pack(side=tk.BOTTOM, fill=tk.X,
                                         padx=10, pady=10)
 
-        # keyboard shortcuts/even handlers
+        # handling changing of window size
         self.bind('<Configure>', self.LeftFrame.on_change_size)
+        
+        # binding keyboard shortcuts
         self.bind('<Control-s>', self.save)
         self.bind('<Control-S>', self.save)
         self.bind('<Control-o>', self.open_)
@@ -144,8 +111,11 @@ class MCVQoEGui(tk.Tk):
          # create test-specific frames
         self._init_frames()
         
+        # sets the current frame to be blank
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
+        
+        # instance vars
         self.cnf_filepath = None
         self.is_destroyed = False
         self.set_step(0)
