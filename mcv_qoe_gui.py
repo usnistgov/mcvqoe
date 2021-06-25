@@ -100,16 +100,7 @@ class MCVQoEGui(tk.Tk):
         super().__init__(*args, **kwargs)
         
         
-        frame_types = [
-            EmptyFrame,
-            TestInfoGuiFrame,
-            PostTestGuiFrame,
-            
-            M2eFrame,
-            AccssDFrame,
-            PSuDFrame,
-    #TODO: add rest of frames
-        ]
+        
         
         # when the user exits the program
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -130,7 +121,7 @@ class MCVQoEGui(tk.Tk):
 
         # change test frame when user selects a test
         self.selected_test.trace_add(
-            'write', lambda a, b, c: self.frame_update())
+            'write', lambda a, b, c: self._select_test())
 
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
@@ -149,9 +140,33 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
  
+        
+         # create test-specific frames
+        self._init_frames()
+        
+        self.currentframe = self.frames['EmptyFrame']
+        self.currentframe.pack()
+        self.cnf_filepath = None
+        self.is_destroyed = False
+        self.set_step(0)
 
+
+
+    def _init_frames(self):
+        """consructs the test-specific frames"""
+        frame_types = [
+            EmptyFrame,
+            TestInfoGuiFrame,
+            PostTestGuiFrame,
+            
+            M2eFrame,
+            AccssDFrame,
+            PSuDFrame,
+    #TODO: add rest of frames
+        ]
+        
+        
         self.frames = {}
-        # Initialize test-specific frames
         for F in frame_types:
             
             btnvars = loadandsave.TkVarDict()
@@ -167,15 +182,15 @@ class MCVQoEGui(tk.Tk):
         self.hardware_settings = loadandsave.TkVarDict()
         
         
-        self.currentframe = self.frames['EmptyFrame']
-        self.currentframe.pack()
-        self.cnf_filepath = None
-        self.is_destroyed = False
-        self.set_step(0)
-
         
-    def frame_update(self):
-        # indicates a change in the user's selected test
+
+    def _select_test(self):
+        if self.step in (0, 1):
+            self.configure_test()
+            
+    def configure_test(self):
+        """Called when the user changes the selected test.
+        Changes the frame to show the proper test configuration"""
         self.show_frame(self.selected_test.get())
         self.set_step(1)
 
@@ -220,9 +235,18 @@ class MCVQoEGui(tk.Tk):
         if self.ask_save():
             # cancelled
             return
-
+        
+        current = self.currentframe.__class__.__name__
+        
+        #destroy all frames
         for frame_name, frame in self.frames.items():
-            frame.btnvars.set(DEFAULT_CONFIG[frame_name])
+            frame.destroy()
+        
+        # reconstruct frames as default
+        self._init_frames()
+        
+        #keep the current frame displayed
+        self.show_frame(current)
 
         # user shouldn't be prompted to save the default config
         self.set_saved_state(True)
@@ -407,7 +431,7 @@ class MCVQoEGui(tk.Tk):
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
                 
         #back to config frame
-        self.frame_update()
+        self.configure_test()
                
         
     def set_step(self, step):
@@ -426,7 +450,7 @@ class MCVQoEGui(tk.Tk):
         elif step == 2:
             next_btn_txt = 'Run Test'
             next_btn = self.run
-            back_btn = self.frame_update
+            back_btn = self.configure_test
         
         elif step == 3:
             #TODO: show running test frame
@@ -1176,7 +1200,7 @@ def run(root_cfg):
         tk.messagebox.showerror('Invalid Option', str(e))
         
         # go back to config screen
-        main.gui_thread.callback(main.win.frame_update)
+        main.gui_thread.callback(main.win.configure_test)
         return
     
     #gathers posttest notes without showing error
