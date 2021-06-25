@@ -55,7 +55,7 @@ class test(shared.MultiChoice):
 
 from shared import audio_files
             
-from shared import BgNoise, AudioSettings, radioport
+from shared import BgNoise, AudioSettings
             
 class audio_file(LabeledControl):
     """NOT USED - use audio_files instead"""
@@ -85,7 +85,6 @@ class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
         return (
             BgNoise,
             AudioSettings,
-            radioport,
             )
 
 
@@ -129,50 +128,8 @@ class M2E_fromGui(shared.SignalOverride, m2e_class.M2E):
             self.m2e_2loc_rx()
         else:
             raise ValueError("\nIncorrect test type")
-    
-    
+            
         
-        
-
-def run(cnf, is_simulation, pretest,):
-    
-    o = M2E_fromGui()
-    
-    cnf['audio_file'] = cnf['audio_files'][0]
-    # TODO: The above should change when we implement multiple audio files
-    
-    
-    for k, v in cnf.items():
-         if hasattr(o, k):
-             setattr(o, k, v)
-    
-    o.param_check()
-     
-    # Get start time and date
-    time_n_date = m2e_class.datetime.datetime.now().replace(microsecond=0)
-    o.info['Tstart'] = time_n_date
-
-    # Add test to info dictionary
-    o.info['test'] = o.test
-    
-    
-    
-    
-    # Open RadioInterface object for testing
-    o.ri = m2e_class.RadioInterface(o.radioport)
-    # Fill 'Arguments' within info dictionary
-    o.info.update(m2e_class.write_log.fill_log(o))
-
-
-
-    
-    
-    # Gather pretest notes and M2E parameters
-    o.info.update(pretest(outdir=o.outdir))
-
-    # Write pretest notes and info to tests.log
-    m2e_class.write_log.pre(info=o.info)
-    
     
     
 

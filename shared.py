@@ -524,6 +524,29 @@ class ptt_gap(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
+
+
+
+
+
+class time_expand(SubCfgFrame):
+    text = 'Time Expand'
+    
+    no_default_value = False
+    
+    variable_type= loadandsave.Vec1Or2Var
+    
+    def __init__(self, master, row, default, **kwargs):
+        
+        super().__init__(master, row, default, **kwargs)
+    
+    def get_controls(self):
+        
+        return (
+            _time_expand_i,
+            _time_expand_f,
+            )
+
 class _time_expand_i(LabeledControl):
     """Length of time, in seconds, of extra
     audio to send BEFORE the keyword to ABC_MRT16. Adding time protects
@@ -532,6 +555,14 @@ class _time_expand_i(LabeledControl):
     text = 'Expand Before:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    no_default_value = True
+    
+    def __init__(self, master, row, default, *args, **kwargs):
+        super().__init__(master, row, default, *args, **kwargs)
+        
+        #it's part of a 2-part value, so this gets the proper tcl variable
+        self.m_ctrl.configure(
+            textvariable=master.btnvars['time_expand'].zero)
     
 class _time_expand_f(LabeledControl):
     """Length of time, in seconds, of extra
@@ -541,18 +572,14 @@ class _time_expand_f(LabeledControl):
     text = 'Expand After:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    no_default_value = True
 
-
-
-
-
-
-
-class radioport(LabeledControl):
-    """Port to use for radio interface. Defaults to the first
-    port where a radio interface is detected"""
-    
-    text = 'Radio Port:'
+    def __init__(self, master, row, default, *args, **kwargs):
+        super().__init__(master, row, default, *args, **kwargs)
+        
+        #it's part of a 2-part value, so this gets the proper tcl variable
+        self.m_ctrl.configure(
+            textvariable=master.btnvars['time_expand'].one)
     
     
 class bgnoise_file(LabeledControl):
@@ -635,15 +662,6 @@ class BgNoise(SubCfgFrame):
        
 
 
-class TimeExpand(SubCfgFrame):
-    text = 'Time Expand'
-    
-    def get_controls(self):
-        return (
-            _time_expand_i,
-            _time_expand_f,
-            )
-
 
 
 
@@ -676,6 +694,15 @@ class HdwSettings(AdvancedConfigGUI):
             dev_dly,
             radioport,
             )
+    
+    
+
+
+class radioport(LabeledControl):
+    """Port to use for radio interface. Defaults to the first
+    port where a radio interface is detected"""
+    
+    text = 'Radio Port:'
 
 class AudioSettings(SubCfgFrame):
     

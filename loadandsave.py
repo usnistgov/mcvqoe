@@ -188,20 +188,25 @@ class IntOrInf(tk.StringVar):
     
     def __init__(self, master=None, value=0, name=None):
         
+        
         try:
             val = str(int(value))
         except OverflowError:
             val = 'inf'
         super().__init__(master, val, name)
         
+        
+        
     def set(self, value):
         try:
-            val = str(int(super().get()))
+            val = str(int(value))
         except OverflowError:
             val = 'inf'
         super().set(val)
         
     def get(self):
         return int_or_inf(super().get())
-        
+    
+    
+    
         

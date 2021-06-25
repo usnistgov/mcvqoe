@@ -14,8 +14,8 @@ import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
-from shared import radioport, outdir, ptt_gap
-from shared import TimeExpand
+from shared import outdir, ptt_gap
+from shared import time_expand
 from shared import BgNoise
 import loadandsave
 
@@ -46,8 +46,7 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
         return (
             BgNoise,
             DetectFailure,
-            TimeExpand,
-            radioport
+            time_expand,
             )
         
     
@@ -77,19 +76,7 @@ class AutoStop(SubCfgFrame):
             stop_rep,
             )
     
-    
-class ptt_delay(SubCfgFrame):
-    text = 'PTT Delay (sec)'
-    
-    no_default_value = False
-    variable_type = loadandsave.Vec1Or2Var
-    
-    def get_controls(self):
-        return (
-            _ptt_delay_min,
-            _ptt_delay_max
-            )
-    
+
     
 
         
@@ -121,13 +108,16 @@ class _limited_trials(LabeledControl):
     MCtrl = ttk.Checkbutton
     do_font_scaling = False
     variable_arg = 'variable'
-    previous = '100'
     no_default_value = True
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, master, row, default, *args, **kwargs):
         self.MCtrlkwargs = {'text': 'Enable Radio Checks',
                             'command': self.on_button}
-        super().__init__(*args, **kwargs)
+        
+        default = master.default_test_obj.trials != float('inf')
+        
+        super().__init__(master, row, default, *args, **kwargs)
+        
         
         self.previous = '100'
         
@@ -136,7 +126,7 @@ class _limited_trials(LabeledControl):
             val = self.previous
         else:
             self.previous = self.master.btnvars['trials'].get()
-            val = 'inf'
+            val = float('inf')
             
         self.master.btnvars['trials'].set(val)
         
@@ -161,6 +151,23 @@ class stop_rep(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 1, 'to': 2**15-1}
     
+    
+    
+    
+    
+    
+    
+class ptt_delay(SubCfgFrame):
+    text = 'PTT Delay (sec)'
+    
+    no_default_value = False
+    variable_type = loadandsave.Vec1Or2Var
+    
+    def get_controls(self):
+        return (
+            _ptt_delay_min,
+            _ptt_delay_max
+            )
     
 class _ptt_delay_min(LabeledControl):
     """The smallest ptt_delay"""
@@ -282,10 +289,7 @@ class Access_fromGui(shared.SignalOverride, adly.Access):
     
     
  #TODO:...
-     #convert _ptt_delay_* into ptt_delay, and multi-s into vectors
      #convert audio_files into audio_files and audio_path
-     #convert time_expand into vectors
-     #
 
     
     
