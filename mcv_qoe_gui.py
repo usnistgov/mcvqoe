@@ -11,9 +11,11 @@ import sys
 import time
 import _thread
 from threading import Thread
+import threading
 import json
 import datetime
 import pickle
+import functools
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -47,9 +49,69 @@ WIN_SIZE = (900, 800)
 
     
     
+def in_thread(thread, wait=True):
+    """A function decorator to ensure that a function runs in the given thread.
     
+    thread: can be {'GuiThread', 'MainThread'}
     
-    
+    Example:
+        
+        @run_in_thread('MainThread')
+        def my_mainthread_func(*args, **kwargs):
+            print('Hello from the main thread!')
+        
+    """
+
+            
+            
+    if thread not in ('MainThread', 'GuiThread'):
+        raise ValueError(f'Thread {thread} does not exist')
+        
+    def decorator(func):
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            
+            
+                
+            
+            if thread == threading.current_thread().getName():
+                # we are already in that thread!!
+                return func(*args, **kwargs)
+            
+            switch_obj = _dec_return(func, args, kwargs)
+            
+            if thread == 'MainThread':
+                main.callback(switch_obj.callbacker)
+            elif thread == 'GuiThread':
+                main.gui_thread.callback(switch_obj.callbacker)
+            
+            
+            # wait until function is finished if applicable
+            while wait and not switch_obj.finished:
+                time.sleep(0.1)
+                
+            if wait:
+                return switch_obj.return_val
+                
+            
+        return wrapper
+    return decorator
+
+
+class _dec_return:
+    def __init__(self, func, args, kwargs):
+        
+        self.finished = False
+        self.args = args
+        self.kwargs = kwargs
+
+    def callbacker(self):
+        self.return_val = self.func(*self.args, **self.kwargs)
+        self.finished = True
+        
+
+
 
 
 class MCVQoEGui(tk.Tk):
@@ -128,10 +190,12 @@ class MCVQoEGui(tk.Tk):
             EmptyFrame,
             TestInfoGuiFrame,
             PostTestGuiFrame,
+            TestProgressFrame,
             
             M2eFrame,
             AccssDFrame,
             PSuDFrame,
+            
     #TODO: add rest of frames
         ]
         
@@ -762,9 +826,6 @@ class TestInfoGuiFrame(ttk.Labelframe):
         self.rowconfigure(ct, weight=1)
         
         
-        #TODO: check audio button
-        #self.check_audio_btn = ttk.Button(text='Check Audio',
-                #command=self._check_audio)
         
 class PostTestGuiFrame(ttk.Labelframe):
     """Replacement for PostTestGui
@@ -797,14 +858,91 @@ class _test_info_gui_override:
 
 
 
-
+class TestProgressFrame(tk.LabelFrame):
     
+    def __init__(self, master, btnvars, *args, **kwargs):
+        self._previous_bar_length = None
+        self.start_time = time.time()
+        self.btnvars = btnvars
+        
+        super().__init__(master, *args, text='', **kwargs)
+        
+        # text above bar
+        self.primary_text = txt = tk.StringVar()
+        
+        
+        ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+        
+        # the progress bar
+        self.bar = ttk.Progressbar(self, mode='indeterminate')
+        self.bar.pack()
+        
+        
+        #the text below the bar
+        
+        self.secondary_text = txt = tk.StringVar()
+        ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+        
+        self.tertiary_text = txt = tk.StringVar()
+        ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+        
+        
+    @in_thread('GuiThread', wait=True)
+    def progress(self, prog_type, num_trials, current_trial, err_msg='') -> bool:
+        
+        
+        messages = {
+            'proc' : ('Processing test data...',
+                      f'Processing trial {current_trial+1} of {num_trials}'),
+            
+            'test' : ('Performing tests...',
+                      f'Trial {current_trial} of {num_trials}'),
+            
+            'check-fail' : ('Test encountered an error.',
+                f'Trial {current_trial+1} of {num_trials}')
+            
+            }
+        
+        
     
-
-
-
-
-
+        if num_trials != self.previous_bar_length:
+            self.previous_bar_length = num_trials
+            self.bar.configure(maximum=num_trials, mode='determinate')
+        
+        self.bar.configure(value=current_trial)
+        
+        self.primary_text.set(messages[prog_type][0])
+        
+        self.secondary_text.set(messages[prog_type][1])
+        
+        
+        if num_trials != 0:
+            if current_trial == 0:
+                self.start_time = time.time()
+                self.tertiary_text.set('')
+            else:
+                # estimate time remaining
+                time_elapsed = time.time() - self.start_time
+                
+                time_total = time_elapsed * num_trials / current_trial
+                
+                time_left = time_total - time_elapsed
+                
+                time_left = time_left / 60
+                
+                if time_left < 120:
+                    time_left = round(time_left)
+                    time_unit = 'minutes'
+                else:
+                    time_left = time_left // 60
+                    time_unit = 'hours'
+                
+                self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
+        
+        
+        
+        # indicate that the test should continue
+        return True
 
 
 
@@ -889,7 +1027,7 @@ class TestQueue(list):
 class GuiThread(Thread):
    
     def callback(self, function):
-        """Calls a function in the GUI_Thread
+        """Calls a function in the GUIThread
         
 
         Parameters
@@ -903,7 +1041,7 @@ class GuiThread(Thread):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.setName('Gui_Thread')
+        self.setName('GuiThread')
         self.setDaemon(True)
         self._callbacks = []
         
@@ -1200,26 +1338,8 @@ def run(root_cfg):
     print('\n\n\n')
     
 def param_modify(cfg, is_simulation):
+    pass
     
-    
-    # convert audio files string into a list
-    for af in ('audio_files', 'audioFiles'):
-        if af in cfg:
-            # turns comma-separated list into list
-            cfg[af] = [x.strip() for x in cfg[af].split(',')]
-    
-            #must enter at least 1 audio file
-            if not cfg[af][0]:
-                raise ValueError('Please select an audio file')
-            
-    if '_ptt_delay_min' in cfg:
-        cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
-        try:
-            cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
-        except ValueError:pass
-    
-    if '_time_expand_i' in cfg:
-        cfg['time_expand'] = [cfg['_time_expand_i'], cfg['_time_expand_f']]
         
 def get_post_notes(error_only=False):
     
