@@ -940,12 +940,15 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 time_left = time_left / 60
                 
-                if time_left <= 60:
+                if time_left < 60:
                     time_left = round(time_left)
                     time_unit = 'minutes'
-                else:
-                    time_left = time_left // 60 + 1
+                elif time_left < 60 * 24:
+                    time_left = time_left // 60
                     time_unit = 'hours'
+                else:
+                    time_left = time_left // 60 // 24
+                    time_unit = 'days'
                 
                 self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
         
@@ -1127,6 +1130,7 @@ class Main():
                     f = self._callbacks.pop()
                 except IndexError:
                     #if no callbacks to be called
+                    self.is_running = False
                     time.sleep(0.2)
                 else:
                     self.is_running = True
@@ -1229,7 +1233,6 @@ def run(root_cfg):
             if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
                  my_obj.audio_file = cfg['audio_files'][0]
     
-        print(my_obj.audio_file)
         try:
             #translate cfg items as necessary
             #TODO: include modifications for sim- and hdwr-settings
@@ -1310,7 +1313,8 @@ def run(root_cfg):
             my_obj.run()
             
 
-    
+        if sel_tst in ('M2eFrame',):
+            my_obj.plot()
     
     
     #gathers posttest notes without showing error
@@ -1335,6 +1339,7 @@ def run(root_cfg):
         # Gather posttest notes and write to log
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
+    
     
     # leave gap in console for next test
     print('\n\n\n')
