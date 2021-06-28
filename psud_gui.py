@@ -136,13 +136,13 @@ class PSuD_fromGui(shared.SignalOverride, psud.measure):
         
     def param_check(self):
         # check if user chose a full folder instead of a list of files
-        if path.isdir(self.audioFiles[0]):
-            self.audioPath = self.audioFiles[0]
-            self.audioFiles = []
+        if path.isdir(self.audio_files[0]):
+            self.audio_path = self.audio_files[0]
+            self.audio_files = []
             self.full_audio_dir = True
             
             #check for the existence of .wav files
-            p = self.audioPath
+            p = self.audio_path
             success = False
             for f in os.listdir(p):
                 fp = path.join(p, f)
@@ -150,7 +150,7 @@ class PSuD_fromGui(shared.SignalOverride, psud.measure):
                     success = True
                     break
             if not success:
-                raise ValueError('Audio Source Folder contains no .wav files.') 
+                raise ValueError('Audio Folder contains no .wav files.') 
     
     
     
