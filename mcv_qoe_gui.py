@@ -53,17 +53,18 @@ def in_thread(thread, wait=True):
     """A function decorator to ensure that a function runs in the given thread.
     
     thread: can be {'GuiThread', 'MainThread'}
+        the thread to run the function in
+    wait:
+        whether to wait for the function to return in the other thread
+        if this is false, it may or may not return None.
     
     Example:
         
-        @run_in_thread('MainThread')
+        @in_thread('MainThread')
         def my_mainthread_func(*args, **kwargs):
             print('Hello from the main thread!')
         
     """
-
-            
-            
     if thread not in ('MainThread', 'GuiThread'):
         raise ValueError(f'Thread {thread} does not exist')
         
@@ -89,6 +90,10 @@ def in_thread(thread, wait=True):
             
             # wait until function is finished if applicable
             while wait and not switch_obj.finished:
+                if thread == 'MainThread':
+                    # keep the gui responsive
+                    main.win.update_idletasks()
+                    
                 time.sleep(0.1)
                 
             if wait:
@@ -98,10 +103,10 @@ def in_thread(thread, wait=True):
         return wrapper
     return decorator
 
-
 class _dec_return:
     def __init__(self, func, args, kwargs):
         
+        self.func = func
         self.finished = False
         self.args = args
         self.kwargs = kwargs
@@ -110,6 +115,12 @@ class _dec_return:
         self.return_val = self.func(*self.args, **self.kwargs)
         self.finished = True
         
+
+
+
+
+
+
 
 
 
@@ -221,11 +232,13 @@ class MCVQoEGui(tk.Tk):
     def _select_test(self):
         if self.step in (0, 1):
             self.configure_test()
-            
+    
+    
+    @in_thread('GuiThread', wait=False)
     def configure_test(self):
         """Called when the user changes the selected test.
         Changes the frame to show the proper test configuration"""
-        self.show_frame(self.selected_test.get())
+        
         self.set_step(1)
 
     def show_frame(self, framename):
@@ -412,12 +425,8 @@ class MCVQoEGui(tk.Tk):
         
         return obj
     
-    def make_empty(self):
-        self.selected_test.set('EmptyFrame')
-        self.set_step(0)
-    
+        
     def pretest(self):
-        self.show_frame('TestInfoGuiFrame')
         self.set_step(2)
 
     def run(self):
@@ -428,8 +437,8 @@ class MCVQoEGui(tk.Tk):
         #retrieve configuration from controls
         cnf = self.get_cnf()
         
-        #runs the test in the main thread, passing cnf as configuration
-        main.callback(lambda: run(cnf))
+        #runs the test
+        run(cnf)
                 
 
     def abort(self):
@@ -447,10 +456,10 @@ class MCVQoEGui(tk.Tk):
         else:
             # indicates cancelled by user
             return True
-        
+    
+    @in_thread('GuiThread', wait=False)
     def post_test(self, error):
         self.set_step(4)
-        self.show_frame('PostTestGuiFrame')
         
         err_class, err_msg, trace = error
         if err_class:
@@ -471,29 +480,32 @@ class MCVQoEGui(tk.Tk):
     def set_step(self, step):
         self.step = step
         if step == 0:
+            self.selected_test.set('EmptyFrame')
             self.show_frame('EmptyFrame')
             next_btn_txt = 'Next'
             next_btn = None #disabled
             back_btn = None
         
         elif step == 1:
+            self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
-            next_btn = self.pretest
-            back_btn = self.make_empty
+            next_btn = lambda : self.set_step(2)
+            back_btn = lambda : self.set_step(0)
         
         elif step == 2:
+            self.show_frame('TestInfoGuiFrame')
             next_btn_txt = 'Run Test'
             next_btn = self.run
             back_btn = self.configure_test
         
         elif step == 3:
-            #TODO: show running test frame
+            self.show_frame('TestProgressFrame')
             next_btn_txt = 'Abort Test'
             next_btn = self.abort
             back_btn = None
             
         elif step == 4:
-            #TODO: show post_test
+            self.show_frame('PostTestGuiFrame')
             next_btn_txt = 'Finish'
             next_btn = self.finish
             back_btn = None
@@ -504,7 +516,8 @@ class MCVQoEGui(tk.Tk):
         
         #changes back button
         self.set_back_btn(back_btn)
-        
+    
+    @in_thread('GuiThread', wait=False)
     def clear_notes(self):
         # clears pre_test and post_test notes
         self.frames['TestInfoGuiFrame'].pre_notes.delete(1.0, tk.END)
@@ -845,20 +858,15 @@ class PostTestGuiFrame(ttk.Labelframe):
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
         
-class _test_info_gui_override:
-    """Container for test_info_gui overrides
-    """
-            
-    def pretest(self, outdir='', check_function=None):
-        pass
-    
-    def post_test(self, error_only=False):
-        return get_post_notes(error_only)
-        
+       
 
 
 
 class TestProgressFrame(tk.LabelFrame):
+    
+    def pack(self, *args, **kwargs):
+        super().pack(*args, **kwargs)
+        self.pack_configure(expand=True, fill=tk.BOTH)
     
     def __init__(self, master, btnvars, *args, **kwargs):
         self._previous_bar_length = None
@@ -875,7 +883,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         # the progress bar
         self.bar = ttk.Progressbar(self, mode='indeterminate')
-        self.bar.pack()
+        self.bar.pack(fill=tk.X)
         
         
         #the text below the bar
@@ -905,8 +913,8 @@ class TestProgressFrame(tk.LabelFrame):
         
         
     
-        if num_trials != self.previous_bar_length:
-            self.previous_bar_length = num_trials
+        if num_trials != self._previous_bar_length:
+            self._previous_bar_length = num_trials
             self.bar.configure(maximum=num_trials, mode='determinate')
         
         self.bar.configure(value=current_trial)
@@ -930,11 +938,11 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 time_left = time_left / 60
                 
-                if time_left < 120:
+                if time_left <= 60:
                     time_left = round(time_left)
                     time_unit = 'minutes'
                 else:
-                    time_left = time_left // 60
+                    time_left = time_left // 60 + 1
                     time_unit = 'hours'
                 
                 self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
@@ -1163,6 +1171,7 @@ class Main():
         
 #----------------------- Running the tests -----------------------------------
 
+@in_thread('MainThread', wait=False)
 def run(root_cfg):
     
     # TODO implement other tests here
@@ -1193,8 +1202,11 @@ def run(root_cfg):
         param_modify(cfg, is_sim)
         
         
+        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
+        
+        
         # if recovery
-        if (cfg['data_file'] != ""):
+        if 'data_file' in cfg and cfg['data_file'] != "":
             my_obj.data_file = cfg['data_file']
             with open(my_obj.data_file, "rb") as pkl:
                 my_obj.rec_file = pickle.load(pkl)
@@ -1235,7 +1247,8 @@ def run(root_cfg):
             # Fill 'Arguments' within info dictionary
             my_obj.info.update(write_log.fill_log(my_obj))
     
-            # Gather pretest notes and M2E parameters
+            # Gather pretest notes and parameters
+            #TODO: make sure to override pre_test and post_test guis
             my_obj.info.update(pre_notes)
     
     
@@ -1246,7 +1259,7 @@ def run(root_cfg):
             my_obj.info = pre_notes
     
         # clear notes from window
-        main.gui_thread.callback(main.win.clear_notes)
+        main.win.clear_notes()
         
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
@@ -1271,24 +1284,17 @@ def run(root_cfg):
             AudioPlayer = hardware.AudioPlayer
         
     
-        # open audio_player
-        if hasattr(my_obj, 'blocksize'):
-            bs = my_obj.blocksize
-        elif hasattr(my_obj, 'blockSize'):
-            bs = my_obj.blockSize
-            
-        if hasattr(my_obj, 'buffersize'):
-            bf = my_obj.buffersize
-        elif hasattr(my_obj, 'bufSize'):
-            bf = my_obj.bufSize
-            
-        ap = AudioPlayer(fs=my_obj.fs,
-                         blocksize=bs,
-                         buffersize=bf)
+        
+        #TODO: set these values from the new hardware_settings
+        #bs = my_obj.blocksize
+        #bf = my_obj.buffersize
+        #fs = my_obj.fs
+        #ap = AudioPlayer(fs=my_obj.fs,blocksize=bs,buffersize=bf)
+        ap = AudioPlayer()
         
         
-        if hasattr(my_obj, 'audioInterface'):
-            my_obj.audioInterface = ap
+        if hasattr(my_obj, 'audio_interface'):
+            my_obj.audio_interface = ap
         elif hasattr(my_obj, 'audio_player'):
             my_obj.audio_player = ap
         
@@ -1297,7 +1303,9 @@ def run(root_cfg):
     
     
         # Open RadioInterface object
-        with RadioInterface(cfg['radioport']) as my_obj.ri:
+        #TODO: use radioport
+        radioport = ''
+        with RadioInterface(radioport) as my_obj.ri:
         
             #run test
             my_obj.run()
@@ -1308,7 +1316,7 @@ def run(root_cfg):
         tk.messagebox.showerror('Invalid Option', str(e))
         
         # go back to config screen
-        main.gui_thread.callback(main.win.configure_test)
+        main.win.configure_test()
         return
     
     #gathers posttest notes without showing error
@@ -1353,11 +1361,11 @@ def get_post_notes(error_only=False):
         return {}
     
     
-    # call post_test in Gui_Thread
-    main.gui_thread.callback(lambda : main.win.post_test(root_error))
+    main.win.post_test_info = None
+    main.win.post_test(root_error)
     
     # wait for completion or program close
-    main.win.post_test_info = None
+    
     while main.win.post_test_info is None and not main.win.is_destroyed:
         time.sleep(0.1)
     
@@ -1377,10 +1385,6 @@ if __name__ == '__main__':
     if hasattr(ctypes, 'windll'):
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
-    #override test_info_gui in each module
-    #TODO: add rest of modules
-    for module in [m2e_gui.m2e_class, accesstime_gui.adly]:
-        module.test_info_gui = _test_info_gui_override
-    
+       
     
     Main()
