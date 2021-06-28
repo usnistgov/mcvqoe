@@ -273,15 +273,6 @@ class advanced(shared.advanced):
 
 class Access_fromGui(shared.SignalOverride, adly.Access):
     
-    def param_check(self):
-        
-        #change trials from str to int_or_inf
-        if self.trials.lower() == 'inf':
-            self.trials = adly.np.inf
-        else:
-            self.trials = int(self.trials)
-        
-        super().param_check()
     
     def run(self):
         #TODO: implement recovery
