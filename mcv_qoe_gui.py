@@ -410,7 +410,9 @@ class MCVQoEGui(tk.Tk):
     def get_cnf(self):
         obj = {
             'is_simulation': self.is_simulation.get(),
-            'selected_test': self.selected_test.get()
+            'selected_test': self.selected_test.get(),
+            'SimSettings'  : self.simulation_settings.get(),
+            'HdwSettings'  : self.hardware_settings.get(),
         }
 
         for framename, frame in self.frames.items():
@@ -1175,7 +1177,7 @@ class Main():
 def run(root_cfg):
     
     # TODO implement other tests here
-    class_assoc = {
+    constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
         'PSuDFrame' : psud_gui.PSuD_fromGui
@@ -1191,18 +1193,15 @@ def run(root_cfg):
     
     
     
-    #initialize object
-    my_obj = class_assoc[sel_tst]()
+    #initialize test object
+    my_obj = constructors[sel_tst]()
     
     try:
         
-        #translate cfg items as necessary
-        
-        #TODO: include modifications for sim- and hdwr-settings
-        param_modify(cfg, is_sim)
         
         
-        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
+        # set progress update callback
+        my_obj.progress_update = progress
         
         
         # if recovery
@@ -1230,9 +1229,23 @@ def run(root_cfg):
             if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
                  my_obj.audio_file = cfg['audio_files'][0]
     
+        print(my_obj.audio_file)
+        try:
+            #translate cfg items as necessary
+            #TODO: include modifications for sim- and hdwr-settings
+            param_modify(cfg, is_sim)
+            
             # Check for value errors with instance variables
             my_obj.param_check()
         
+        except ValueError as e:
+            # in case of incorrect input from user
+            
+            tk.messagebox.showerror('Invalid Option', str(e))
+        
+            # go back to config screen
+            main.win.configure_test()
+            return
         
         
         # PSuD handles this by itself
@@ -1269,55 +1282,36 @@ def run(root_cfg):
         
         # in case of simulation test
         if is_sim:
-            # create simulator
+            
             sim = QoEsim()
-                
-            #override these to simulate them
-            RadioInterface = lambda *args, **kwargs : sim
-            AudioPlayer = lambda *args, **kwargs : sim
-        
-            #TODO: the following is a workaround
-            m2e_gui.m2e_class.AudioPlayer = AudioPlayer
+            
+            for k, v in root_cfg['SimSettings'].items():
+                if hasattr(sim, k):
+                    setattr(sim, k, v)
+            
+            ri = sim
+            ap = sim
         
         else:
-            RadioInterface = hardware.RadioInterface
-            AudioPlayer = hardware.AudioPlayer
+            #TODO set blocksize, buffersize, and fs, as well as radioport
+            ri = hardware.RadioInterface()
+            ap = hardware.AudioPlayer()
+            
+            ap.playback_chans = {'tx_voice':0, 'start_signal':1}
+            ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
         
     
-        
-        #TODO: set these values from the new hardware_settings
-        #bs = my_obj.blocksize
-        #bf = my_obj.buffersize
-        #fs = my_obj.fs
-        #ap = AudioPlayer(fs=my_obj.fs,blocksize=bs,buffersize=bf)
-        ap = AudioPlayer()
-        
-        
-        if hasattr(my_obj, 'audio_interface'):
-            my_obj.audio_interface = ap
-        elif hasattr(my_obj, 'audio_player'):
-            my_obj.audio_player = ap
-        
-            my_obj.audio_player.playback_chans = {'tx_voice':0, 'start_signal':1}
-            my_obj.audio_player.rec_chans = {'rx_voice':0, 'PTT_signal':1}
-    
-    
-        # Open RadioInterface object
-        #TODO: use radioport
-        radioport = ''
-        with RadioInterface(radioport) as my_obj.ri:
+        my_obj.audio_interface = ap
+       
+        # Enter RadioInterface object
+        with ri as my_obj.ri:
         
             #run test
             my_obj.run()
             
 
     
-    except ValueError as e:
-        tk.messagebox.showerror('Invalid Option', str(e))
-        
-        # go back to config screen
-        main.win.configure_test()
-        return
+    
     
     #gathers posttest notes without showing error
     except Abort_by_User:pass
@@ -1336,14 +1330,18 @@ def run(root_cfg):
         return
 
     
-    #PSuD handles this internally
-    if sel_tst in ('M2eFrame', 'AccssDFrame'):
+    #PSuD, m2e handle this internally
+    if sel_tst in ('AccssDFrame'):
         # Gather posttest notes and write to log
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
     
     # leave gap in console for next test
     print('\n\n\n')
+    
+    
+def progress(*args, **kwargs):
+    return main.win.frames['TestProgressFrame'].progress(*args, **kwargs)
     
 def param_modify(cfg, is_simulation):
     pass
@@ -1356,7 +1354,7 @@ def get_post_notes(error_only=False):
     error = root_error[0]
     
     #check if there is no error and we should only show on error
-    if( (not error) and error_only):
+    if((not error) and error_only):
         #nothing to do, bye!
         return {}
     

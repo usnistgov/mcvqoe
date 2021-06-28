@@ -5,7 +5,7 @@ Created on Wed Jun  2 08:52:09 2021
 @author: MkZee
 """
 
-import m2e_class
+import mcvqoe.mouth2ear.m2e as m2e
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -19,7 +19,7 @@ class M2eFrame(TestCfgFrame):
     
     text = 'Mouth-to-Ear Latency Test'
     
-    default_test_obj = m2e_class.M2E()
+    default_test_obj = m2e.measure()
     
     def get_controls(self):
         return (
@@ -114,7 +114,7 @@ class advanced(shared.advanced):
 
 
 
-class M2E_fromGui(shared.SignalOverride, m2e_class.M2E):
+class M2E_fromGui(shared.SignalOverride, m2e.measure):
     
     def run(self):
               
