@@ -12,7 +12,7 @@ import tkinter.filedialog as fdl
 import loadandsave
 
 from mcvqoe.simulation.QoEsim import QoEsim
-from mcvqoe.hardware.radio_interface import RadioInterface
+from mcvqoe.hardware.audio_player import AudioPlayer
 
 PADX = 10
 PADY = 10
@@ -680,18 +680,21 @@ class BgNoise(SubCfgFrame):
 
 #------------------------ Global settings for hdw/simulation------------------
 
+class _HdwPrototype(AudioPlayer):
+    radioport = ''
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
     
-    #default_test_obj = RadioInterface()
+    default_test_obj = _HdwPrototype()
     
     def get_controls(self):
         return (
-            #AudioSettings,
+            AudioSettings,
             overplay,
-            dev_dly,
+            #TODO: device delay
+            #dev_dly,
             radioport,
             )
     
