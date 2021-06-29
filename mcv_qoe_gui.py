@@ -1262,7 +1262,7 @@ def run(root_cfg):
         try:
             #translate cfg items as necessary
             #TODO: include modifications for sim- and hdwr-settings
-            param_modify(cfg, is_sim)
+            param_modify(cfg, is_sim, root_cfg)
             
             #TODO: change this when M2E implements multiple audio files
             if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
@@ -1294,7 +1294,6 @@ def run(root_cfg):
             my_obj.info.update(write_log.fill_log(my_obj))
     
             # Gather pretest notes and parameters
-            #TODO: make sure to override pre_test and post_test guis
             my_obj.info.update(pre_notes)
     
     
@@ -1327,8 +1326,25 @@ def run(root_cfg):
         
         else:
             #TODO set blocksize, buffersize, and fs, as well as radioport
-            ri = hardware.RadioInterface()
+            hdw_cfg = root_cfg['HdwSettings']
+            
+            
+            if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
+                radioport = hdw_cfg['radioport']
+            else:
+                radioport = None
+                
+            ri = hardware.RadioInterface(radioport)
+            
             ap = hardware.AudioPlayer()
+            
+            for k, v in hdw_cfg:
+                if hasattr(ap, k):
+                    setattr(ap, k, v)
+            
+            ap.blocksize = hdw_cfg['blocksize']
+            ap.buffersize = hdw_cfg['buffersize']
+            ap.sample_rate = 48000
             
             ap.playback_chans = {'tx_voice':0, 'start_signal':1}
             ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
@@ -1379,9 +1395,20 @@ def progress(prog_type, num_trials, current_trial, err_msg='') -> bool:
     return main.win.frames['TestProgressFrame'].progress(
         prog_type, num_trials, current_trial, err_msg)
     
-def param_modify(cfg, is_simulation):
+
+
+def param_modify(cfg, is_simulation, root_cfg):
+    
     if not len(cfg['audio_files']) or not cfg['audio_files'][0]:
         raise ValueError('Please choose at least one audio file')
+        
+        
+    if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
+            'SimSettings']['channel_rate'] == 'None':
+            
+        root_cfg['SimSettings']['channel_rate'] = None
+        
+    
     
         
 def get_post_notes(error_only=False):
