@@ -29,7 +29,6 @@ class M2eFrame(TestCfgFrame):
             ptt_wait,
             outdir,
             advanced
-            
             )
     
     
@@ -55,7 +54,7 @@ class test(shared.MultiChoice):
 
 from shared import audio_files
             
-from shared import BgNoise, AudioSettings
+from shared import BgNoise
             
 class audio_file(LabeledControl):
     """NOT USED - use audio_files instead"""
@@ -84,7 +83,6 @@ class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
     def get_controls(self):
         return (
             BgNoise,
-            AudioSettings,
             )
 
 
