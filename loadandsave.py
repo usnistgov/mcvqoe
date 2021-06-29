@@ -167,7 +167,7 @@ class Vec1Or2Var:
         
         one = self.one.get()
         if one != '<default>':
-            lst[1] = self.type_(one)
+            lst.append(self.type_(one))
             
         return lst
     
