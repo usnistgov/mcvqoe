@@ -1264,10 +1264,7 @@ def run(root_cfg):
             #TODO: include modifications for sim- and hdwr-settings
             param_modify(cfg, is_sim, root_cfg)
             
-            #TODO: change this when M2E implements multiple audio files
-            if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
-                 my_obj.audio_file = cfg['audio_files'][0]
-            
+                        
             # Check for value errors with instance variables
             my_obj.param_check()
         
