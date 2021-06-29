@@ -944,10 +944,10 @@ class TestProgressFrame(tk.LabelFrame):
                     time_left = round(time_left)
                     time_unit = 'minutes'
                 elif time_left < 60 * 24:
-                    time_left = time_left // 60
+                    time_left = round(time_left // 60)
                     time_unit = 'hours'
                 else:
-                    time_left = time_left // 60 // 24
+                    time_left = round(time_left // 60 // 24)
                     time_unit = 'days'
                 
                 self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
@@ -1229,14 +1229,16 @@ def run(root_cfg):
              
              
              
-            #TODO: change this when M2E implements multiple audio files
-            if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
-                 my_obj.audio_file = cfg['audio_files'][0]
+
     
         try:
             #translate cfg items as necessary
             #TODO: include modifications for sim- and hdwr-settings
             param_modify(cfg, is_sim)
+            
+            #TODO: change this when M2E implements multiple audio files
+            if 'audio_files' in cfg and hasattr(my_obj, 'audio_file'):
+                 my_obj.audio_file = cfg['audio_files'][0]
             
             # Check for value errors with instance variables
             my_obj.param_check()
@@ -1349,7 +1351,8 @@ def progress(*args, **kwargs):
     return main.win.frames['TestProgressFrame'].progress(*args, **kwargs)
     
 def param_modify(cfg, is_simulation):
-    pass
+    if not len(cfg['audio_files']) or not cfg['audio_files'][0]:
+        raise ValueError('Please choose at least one audio file')
     
         
 def get_post_notes(error_only=False):
