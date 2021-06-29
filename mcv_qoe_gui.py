@@ -1261,7 +1261,6 @@ def run(root_cfg):
     
         try:
             #translate cfg items as necessary
-            #TODO: include modifications for sim- and hdwr-settings
             param_modify(cfg, is_sim, root_cfg)
             
                         
@@ -1322,7 +1321,6 @@ def run(root_cfg):
             ap = sim
         
         else:
-            #TODO set blocksize, buffersize, and fs, as well as radioport
             hdw_cfg = root_cfg['HdwSettings']
             
             

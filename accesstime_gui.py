@@ -275,12 +275,8 @@ class Access_fromGui(shared.SignalOverride, adly.Access):
     
     
     def run(self):
-        #TODO: implement recovery
         self.test(recovery=False)
+        #TODO: implement recovery
     
-    
- #TODO:...
-     #convert audio_files into audio_files and audio_path
-
-    
+        
     
