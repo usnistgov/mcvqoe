@@ -479,7 +479,8 @@ class MCVQoEGui(tk.Tk):
         #back to config frame
         self.configure_test()
                
-        
+    
+    @in_thread('GuiThread')
     def set_step(self, step):
         self.step = step
         if step == 0:
@@ -521,6 +522,7 @@ class MCVQoEGui(tk.Tk):
             back_btn = None
             
         elif step == 5:
+            #post_test
             self.show_frame('PostTestGuiFrame')
             next_btn_txt = 'Finish'
             next_btn = self.finish
@@ -1250,31 +1252,28 @@ def run(root_cfg):
                     setattr(my_obj, k, v)
         
         else:
-            # put config into object
-            for k, v in cfg.items():
-                if hasattr(my_obj, k):
-                    setattr(my_obj, k, v)
-             
-             
-             
-
-    
-        try:
-            #translate cfg items as necessary
-            param_modify(cfg, is_sim, root_cfg)
             
-                        
-            # Check for value errors with instance variables
-            my_obj.param_check()
-        
-        except ValueError as e:
-            # in case of incorrect input from user
+            try:
+                #translate cfg items as necessary
+                param_modify(cfg, is_sim, root_cfg)
             
-            tk.messagebox.showerror('Invalid Option', str(e))
+            
+                # put config into object
+                for k, v in cfg.items():
+                    if hasattr(my_obj, k):
+                        setattr(my_obj, k, v)
+             
+                # Check for value errors with instance variables
+                my_obj.param_check()
         
-            # go back to config screen
-            main.win.configure_test()
-            return
+            except ValueError as e:
+                # in case of incorrect input from user
+            
+                tk.messagebox.showerror('Invalid Option', str(e))
+        
+                # go back to config screen
+                main.win.set_step(1)
+                return
         
         
         # PSuD handles this by itself
