@@ -432,6 +432,7 @@ class MCVQoEGui(tk.Tk):
         self.set_step(2)
 
     def run(self):
+        progress('pre', 0, 0)
         
         #set step to 'running'
         self.set_step(3)
@@ -461,10 +462,10 @@ class MCVQoEGui(tk.Tk):
     
     @in_thread('GuiThread', wait=False)
     def post_test(self, error):
-        self.set_step(4)
+        self.set_step(5)
         
         err_class, err_msg, trace = error
-        if err_class:
+        if err_class and err_class not in (KeyboardInterrupt,):
             tk.messagebox.showerror(
                err_class.__name__, err_msg)
         
@@ -482,6 +483,7 @@ class MCVQoEGui(tk.Tk):
     def set_step(self, step):
         self.step = step
         if step == 0:
+            # blank window
             self.selected_test.set('EmptyFrame')
             self.show_frame('EmptyFrame')
             next_btn_txt = 'Next'
@@ -489,24 +491,36 @@ class MCVQoEGui(tk.Tk):
             back_btn = None
         
         elif step == 1:
+            # test configuration
             self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
             next_btn = lambda : self.set_step(2)
             back_btn = lambda : self.set_step(0)
         
         elif step == 2:
+            # test info gui
             self.show_frame('TestInfoGuiFrame')
             next_btn_txt = 'Run Test'
             next_btn = self.run
             back_btn = self.configure_test
         
         elif step == 3:
+            # progress bar
             self.show_frame('TestProgressFrame')
             next_btn_txt = 'Abort Test'
-            next_btn = self.abort
+            next_btn = lambda : self.set_step(4)
             back_btn = None
             
         elif step == 4:
+            # in process of aborting
+            self.show_frame('TestProgressFrame')
+            self.frames['TestProgressFrame'].primary_text.set('Aborting...')
+            
+            next_btn_txt = 'Cancel Abort'
+            next_btn = lambda : self.set_step(3)
+            back_btn = None
+            
+        elif step == 5:
             self.show_frame('PostTestGuiFrame')
             next_btn_txt = 'Finish'
             next_btn = self.finish
@@ -871,7 +885,6 @@ class TestProgressFrame(tk.LabelFrame):
         self.pack_configure(expand=True, fill=tk.BOTH)
     
     def __init__(self, master, btnvars, *args, **kwargs):
-        self._previous_bar_length = None
         self.start_time = time.time()
         self.btnvars = btnvars
         
@@ -885,7 +898,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         # the progress bar
         self.bar = ttk.Progressbar(self, mode='indeterminate')
-        self.bar.pack(fill=tk.X)
+        self.bar.pack(fill=tk.X, padx=10, pady=10)
         
         
         #the text below the bar
@@ -901,7 +914,14 @@ class TestProgressFrame(tk.LabelFrame):
     def progress(self, prog_type, num_trials, current_trial, err_msg='') -> bool:
         
         
+        if main.win.step == 4:
+            # indicate that the test should not continue
+            return False
+        
+        
         messages = {
+            'pre' : ('Loading...', ''),
+            
             'proc' : ('Processing test data...',
                       f'Processing trial {current_trial+1} of {num_trials}'),
             
@@ -914,24 +934,33 @@ class TestProgressFrame(tk.LabelFrame):
             }
         
         
-    
-        if num_trials != self._previous_bar_length:
-            self._previous_bar_length = num_trials
-            self.bar.configure(maximum=num_trials, mode='determinate')
         
-        self.bar.configure(value=current_trial)
         
         self.primary_text.set(messages[prog_type][0])
         
         self.secondary_text.set(messages[prog_type][1])
+                
         
-        
-        if num_trials != 0:
+        if not num_trials:
+            #indeterminate progress bar
+            self.bar.configure(mode='indeterminate', maximum = 100)
+            self.bar.start()
+            self.tertiary_text.set('')
+            
+            
+        else:
+            # show current progress
+            self.bar.stop()
+            self.bar.configure(value=current_trial, maximum = num_trials,
+                               mode='determinate')
+            
+
+            # estimate time remaining
+            
             if current_trial == 0:
                 self.start_time = time.time()
                 self.tertiary_text.set('')
             else:
-                # estimate time remaining
                 time_elapsed = time.time() - self.start_time
                 
                 time_total = time_elapsed * num_trials / current_trial
@@ -952,9 +981,8 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
         
+            
         
-        
-        # indicate that the test should continue
         return True
 
 
@@ -1347,8 +1375,9 @@ def run(root_cfg):
     print('\n\n\n')
     
     
-def progress(*args, **kwargs):
-    return main.win.frames['TestProgressFrame'].progress(*args, **kwargs)
+def progress(prog_type, num_trials, current_trial, err_msg='') -> bool:
+    return main.win.frames['TestProgressFrame'].progress(
+        prog_type, num_trials, current_trial, err_msg)
     
 def param_modify(cfg, is_simulation):
     if not len(cfg['audio_files']) or not cfg['audio_files'][0]:
