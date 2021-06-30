@@ -16,6 +16,7 @@ import json
 import datetime
 import pickle
 import functools
+from os import path
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -186,7 +187,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
         
-         # create test-specific frames
+        # create test-specific frames
         
         self._init_frames()
         
@@ -731,6 +732,11 @@ class TestTypeFrame(tk.Frame):
         ttk.Button(self, textvariable=self.set_btn_txtvar,
                    command=self.settings_btn).pack(fill=tk.X)
         
+        
+        self._test_btn = ttk.Button(self, text='Test Audio',
+                                   command=self.test_audio_btn)
+        self._test_btn.pack(fill=tk.X)
+        
         #auto-update button text based on is_simulation
         is_sim.trace_add('write', self.update_settings_btn)
         
@@ -767,6 +773,17 @@ class TestTypeFrame(tk.Frame):
         else:
             shared.HdwSettings(
                 self.main_, self.main_.hardware_settings)
+            
+    def test_audio_btn(self):
+        self._test_btn.state(['disabled'])
+        test_audio(self.main_.get_cnf(),
+            on_finish=self._test_audio_on_finish)
+    
+    @in_thread('GuiThread', wait=False)
+    def _test_audio_on_finish(self):
+        self._test_btn.state(['!disabled'])
+        
+        
         
 
 class LogoFrame(tk.Canvas):
@@ -1221,6 +1238,43 @@ class Main():
         
         
 #----------------------- Running the tests -----------------------------------
+    
+
+
+
+@in_thread('MainThread', wait=False)
+def test_audio(root_cfg, on_finish=None):
+    
+    try:
+        radio_interface, ap = _get_interfaces(root_cfg)
+    
+        sel_tst = root_cfg['selected_test']
+    
+        cfg = root_cfg[sel_tst]
+    
+        if 'audio_files' in cfg and path.isfile(fp := cfg['audio_files'][0]):
+            pass
+        else:
+            fp = None
+    
+    
+        with radio_interface as ri:
+        
+            if 'ptt_wait' in cfg:
+                hardware.PTT_play.single_play(ri, ap, fp,
+                    playback=root_cfg['is_simulation'],
+                    ptt_wait=cfg['ptt_wait'])
+            else:
+                hardware.PTT_play.single_play(ri, ap, fp,
+                    playback=root_cfg['is_simulation'])
+                
+                
+    except Exception as error:
+        tk.messagebox.showerror(error.__class__.__name__, str(error))
+    
+    if on_finish:
+        on_finish()
+
 
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
@@ -1274,9 +1328,7 @@ def run(root_cfg):
             
             
                 # put config into object
-                for k, v in cfg.items():
-                    if hasattr(my_obj, k):
-                        setattr(my_obj, k, v)
+                _set_values_from_cfg(my_obj, cfg)
              
                 # Check for value errors with instance variables
                 my_obj.param_check()
@@ -1322,41 +1374,7 @@ def run(root_cfg):
         
         
         
-        # in case of simulation test
-        if is_sim:
-            
-            sim = QoEsim()
-            
-            for k, v in root_cfg['SimSettings'].items():
-                if hasattr(sim, k):
-                    setattr(sim, k, v)
-            
-            ri = sim
-            ap = sim
-        
-        else:
-            hdw_cfg = root_cfg['HdwSettings']
-            
-            
-            if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
-                radioport = hdw_cfg['radioport']
-            else:
-                radioport = None
-                
-            ri = hardware.RadioInterface(radioport)
-            
-            ap = hardware.AudioPlayer()
-            
-            for k, v in hdw_cfg:
-                if hasattr(ap, k):
-                    setattr(ap, k, v)
-            
-            ap.blocksize = hdw_cfg['blocksize']
-            ap.buffersize = hdw_cfg['buffersize']
-            ap.sample_rate = 48000
-            
-            ap.playback_chans = {'tx_voice':0, 'start_signal':1}
-            ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+        ri, ap = _get_interfaces(root_cfg)
         
     
         my_obj.audio_interface = ap
@@ -1446,16 +1464,51 @@ def get_post_notes(error_only=False):
         nts = {}
     return nts
     
+
     
 
 
+def _get_interfaces(root_cfg):
+    # in case of simulation test
+        if root_cfg['is_simulation']:
+            
+            sim = QoEsim()
+            
+            _set_values_from_cfg(sim, root_cfg['SimSettings'])
+                
+            
+            ri = sim
+            ap = sim
+        
+        else:
+            hdw_cfg = root_cfg['HdwSettings']
+            
+            
+            if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
+                radioport = hdw_cfg['radioport']
+            else:
+                radioport = None
+                
+            ri = hardware.RadioInterface(radioport)
+            
+            ap = hardware.AudioPlayer()
+            
+            _set_values_from_cfg(ap, hdw_cfg)
+            
+            
+            ap.blocksize = hdw_cfg['blocksize']
+            ap.buffersize = hdw_cfg['buffersize']
+            ap.sample_rate = 48000
+            
+            ap.playback_chans = {'tx_voice':0, 'start_signal':1}
+            ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+            
+        return (ri, ap)
 
-
-
-
-
-
-
+def _set_values_from_cfg(my_obj, cfg):
+    for k, v in cfg.items():
+        if hasattr(my_obj, k):
+            setattr(my_obj, k, v)
 
 
 #--------------------------------- For the plot ------------------------------
