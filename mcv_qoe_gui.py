@@ -17,6 +17,10 @@ import datetime
 import pickle
 import functools
 from os import path
+import gc
+
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -281,6 +285,10 @@ class MCVQoEGui(tk.Tk):
         if main.is_running and self.abort():
             # abort was canceled by user
             return
+        
+        # destroy plots to prevent errors
+        self.frames['PostProcessingFrame'].reset()
+        
         main.stop()
         #waits for test to close gracefully, then destroys window
         self.after(50, self._wait_to_destroy)
@@ -290,6 +298,10 @@ class MCVQoEGui(tk.Tk):
         if main.is_running:
             self.after(50, self._wait_to_destroy)
         else:
+            #destroy any open plots (they otherwise raise errors)
+            self.frames['PostProcessingFrame'].reset()
+            gc.collect(2)
+            
             self.destroy()
             
     def destroy(self, *args, **kwargs):
@@ -1035,6 +1047,7 @@ class PostProcessingFrame(ttk.Frame):
         ttk.Label(self, text='Test Complete').pack(padx=10, pady=10, fill=tk.X)
         
         self.elements = []
+        self.canvasses = []
     
     @in_thread('GuiThread', wait=False)
     def add_element(self, element):
@@ -1051,6 +1064,7 @@ class PostProcessingFrame(ttk.Frame):
             canvas = FigureCanvasTkAgg(element, master=self)
             widget = canvas.get_tk_widget()
             canvas.draw()
+            self.canvasses.append(widget)
             
         elif isinstance(element, str):
             widget = ttk.Label(self, text=element)
@@ -1059,11 +1073,16 @@ class PostProcessingFrame(ttk.Frame):
         
         self.elements.append(widget)
     
-    @in_thread('GuiThread', wait=False)
+    @in_thread('GuiThread', wait=True)
     def reset(self):
+        
+        for canvas in self.canvasses:
+            canvas.delete('all')
+        
         for elt in self.elements:
             elt.destroy()
-            
+        
+        self.canvasses = []
         self.elements = []
         
 
