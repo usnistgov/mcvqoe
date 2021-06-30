@@ -45,7 +45,7 @@ from psud_gui import PSuDFrame
 TITLE_ = 'MCV QoE'
 
 
-WIN_SIZE = (900, 800)
+WIN_SIZE = (900, 750)
 
     
     
@@ -162,10 +162,13 @@ class MCVQoEGui(tk.Tk):
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
         
-        
         # initiate row of buttons on bottom of window
         BottomButtons(master=self).pack(side=tk.BOTTOM, fill=tk.X,
                                         padx=10, pady=10)
+        
+        # the frame containing the meat of the software
+        self.RightFrame = shared.ScrollableFrame(self)
+        
 
         # handling changing of window size
         self.bind('<Configure>', self.LeftFrame.on_change_size)
@@ -179,9 +182,12 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-Shift-S>', self.save_as)
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
- 
+        self.bind('<MouseWheel>', self.RightFrame.scroll)
+        self.bind('<Button-5>', self.RightFrame.scroll)
+        self.bind('<Button-4>', self.RightFrame.scroll)
         
          # create test-specific frames
+        
         self._init_frames()
         
         # sets the current frame to be blank
@@ -209,15 +215,19 @@ class MCVQoEGui(tk.Tk):
             
     #TODO: add rest of frames
         ]
-        
-        
+                
         self.frames = {}
         for F in frame_types:
             
             btnvars = loadandsave.TkVarDict()
-
+            
+            if F in (AccssDFrame,):
+                parent=self.RightFrame
+            else:
+                parent=self
+            
             # initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=self, btnvars=btnvars)
+            self.frames[F.__name__] = F(master=parent, btnvars=btnvars)
 
             # when user changes a control
             btnvars.on_change = self.on_change
@@ -248,7 +258,12 @@ class MCVQoEGui(tk.Tk):
             self.currentframe = self.frames[framename]
         finally:
             self.currentframe.pack(side=tk.RIGHT,
-                                   fill=tk.BOTH, padx=10, pady=10)
+                                   fill=tk.BOTH, padx=10, pady=10, expand=True)
+            
+        if self.currentframe.master is self.RightFrame:
+            self.RightFrame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        else:
+            self.RightFrame.pack_forget()
 
     def is_empty(self):
         return self.currentframe == self.frames['EmptyFrame']
@@ -1432,6 +1447,18 @@ def get_post_notes(error_only=False):
     return nts
     
     
+
+
+
+
+
+
+
+
+
+
+
+#--------------------------------- For the plot ------------------------------
 
         
 
