@@ -20,7 +20,51 @@ PADY = 10
 FONT_SIZE = 10
 
 
-
+class ScrollableFrame(ttk.Frame):
+    
+    def __init__(self, master, **kwargs):
+        self.container = ttk.Frame(master)
+        self.canvas = tk.Canvas(self.container)
+        scrollbar = ttk.Scrollbar(
+            self.container, orient='vertical', command=self.canvas.yview)
+        
+        super().__init__(self.canvas, **kwargs)
+        
+        self.bind(
+                "<Configure>",
+                self._on_resize
+                )
+        self.canvas.create_window((0, 0), window=self, anchor="nw")
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        
+    def _on_resize(self, e):
+        self.canvas.configure(
+                    scrollregion=self.canvas.bbox("all")
+                    )
+    
+    def pack(self, *args, **kwargs):
+        self.container.pack(*args, **kwargs)
+    
+    def grid(self, *args, **kwargs):
+        self.container.grid(*args, **kwargs)
+    def place(self, *args, **kwargs):
+        self.container.place(*args, **kwargs)
+    def pack_forget(self):
+        self.container.pack_forget()
+    def grid_forget(self):
+        self.container.grid_forget()
+        
+    def scroll(self, event):
+        
+        if (hasattr(event, 'num') and event.num == 5) or (hasattr(
+                event, 'delta') and event.delta < 0):
+            delta = -1
+        else:
+            delta = 1
+        self.canvas.yview_scroll(-delta, 'units')
 
 
 
