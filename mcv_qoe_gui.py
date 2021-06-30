@@ -17,6 +17,8 @@ import datetime
 import pickle
 import functools
 from os import path
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -209,12 +211,12 @@ class MCVQoEGui(tk.Tk):
             TestInfoGuiFrame,
             PostTestGuiFrame,
             TestProgressFrame,
+            PostProcessingFrame,
             
             M2eFrame,
             AccssDFrame,
             PSuDFrame,
             
-    #TODO: add rest of frames
         ]
                 
         self.frames = {}
@@ -222,7 +224,7 @@ class MCVQoEGui(tk.Tk):
             
             btnvars = loadandsave.TkVarDict()
             
-            if F in (AccssDFrame,):
+            if F in (AccssDFrame, PostProcessingFrame):
                 parent=self.RightFrame
             else:
                 parent=self
@@ -485,15 +487,13 @@ class MCVQoEGui(tk.Tk):
             tk.messagebox.showerror(
                err_class.__name__, err_msg)
         
-    def finish(self):
+    def submit_post_test(self):
         
         txt_box = self.frames['PostTestGuiFrame'].post_test
         
         # retrieve post_notes
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
-                
-        #back to config frame
-        self.configure_test()
+        
                
     
     @in_thread('GuiThread')
@@ -540,8 +540,15 @@ class MCVQoEGui(tk.Tk):
         elif step == 5:
             #post_test
             self.show_frame('PostTestGuiFrame')
+            next_btn_txt = 'Submit'
+            next_btn = self.submit_post_test
+            back_btn = None
+            
+        
+        elif step == 6:
+            self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
-            next_btn = self.finish
+            next_btn = lambda : self.set_step(0)
             back_btn = None
             
         
@@ -1019,8 +1026,46 @@ class TestProgressFrame(tk.LabelFrame):
         
         return True
 
+class PostProcessingFrame(ttk.Frame):
+    
+    def __init__(self, master, btnvars, **kwargs):
+        self.btnvars = btnvars
+        super().__init__(master, **kwargs)
+        
+        ttk.Label(self, text='Test Complete').pack(padx=10, pady=10, fill=tk.X)
+        
+        self.elements = []
+    
+    @in_thread('GuiThread', wait=False)
+    def add_element(self, element):
+        """Adds an element to the post-processing frame
+        
+        Parameters
+        ----------
+        element : UNION[str, Figure]
+            A string or matplotlib figure to be added into the window
 
+        """
+        
+        if isinstance(element, Figure):
+            canvas = FigureCanvasTkAgg(element, master=self)
+            widget = canvas.get_tk_widget()
+            canvas.draw()
+            
+        elif isinstance(element, str):
+            widget = ttk.Label(self, text=element)
 
+        widget.pack(fill=tk.X, expand=True, padx=10, pady=10)
+        
+        self.elements.append(widget)
+    
+    @in_thread('GuiThread', wait=False)
+    def reset(self):
+        for elt in self.elements:
+            elt.destroy()
+            
+        self.elements = []
+        
 
 
 
@@ -1305,7 +1350,11 @@ def run(root_cfg):
         
         # set progress update callback
         my_obj.progress_update = progress
-        
+        # set postprocessing info callback
+        my_obj.gui_show_element = main.win.frames[
+                                'PostProcessingFrame'].add_element
+        # remove post-processing info from frame
+        main.win.frames['PostProcessingFrame'].reset()
         
         # if recovery
         if 'data_file' in cfg and cfg['data_file'] != "":
@@ -1404,6 +1453,9 @@ def run(root_cfg):
         traceback.print_exc()
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
+        
+        #show postprocessing frame
+        main.win.set_step(6)
         return
 
     
@@ -1412,6 +1464,11 @@ def run(root_cfg):
         # Gather posttest notes and write to log
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
+        
+        
+        
+    #show post-processing frame
+    main.win.set_step(6)
     
     
     # leave gap in console for next test
@@ -1511,7 +1568,13 @@ def _set_values_from_cfg(my_obj, cfg):
             setattr(my_obj, k, v)
 
 
-#--------------------------------- For the plot ------------------------------
+
+
+
+
+
+
+
 
         
 
