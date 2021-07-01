@@ -511,6 +511,9 @@ class MCVQoEGui(tk.Tk):
     @in_thread('GuiThread')
     def set_step(self, step):
         self.step = step
+        
+        back_btn_txt = 'Back'
+        
         if step == 0:
             # blank window
             self.selected_test.set('EmptyFrame')
@@ -561,14 +564,15 @@ class MCVQoEGui(tk.Tk):
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
             next_btn = lambda : self.set_step(0)
-            back_btn = None
+            back_btn = lambda : self.set_step(2)
+            back_btn_txt = 'Run Again'
             
         
         #changes function and text of the next button
         self.set_next_btn(next_btn_txt, next_btn)
         
         #changes back button
-        self.set_back_btn(back_btn)
+        self.set_back_btn(back_btn_txt, back_btn)
     
     @in_thread('GuiThread', wait=False)
     def clear_notes(self):
@@ -589,6 +593,7 @@ class BottomButtons(tk.Frame):
         self.master = master
         self.do_run = True
         self.run_textvar = tk.StringVar()
+        self.back_textvar = tk.StringVar()
         
         self.master.set_next_btn = self.set_next_btn
         self.master.set_back_btn = self.set_back_btn
@@ -601,7 +606,7 @@ class BottomButtons(tk.Frame):
         
         
         # Back Button
-        self._bck_btn_wgt = ttk.Button(self, text='Back',
+        self._bck_btn_wgt = ttk.Button(self, textvariable=self.back_textvar,
                     command=self._back_btn)
         self._bck_btn_wgt.pack(side=tk.RIGHT)
         
@@ -618,7 +623,8 @@ class BottomButtons(tk.Frame):
                    command=master.save).pack(
             side=tk.RIGHT)
     
-    def set_back_btn(self, callback):
+    def set_back_btn(self, text, callback):
+        self.back_textvar.set(text)
         self._back_callback = callback
         
         if callback:
@@ -1045,6 +1051,7 @@ class PostProcessingFrame(ttk.Frame):
         super().__init__(master, **kwargs)
         
         ttk.Label(self, text='Test Complete').pack(padx=10, pady=10, fill=tk.X)
+        
         
         self.elements = []
         self.canvasses = []
