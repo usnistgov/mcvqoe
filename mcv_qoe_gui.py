@@ -16,7 +16,7 @@ import json
 import datetime
 import pickle
 import functools
-from os import path
+from os import path, listdir
 import gc
 
 import matplotlib
@@ -1322,9 +1322,25 @@ def test_audio(root_cfg, on_finish=None):
         sel_tst = root_cfg['selected_test']
     
         cfg = root_cfg[sel_tst]
-    
-        if 'audio_files' in cfg and path.isfile(fp := cfg['audio_files'][0]):
-            pass
+        
+        
+        # get selected audio file
+        if 'audio_files' in cfg:
+            fp = cfg['audio_files'][0]
+            
+            
+            if path.isdir(fp):
+                files = [f for f in listdir(fp) if path.isfile(path.join(fp, f))]
+                
+                for f in files:
+                    void, ext = path.splitext(f)
+                    if ext.lower() == '.wav':
+                        fp = path.join(fp, f)
+                        break
+                    
+            if not path.isfile(fp):
+                raise ValueError('Audio File not found')
+            
         else:
             fp = None
     
