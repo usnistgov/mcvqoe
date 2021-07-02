@@ -36,6 +36,8 @@ class TkVarDict(dict):
                 var_type = tk.DoubleVar
             elif type(value) == int:
                 var_type = tk.IntVar
+            elif type(value) == list:
+                var_type = CommaSepList
             elif value is None:
                 return
             else:

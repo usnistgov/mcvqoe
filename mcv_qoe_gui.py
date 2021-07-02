@@ -51,8 +51,133 @@ from psud_gui import PSuDFrame
 # basic config
 TITLE_ = 'MCV QoE'
 
-
 WIN_SIZE = (900, 750)
+
+
+control_list = {
+    'EmptyFrame': [],
+    
+    'TestInfoGuiFrame': [
+            'Test Type',
+            'Tx Device',
+            'Rx Device',
+            'System',
+            'Test Loc'
+            ],
+    
+    'PostTestGuiFrame': [],
+    
+    'TestProgressFrame': [],
+    
+    'PostProcessingFrame': [],
+    
+    'M2eFrame': [
+        'audio_files',
+        'bgnoise_file',
+        'bgnoise_volume',
+        'outdir',
+        'ptt_wait',
+        'test',
+        'trials'
+    ],
+
+    'AccssDFrame': [
+        'audio_files',
+        'audio_path',
+        'auto_stop',
+        'bgnoise_file',
+        'bgnoise_volume',
+        'data_file',
+        'outdir',
+        'ptt_gap',
+        'ptt_rep',
+        'ptt_step',
+        's_thresh',
+        's_tries',
+        'stop_rep',
+        'trials'
+    ],
+    
+    'PSuDFrame' : [
+        'audio_files',
+        'audio_path',
+        'trials',
+        'outdir',
+        'ptt_wait',
+        'ptt_gap',
+        'm2e_min_corr',
+        'intell_est',
+    ],
+        
+    'SimSettings': [
+        'overplay',
+        'channel_tech',
+        'channel_rate',
+        'm2e_latency',
+        'access_delay',
+        'rec_snr',
+        'PTT_sig_freq',
+        'PTT_sig_aplitude',
+    ],
+    
+    'HdwSettings' : [
+        
+        'overplay',
+        'radioport',
+        'dev_dly',
+        'blocksize',
+        'buffersize',
+        ]
+}
+
+initial_measure_objects = {
+    'M2eFrame': m2e_gui.m2e.measure(),
+    'AccssDFrame': accesstime_gui.adly.Access(),
+    'PSuDFrame' : psud_gui.psud.measure(),
+    'SimSettings': QoEsim(),
+    'HdwSettings': shared._HdwPrototype()
+    }
+
+
+# load default values from objects
+DEFAULTS = {}
+for name_, key_group in control_list.items():
+    
+    DEFAULTS[name_] = {}
+    
+    if name_ in initial_measure_objects:
+        obj = initial_measure_objects[name_]
+        
+        for key in key_group:
+            if hasattr(obj, key):
+                DEFAULTS[name_][key] = getattr(obj, key)
+
+#values that require more than one control
+DEFAULTS['AccssDFrame']['_ptt_delay_min'] = initial_measure_objects[
+    'AccssDFrame'].ptt_delay[0]
+try:
+    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = str(initial_measure_objects[
+        'AccssDFrame'].ptt_delay[1])
+except IndexError:
+    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = '<default>'
+    
+for k in ('AccssDFrame','PSuDFrame'):
+    DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
+    try:
+        DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
+            k].time_expand[1])
+    except IndexError:
+        DEFAULTS[k]['_time_expand_f'] = '<default>'
+
+#the following should be a string, not any other type
+DEFAULTS['AccssDFrame']['trials'] = str(DEFAULTS['AccssDFrame']['trials'])
+
+DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
+
+#free initial objects
+del initial_measure_objects
+del obj
+
 
     
     
@@ -226,7 +351,7 @@ class MCVQoEGui(tk.Tk):
         self.frames = {}
         for F in frame_types:
             
-            btnvars = loadandsave.TkVarDict()
+            btnvars = loadandsave.TkVarDict(**DEFAULTS[F.__name__])
             
             if F in (AccssDFrame, PostProcessingFrame):
                 parent=self.RightFrame
@@ -239,9 +364,11 @@ class MCVQoEGui(tk.Tk):
             # when user changes a control
             btnvars.on_change = self.on_change
         
+        self.simulation_settings = loadandsave.TkVarDict(
+            **DEFAULTS['SimSettings'])
         
-        self.simulation_settings = loadandsave.TkVarDict()
-        self.hardware_settings = loadandsave.TkVarDict()
+        self.hardware_settings = loadandsave.TkVarDict(
+            **DEFAULTS['HdwSettings'])
         
         
         
@@ -313,18 +440,12 @@ class MCVQoEGui(tk.Tk):
             # cancelled
             return
         
-        current = self.currentframe.__class__.__name__
+        for fname, f in self.frames.items():
+            f.btnvars.set(DEFAULTS[fname])
+            
         
-        #destroy all frames
-        for frame_name, frame in self.frames.items():
-            frame.destroy()
+        self.is_simulation.set(False)
         
-        # reconstruct frames as default
-        self._init_frames()
-        
-        #keep the current frame displayed
-        self.show_frame(current)
-
         # user shouldn't be prompted to save the default config
         self.set_saved_state(True)
 
@@ -1317,11 +1438,19 @@ class Main():
 def test_audio(root_cfg, on_finish=None):
     
     try:
-        radio_interface, ap = _get_interfaces(root_cfg)
+        
     
         sel_tst = root_cfg['selected_test']
     
         cfg = root_cfg[sel_tst]
+        
+        if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
+            'SimSettings']['channel_rate'] == 'None':
+            root_cfg['SimSettings']['channel_rate'] = None
+        
+        
+        
+        radio_interface, ap = _get_interfaces(root_cfg)
         
         
         # get selected audio file
@@ -1533,9 +1662,22 @@ def param_modify(cfg, is_simulation, root_cfg):
             'SimSettings']['channel_rate'] == 'None':
             
         root_cfg['SimSettings']['channel_rate'] = None
+    
+    
+    
+    if '_ptt_delay_min' in cfg:
+        cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
+        try:
+            cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
+        except ValueError:pass
         
-    
-    
+        
+    if '_time_expand_i' in cfg:
+        cfg['time_expand'] = [cfg['_time_expand_i']]
+        try:
+            cfg['time_expand'].append(float(cfg['_time_expand_f']))
+        except ValueError:pass
+        
         
 def get_post_notes(error_only=False):
     

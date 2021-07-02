@@ -23,7 +23,6 @@ import loadandsave
 class AccssDFrame(TestCfgFrame):
     text = 'Access Delay Test'
     
-    default_test_obj = adly.Access()
     
     def get_controls(self):
         return (
@@ -108,27 +107,43 @@ class _limited_trials(LabeledControl):
     MCtrl = ttk.Checkbutton
     do_font_scaling = False
     variable_arg = 'variable'
-    no_default_value = True
     
-    def __init__(self, master, row, default, *args, **kwargs):
-        self.MCtrlkwargs = {'text': 'Enable Radio Checks',
-                            'command': self.on_button}
+    def __init__(self, master, row, *args, **kwargs):
+        self.MCtrlkwargs = {'text': 'Enable Radio Checks',}
+                
+        self.btnvar = tk.BooleanVar()
         
-        default = master.default_test_obj.trials != float('inf')
+        super().__init__(master, row, *args, **kwargs)
         
-        super().__init__(master, row, default, *args, **kwargs)
+        self.btnvar.trace_add('write', self.on_button)
+        self.master.btnvars['trials'].trace_add('write', self.update)
+        self.update()
         
         
-        self.previous = '100'
-        
-    def on_button(self):
+    def on_button(self, *args, **kwargs):
         if self.btnvar.get():
             val = self.previous
         else:
-            self.previous = self.master.btnvars['trials'].get()
-            val = float('inf')
+            val = 'inf'
             
         self.master.btnvars['trials'].set(val)
+    
+    def update(self, *args, **kwargs):
+        
+        v = self.master.btnvars['trials'].get()
+        
+        other = v != 'inf'
+        this = self.btnvar.get()
+        
+        if other:
+            self.previous = v
+            
+        if other != this:
+            self.btnvar.set(other)
+        
+        
+        
+    
         
 class trials(shared.trials):
     """Number of trials to run before pausing to perform a radio check."""
@@ -160,7 +175,6 @@ class stop_rep(LabeledControl):
 class ptt_delay(SubCfgFrame):
     text = 'PTT Delay (sec)'
     
-    no_default_value = False
     variable_type = loadandsave.Vec1Or2Var
     
     def get_controls(self):
@@ -175,14 +189,6 @@ class _ptt_delay_min(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
-    no_default_value = True
-    
-    def __init__(self, master, row, default):
-        super().__init__(master, row, default)
-        
-        #it's part of a 2-part value, so this gets the proper tcl variable
-        self.m_ctrl.configure(
-            textvariable=master.btnvars['ptt_delay'].zero)
     
 class _ptt_delay_max(LabeledControl):
     """The largest ptt_delay. By default, this will be set to the end
@@ -192,14 +198,6 @@ class _ptt_delay_max(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
     
-    no_default_value = True
-    
-    def __init__(self, master, row, default):
-        super().__init__(master, row, default)
-        
-        # it's part of a 2-part value
-        self.m_ctrl.configure(
-            textvariable=master.btnvars['ptt_delay'].one)
 
 class ptt_step(LabeledControl):
     """Time difference in seconds between successive ptt_delays."""
@@ -273,6 +271,9 @@ class advanced(shared.advanced):
 
 class Access_fromGui(shared.SignalOverride, adly.Access):
     
+    def param_check(self):
+        # otherwise, trials would be a string
+        self.trials = adly.int_or_inf(self.trials)
     
     def run(self):
         self.test(recovery=False)

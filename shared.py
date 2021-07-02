@@ -93,14 +93,10 @@ class TestCfgFrame(ttk.LabelFrame):
     text : str
         The caption of the frame
     
-    default_test_obj : Any
-        The object whose attributes determine the default values in the controls
-    
     """
     
     text = ''
     
-    default_test_obj = None # set by subclasses
        
     
     def __init__(self, btnvars, *args, **kwargs):
@@ -115,9 +111,7 @@ class TestCfgFrame(ttk.LabelFrame):
         
         #initializes controls
         for row in range(len(controls)):
-            default = extract_defaults(controls[row], self.default_test_obj)
-            
-            controls[row](master=self, row=row, default=default)
+            controls[row](master=self, row=row)
         
         
         
@@ -132,17 +126,11 @@ class SubCfgFrame(TestCfgFrame):
     
     """
     text = ''
-    no_default_value = True
-    variable_type = None
     
-    def __init__(self, master, row, default, *args, **kwargs):
-        
-        if not self.no_default_value:
-            self.btnvar = master.btnvars.add_entry(self.__class__.__name__,
-                    value=default, var_type = self.variable_type)
+    def __init__(self, master, row, *args, **kwargs):
         
         
-        self.default_test_obj = master.default_test_obj
+    
         super().__init__(master.btnvars, master, *args, **kwargs)
         
         
@@ -158,12 +146,8 @@ class AdvancedConfigGUI(tk.Toplevel):
     """
     text = ''
     
-    default_test_obj = None
-    
     def __init__(self, master, btnvars, *args, **kwargs):
         
-        if self.default_test_obj is None:
-            self.default_test_obj = master.default_test_obj
         
         super().__init__(master, *args, **kwargs)
         
@@ -182,8 +166,7 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         #initializes controls
         for row in range(len(controls)):
-            controls[row](master=self, row=row,
-                default=extract_defaults(controls[row], self.default_test_obj))
+            controls[row](master=self, row=row)
             
         
         
@@ -213,14 +196,11 @@ class LabeledControl():
     row : int
         the row that the controls should be gridded in
         
-    default : Any
-        the default value that will start inside the control
     
     """
     text = ''
     
     do_font_scaling = True
-    no_default_value = False
     
     MCtrl = ttk.Entry
     MCtrlargs = []
@@ -235,14 +215,15 @@ class LabeledControl():
     padx = PADX
     pady = PADY
     
-    variable_type = None #if None, set automatically based on default value
+    no_value = False # if it has no associated instance variable in measure
+    
     
     def setup(self):
         pass
     
     
     
-    def __init__(self, master, row, default):
+    def __init__(self, master, row):
         self.master = master
         
         
@@ -257,10 +238,9 @@ class LabeledControl():
         
         
         
-        # get tkinter variable 
-        
-        self.btnvar = master.btnvars.add_entry(self.__class__.__name__,
-                    value=default, var_type = self.variable_type)
+        # get tcl variable 
+        if self.__class__.__name__ in master.btnvars:
+            self.btnvar = master.btnvars[self.__class__.__name__]
         
             
         
@@ -406,8 +386,8 @@ class LabeledSlider(LabeledControl):
     do_font_scaling = False    
     
     
-    def __init__(self, master, row, default, *args, **kwargs):
-        super().__init__(master, row, default, *args, **kwargs)
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
         self.txtvar = self._percentage()
         self.on_change()
         
@@ -511,7 +491,6 @@ class audio_files(LabeledControl):
         'text' : 'Browse...'
         }
     
-    variable_type = loadandsave.CommaSepList 
     
     def on_button(self):
         fp = fdl.askopenfilenames(parent=self.master,
@@ -576,13 +555,11 @@ class ptt_gap(LabeledControl):
 class time_expand(SubCfgFrame):
     text = 'Time Expand'
     
-    no_default_value = False
     
-    variable_type= loadandsave.Vec1Or2Var
     
-    def __init__(self, master, row, default, **kwargs):
+    def __init__(self, master, row, **kwargs):
         
-        super().__init__(master, row, default, **kwargs)
+        super().__init__(master, row, **kwargs)
     
     def get_controls(self):
         
@@ -599,14 +576,7 @@ class _time_expand_i(LabeledControl):
     text = 'Expand Before:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-    no_default_value = True
     
-    def __init__(self, master, row, default, *args, **kwargs):
-        super().__init__(master, row, default, *args, **kwargs)
-        
-        #it's part of a 2-part value, so this gets the proper tcl variable
-        self.m_ctrl.configure(
-            textvariable=master.btnvars['time_expand'].zero)
     
 class _time_expand_f(LabeledControl):
     """Length of time, in seconds, of extra
@@ -616,14 +586,7 @@ class _time_expand_f(LabeledControl):
     text = 'Expand After:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
-    no_default_value = True
 
-    def __init__(self, master, row, default, *args, **kwargs):
-        super().__init__(master, row, default, *args, **kwargs)
-        
-        #it's part of a 2-part value, so this gets the proper tcl variable
-        self.m_ctrl.configure(
-            textvariable=master.btnvars['time_expand'].one)
     
     
 class bgnoise_file(LabeledControl):
@@ -675,7 +638,8 @@ class advanced(LabeledControl):
     RCtrl = ttk.Button       
     RCtrlkwargs = {'text': 'Advanced...'}
     toplevel = None
-    no_default_value = True
+    
+    no_value = True
     
     def on_button(self):
         self.toplevel(master=self.master, btnvars=self.master.btnvars)
@@ -688,7 +652,6 @@ class _advanced_submit(LabeledControl):
     MCtrl = None
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'OK'}
-    no_default_value = True
     
     def on_button(self):
         self.master.destroy()
@@ -725,13 +688,16 @@ class BgNoise(SubCfgFrame):
 #------------------------ Global settings for hdw/simulation------------------
 
 class _HdwPrototype(AudioPlayer):
+    """Conveniently contains radioport so that all hardware settings
+    come from the same place
+    
+    """
     radioport = ''
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
     
-    default_test_obj = _HdwPrototype()
     
     def get_controls(self):
         return (
@@ -789,7 +755,6 @@ class dev_dly(LabeledControl):
 #SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
     
-    default_test_obj = QoEsim()
     
     text = 'Simulation Settings'
     
@@ -812,13 +777,13 @@ class channel_tech(LabeledControl):
     """Technology to use for the simulated channel. Channel technologies are
     handled by plugins. The only tech that is available by default is 'clean'."""
 
-    def __init__(self, master, row, default, *args, **kwargs):
+    def __init__(self, master, row, *args, **kwargs):
         
         self.text = 'Channel Tech:'
         self.MCtrl = ttk.Menubutton
         self.do_font_scaling = False
         
-        super().__init__(master, row, default, *args, **kwargs)
+        super().__init__(master, row, *args, **kwargs)
         
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         
@@ -836,16 +801,15 @@ class channel_rate(LabeledControl):
     """Rate to simulate channel at. Each channel tech handles this differently.
     When set to None the default rate is used."""
     
-    variable_type = tk.StringVar
     
-    def __init__(self, master, row, default, *args, **kwargs):
+    def __init__(self, master, row, *args, **kwargs):
         
         self.text = 'Channel Rate:'
         self.MCtrl = ttk.Menubutton
         
         self.do_font_scaling = False
         
-        super().__init__(master, row, default, *args, **kwargs)
+        super().__init__(master, row, *args, **kwargs)
         
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
@@ -933,15 +897,6 @@ class PTT_sig_aplitude(LabeledControl):
 
 # ---------------------------------- Misc ------------------------------------
 
-
-def extract_defaults(control, default_test_obj):
-    # get default value
-    if control.no_default_value:
-        default = None
-    else:
-        default = getattr(
-                        default_test_obj, control.__name__)
-    return default
 
 
 class SignalOverride():
