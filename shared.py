@@ -110,8 +110,13 @@ class TestCfgFrame(ttk.LabelFrame):
         controls = self.get_controls()
         
         #initializes controls
+        self.controls = {}
         for row in range(len(controls)):
-            controls[row](master=self, row=row)
+            c = controls[row](master=self, row=row)
+            
+            self.controls[c.__class__.__name__] = c
+            
+            
         
         
         
@@ -136,6 +141,8 @@ class SubCfgFrame(TestCfgFrame):
         
         self.grid(column=0, row=row, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
+        
+        master.controls.update(self.controls)
 
 
 
@@ -166,7 +173,9 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         #initializes controls
         for row in range(len(controls)):
-            controls[row](master=self, row=row)
+            c = controls[row](master=self, row=row)
+            
+            master.controls[c.__class__.__name__] = c
             
         
         
@@ -358,12 +367,12 @@ class HelpIcon(ttk.Button):
 
 class ToolTip(tk.Toplevel):
     
-    def __init__(self, master, text):
+    def __init__(self, master, text, style='McvToolTip.TLabel'):
         super().__init__(master)
         lf = ttk.Frame(self, style='McvToolTip.TFrame')
         lf.pack()
         
-        ttk.Label(lf, text=text, style='McvToolTip.TLabel').pack(
+        ttk.Label(lf, text=text, style=style).pack(
             padx=PADX, pady=PADY)
         
         #removes window title-bar, taskbar icon, etc
@@ -905,6 +914,19 @@ class SignalOverride():
         #override signal's ability to close the application
         
         raise Abort_by_User()
+        
+        
+class InvalidParameter(ValueError):
+    """Raised when a user fails to input a required parameter.
+    """
+    
+    def __init__(self, parameter, param_loc=None, message=None, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        
+        self.param_loc = param_loc
+        self.parameter = parameter
+        self.message = message
     
 class Abort_by_User(BaseException):
     """Raised when user presses 'Abort test'

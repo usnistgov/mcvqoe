@@ -23,6 +23,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 
 from mcvqoe import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -38,7 +39,7 @@ from tkinter import ttk
 import tkinter as tk
 
 import shared
-from shared import Abort_by_User
+from shared import Abort_by_User, InvalidParameter
 import loadandsave
 import accesstime_gui
 from accesstime_gui import AccssDFrame
@@ -170,7 +171,7 @@ for k in ('AccssDFrame','PSuDFrame'):
         DEFAULTS[k]['_time_expand_f'] = '<default>'
 
 #the following should be a string, not any other type
-DEFAULTS['AccssDFrame']['trials'] = str(DEFAULTS['AccssDFrame']['trials'])
+DEFAULTS['AccssDFrame']['trials'] = str(int(DEFAULTS['AccssDFrame']['trials']))
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
 
@@ -327,6 +328,8 @@ class MCVQoEGui(tk.Tk):
         self.currentframe.pack()
         
         # instance vars
+        self.controls = {}
+        self._red_controls = []
         self.cnf_filepath = None
         self.is_destroyed = False
         self.set_step(0)
@@ -578,9 +581,89 @@ class MCVQoEGui(tk.Tk):
         
         return obj
     
+
+    def verify_config(self, root_cfg):
+        try:
+            #translate cfg items as necessary
+            param_modify(root_cfg)
+            
+        except InvalidParameter as e:
+            # highlight the offending control in red
+            
+            if e.param_loc == 'SimSettings':
+                shared.SimSettings(self, self.simulation_settings)
+                loc = self
+            elif e.param_loc == 'HdwSettings':
+                shared.HdwSettings(self, self.hardware_settings)
+                loc = self
+            else:
+                loc = self.frames[root_cfg['selected_test']]
+                
+            try:
+                ctrl = loc.controls[e.parameter].m_ctrl
+            except AttributeError:
+                ctrl = None
+            
+            if ctrl is not None:
+                # make the control red
+                ctrl.configure(style='Error.' + ctrl.winfo_class())
+                
+                # create a tooltip
+                tw = shared.ToolTip(
+                    ctrl,
+                    e.message,
+                    style='Error.McvToolTip.TLabel')
+                # get location of control
+                x, y, cx, cy = ctrl.bbox("insert")
+                rootx = self.winfo_rootx()
         
+                # calculate location of tooltip
+                x = x + ctrl.winfo_rootx() - tw.winfo_width()
+                y = y + cy + ctrl.winfo_rooty() + 27
+        
+                #ensure tooltip does not fall off left edge of window
+                if x < rootx + 20: x = rootx + 20
+                
+                # set position of tooltip
+                tw.wm_geometry("+%d+%d" % (x, y))
+                ctrl.bind('<FocusOut>', lambda _e: tw.destroy())
+                
+                #show tooltip
+                tw.show()
+                
+                #focus the offending control
+                ctrl.focus_force()
+            
+                self._red_controls.append(ctrl)
+            
+            # back to config
+            self.set_step(1)
+            return False
+        else:
+            # clear all controls of redness
+            for ctrl in self._red_controls:
+                # unbind lost focus function
+                ctrl.unbind_all('<FocusOut>')
+                
+                # reset style
+                ctrl.configure(style=ctrl.winfo_class())
+            self._red_controls = []
+            
+            
+        return True
+    
+    
     def pretest(self):
-        self.set_step(2)
+        
+        if self.verify_config(self.get_cnf()):
+            self.set_step(2)
+            
+            
+            
+            
+            
+            
+            
 
     def run(self):
         progress('pre', 0, 0)
@@ -589,11 +672,12 @@ class MCVQoEGui(tk.Tk):
         self.set_step(3)
         
         #retrieve configuration from controls
-        cnf = self.get_cnf()
+        root_cfg = self.get_cnf()
         
-        #runs the test
-        run(cnf)
-                
+        if self.verify_config(root_cfg):
+        
+            #runs the test
+            run(root_cfg)
 
     def abort(self):
         """Aborts the test by raising KeyboardInterrupt
@@ -647,7 +731,7 @@ class MCVQoEGui(tk.Tk):
             # test configuration
             self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
-            next_btn = lambda : self.set_step(2)
+            next_btn = self.pretest
             back_btn = lambda : self.set_step(0)
         
         elif step == 2:
@@ -1234,21 +1318,60 @@ def set_font(**cfg):
 
 def set_styles():
     
-    style_obj = ttk.Style()
-
-    for style in ('TButton', 'TEntry.Label', 'TLabel', 'TLabelframe.Label',
-                  'TRadiobutton', 'TCheckbutton'):
-        style_obj.configure(style, font=('TkDefaultFont', shared.FONT_SIZE))
+    f = ttk.Style().configure
+    g = ttk.Style().layout
+        
+    # set global font
+    f('.', font=('TkDefaultFont', shared.FONT_SIZE))
     
     
     # help button and tooltip styles
-    style_obj.configure('McvHelpBtn.TLabel', font=('TkDefaultFont',
+    f('McvHelpBtn.TLabel', font=('TkDefaultFont',
                 round(shared.FONT_SIZE * 0.75)), relief='groove')
-    style_obj.configure('McvToolTip.TLabel', 
+    f('McvToolTip.TLabel', 
                 background='white')
-    style_obj.configure('McvToolTip.TFrame',
+    f('McvToolTip.TFrame',
                 background='white', relief='groove')
-
+    
+    
+    
+    
+    
+#red highlight for missing or invalid controls
+    
+    #for Entry
+    g("Error.TEntry",
+                   [('Entry.plain.field', {'children': [(
+                       'Entry.background', {'children': [(
+                           'Entry.padding', {'children': [(
+                               'Entry.textarea', {'sticky': 'nswe'})],
+                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
+                      'border':'2', 'sticky': 'nswe'})])
+    
+    f("Error.TEntry",
+      fieldbackground="pink"
+      )
+    
+    # for Spinbox
+    g("Error.TSpinbox",
+                   [('Entry.plain.field', {'children': [(
+                       'Entry.background', {'children': [(
+                           'Entry.padding', {'children': [(
+                               'Entry.textarea', {'sticky': 'nswe'})],
+                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
+                      'border':'2', 'sticky': 'nswe'}),
+                       ('Spinbox.uparrow', {'side': 'top', 'sticky': 'nse'}),
+                       ('Spinbox.downarrow', {'side': 'bottom', 'sticky': 'nse'})])
+    
+    f("Error.TSpinbox",
+      fieldbackground="pink"
+      )
+    
+    f('Error.McvToolTip.TLabel',
+      foreground='maroon',
+      )
+    
+    
 def dpi_scaling(root):
     global dpi_scale
     try:
@@ -1541,26 +1664,12 @@ def run(root_cfg):
                     setattr(my_obj, k, v)
         
         else:
-            
-            try:
-                #translate cfg items as necessary
-                param_modify(cfg, is_sim, root_cfg)
-            
-            
-                # put config into object
-                _set_values_from_cfg(my_obj, cfg)
+                        
+            # put config into object
+            _set_values_from_cfg(my_obj, cfg)
              
-                # Check for value errors with instance variables
-                my_obj.param_check()
-        
-            except ValueError as e:
-                # in case of incorrect input from user
-            
-                tk.messagebox.showerror('Invalid Option', str(e))
-        
-                # go back to config screen
-                main.win.set_step(1)
-                return
+            # Check for value errors with instance variables
+            my_obj.param_check()
         
         
         # PSuD handles this by itself
@@ -1609,7 +1718,7 @@ def run(root_cfg):
         if sel_tst in ('M2eFrame',):
             my_obj.plot()
     
-    
+            
     #gathers posttest notes without showing error
     except Abort_by_User:pass
     
@@ -1652,19 +1761,66 @@ def progress(prog_type, num_trials, current_trial, err_msg='') -> bool:
     
 
 
-def param_modify(cfg, is_simulation, root_cfg):
+def param_modify(root_cfg):
     
-    if not len(cfg['audio_files']) or not cfg['audio_files'][0]:
-        raise ValueError('Please choose at least one audio file')
+    sel_tst = root_cfg['selected_test']
+    is_sim = root_cfg['is_simulation']
+    cfg = root_cfg[sel_tst]
+    
+    
+    
+    
+    # check: audio_files should not be empty
+    if not ('audio_files' in cfg
+            and cfg['audio_files']
+            and cfg['audio_files'][0]):
         
+        raise InvalidParameter('audio_files', message='Audio File is required.')
         
+    
+    # check: audio files should all exist
+    ct = 0
+    for af in cfg['audio_files']:
+        if path.isdir(af) and ct == 0:
+            break
+        if not path.isfile(af):
+            raise InvalidParameter('audio_files',
+                message=f'"{af}" does not exist')
+        if not path.splitext(af)[1].lower() == '.wav':
+            raise InvalidParameter('audio_files',
+                message='All audio files must be .wav files')
+        ct += 1
+    
+    
+    
+    
+    # make trials an integer if it's not already (mainly for access time)
+    bad_param = False
+    try:
+        cfg['trials'] = int(cfg['trials'])
+    except ValueError:
+        if cfg['trials'].lower() == 'inf':
+            cfg['trials'] = np.inf
+        else:
+            bad_param = True
+    if bad_param:
+        raise InvalidParameter('trials',
+                    message='Number of trials must be a whole number')
+    
+    
+    
+    # if channel_rate should be None, make it so
     if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
             'SimSettings']['channel_rate'] == 'None':
-            
+        
+        # turn str(None) into None
         root_cfg['SimSettings']['channel_rate'] = None
     
     
     
+    
+    
+    # combine the 2 ptt_delays into a vector
     if '_ptt_delay_min' in cfg:
         cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
         try:
