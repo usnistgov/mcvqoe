@@ -89,8 +89,11 @@ class TkVarDict(dict):
         
 
 class Config(dict):
+    """loads and saves a json file in the user's appdir folder
     
-    appinf = {'appname': 'MCV-QoE', 'appauthor': 'NIST'}
+    """
+    
+    appinf = {'appname': 'mcvqoe', 'appauthor': 'NIST'}
     
     def __init__(self, /, filename, **kwargs):
         super().__init__(**kwargs)
@@ -115,6 +118,7 @@ class Config(dict):
         with open(self.filepath, 'r+') as fp:
             for k, v in json.load(fp=fp).items():
                 self[k] = v
+        return self
         
         
         
