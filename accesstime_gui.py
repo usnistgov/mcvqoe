@@ -14,9 +14,10 @@ import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
-from shared import outdir, ptt_gap
-from shared import time_expand
+from shared import outdir, ptt_gap, time_expand
 from shared import BgNoise
+
+from shared import Abort_by_User, InvalidParameter
 import loadandsave
 
 
@@ -272,12 +273,39 @@ class advanced(shared.advanced):
 class Access_fromGui(shared.SignalOverride, adly.Access):
     
     def param_check(self):
-        # otherwise, trials would be a string
-        self.trials = adly.int_or_inf(self.trials)
+
+        
+        try:
+            dev_dly = loadandsave.Config('dev_dly.json').load()['dev_dly']
+        except FileNotFoundError:
+            dev_dly = None
+        
+        if dev_dly is None or self.dev_dly != dev_dly:
+            ync = tk.messagebox.askyesnocancel('Device Delay',
+                'It looks like your device delay has not been calibrated.'+
+                ' Run calibration now?')
+            if ync:
+                self.dev_dly = dev_dly_calibration()
+            elif ync is None:
+                raise Abort_by_User()
     
     def run(self):
         self.test(recovery=False)
         #TODO: implement recovery
     
-        
+
+
+
+
+
+
+
+
+
+
+
+
+#------------------------ Device Delay calibration ---------------------------
     
+def dev_dly_calibration():
+    print('DOING THE THING')
