@@ -1780,9 +1780,30 @@ def param_modify(root_cfg):
     
     # check: audio files should all exist
     ct = 0
+    cfg['full_audio_dir'] = False
     for af in cfg['audio_files']:
         if path.isdir(af) and ct == 0:
+            
+            # set audio_path and full_audio_dir
+            cfg['audio_path'] = p = af
+            cfg['full_audio_dir'] = True
+            cfg['audio_files'] = []
+            
+            # check folder for audio files
+            success = False
+            for f in listdir(p):
+                fp = path.join(p, f)
+                if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
+                    success = True
+                    break
+            if not success:
+                raise InvalidParameter('audio_files',
+                    message='Folder must contain .wav files') 
+            
             break
+        
+        
+        # else, make sure all file names are valid
         if not path.isfile(af):
             raise InvalidParameter('audio_files',
                 message=f'"{af}" does not exist')
@@ -1873,7 +1894,7 @@ def _get_interfaces(root_cfg):
             
             _set_values_from_cfg(sim, root_cfg['SimSettings'])
                 
-            
+            print(root_cfg['SimSettings'], sim.access_delay)
             ri = sim
             ap = sim
         
