@@ -110,7 +110,7 @@ class advanced(shared.advanced):
 #-------------------------Running the test------------------------------------
 
 class PSuD_fromGui(shared.SignalOverride, psud.measure):
-    pass
+    def param_check(self):pass
         
     
     
