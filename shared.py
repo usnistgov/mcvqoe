@@ -171,11 +171,12 @@ class AdvancedConfigGUI(tk.Toplevel):
         self.grab_set()
         #self.attributes('-topmost', True)
         
+        self.controls = master.controls
         #initializes controls
         for row in range(len(controls)):
             c = controls[row](master=self, row=row)
             
-            master.controls[c.__class__.__name__] = c
+            self.controls[c.__class__.__name__] = c
             
         
         
