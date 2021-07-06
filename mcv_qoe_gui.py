@@ -175,6 +175,10 @@ DEFAULTS['AccssDFrame']['trials'] = str(int(DEFAULTS['AccssDFrame']['trials']))
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
 
+
+# the following should be a float
+DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+
 #free initial objects
 del initial_measure_objects
 del obj
@@ -1894,7 +1898,7 @@ def _get_interfaces(root_cfg):
             
             _set_values_from_cfg(sim, root_cfg['SimSettings'])
                 
-            print(root_cfg['SimSettings'], sim.access_delay)
+            
             ri = sim
             ap = sim
         
