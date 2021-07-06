@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 
-import loadandsave
 
 from mcvqoe.simulation.QoEsim import QoEsim
 from mcvqoe.hardware.audio_player import AudioPlayer
@@ -509,6 +508,23 @@ class audio_files(LabeledControl):
         if fp:
             self.btnvar.set(fp)
             
+            
+class _BrowseForFolder(LabeledControl):
+    text = ''
+    MCtrl = None
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Browse for Folder...'}
+    
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
+        self.r_ctrl.grid_forget()
+        self.r_ctrl.grid(columnspan=2,
+                padx=self.padx, pady=self.pady, column=2, row=row, sticky='E')
+        
+    def on_button(self):
+        fp = fdl.askdirectory()
+        if fp:
+            self.master.btnvars['audio_files'].set([fp])
             
 class trials(LabeledControl):
     """Number of trials to use for test."""

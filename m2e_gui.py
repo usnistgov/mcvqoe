@@ -7,7 +7,6 @@ Created on Wed Jun  2 08:52:09 2021
 
 import mcvqoe.mouth2ear.m2e as m2e
 
-import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
 
@@ -28,6 +27,7 @@ class M2eFrame(TestCfgFrame):
         return (
             test,
             audio_files,
+            _BrowseForFolder,
             trials,
             ptt_wait,
             outdir,
@@ -37,6 +37,10 @@ class M2eFrame(TestCfgFrame):
             
         
         #------------------ Controls ----------------------
+from shared import audio_files, _BrowseForFolder
+from shared import BgNoise
+from shared import trials, ptt_wait, outdir
+
 
 
 class test(shared.MultiChoice):
@@ -52,9 +56,7 @@ class test(shared.MultiChoice):
             }
     
 
-from shared import audio_files
-            
-from shared import BgNoise
+
             
 class audio_file(LabeledControl):
     """NOT USED - use audio_files instead"""
@@ -72,8 +74,7 @@ class audio_file(LabeledControl):
         'text'   : 'Browse...'
         }
     
-    
-from shared import trials, ptt_wait, outdir
+
 
 
 

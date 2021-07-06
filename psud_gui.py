@@ -9,10 +9,7 @@ import shared
 
 import mcvqoe.psud as psud
 
-from tkinter import ttk
-from tkinter import filedialog
-from os import path
-import os
+
 
 
 class PSuDFrame(shared.TestCfgFrame):
@@ -55,7 +52,7 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
 
 
 
-from shared import trials
+from shared import trials, _BrowseForFolder
 from shared import outdir
 from shared import ptt_wait
 from shared import ptt_gap
@@ -66,23 +63,6 @@ class audio_files(shared.audio_files):
     If a folder is entered instead, all audio files in the folder will be used"""
     
     
-
-class _BrowseForFolder(shared.LabeledControl):
-    text = ''
-    MCtrl = None
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Browse for Folder...'}
-    
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, row, *args, **kwargs)
-        self.r_ctrl.grid_forget()
-        self.r_ctrl.grid(columnspan=2,
-                padx=self.padx, pady=self.pady, column=2, row=row, sticky='E')
-    
-    def on_button(self):
-        fp = filedialog.askdirectory()
-        if fp:
-            self.master.btnvars['audio_files'].set([fp])
     
 class m2e_min_corr(shared.LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
@@ -130,25 +110,9 @@ class advanced(shared.advanced):
 #-------------------------Running the test------------------------------------
 
 class PSuD_fromGui(shared.SignalOverride, psud.measure):
-    
+    pass
         
-    def param_check(self):
-        # check if user chose a full folder instead of a list of files
-        if path.isdir(self.audio_files[0]):
-            self.audio_path = self.audio_files[0]
-            self.audio_files = []
-            self.full_audio_dir = True
-            
-            #check for the existence of .wav files
-            p = self.audio_path
-            success = False
-            for f in os.listdir(p):
-                fp = path.join(p, f)
-                if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
-                    success = True
-                    break
-            if not success:
-                raise ValueError('Audio Folder contains no .wav files.') 
+    
     
     
     
