@@ -214,7 +214,7 @@ class ptt_rep(LabeledControl):
     
     text = 'Repeats per Step:'
     MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 1}
     
   
 

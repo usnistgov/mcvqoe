@@ -1860,6 +1860,18 @@ def param_modify(root_cfg):
         except ValueError:pass
         
         
+        
+        
+        
+        
+        
+    # check auto_stop with ptt_rep
+    if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
+            cfg['ptt_rep'] < 16):
+        raise InvalidParameter('ptt_rep',
+                    message='Must be greater than 15 if auto-stop is enabled')
+        
+        
 def get_post_notes(error_only=False):
     
     #get current error status, will be None if we are not handling an error
