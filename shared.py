@@ -266,9 +266,16 @@ class LabeledControl():
         self.setup()
         #some controls require more flexibility, so they don't use self.MCtrl
         if self.MCtrl:
+            try:
+                btnvar = self.btnvar
+            except AttributeError:
+                btnvar = None
+            if btnvar is None:
+                raise KeyError(f'{self.__class__.__name__} is missing a default value')
+                
             if self.variable_arg:
                 MCtrlkwargs[self.variable_arg] = self.btnvar
-            
+                
             else:
                 MCtrlargs.insert(0, self.btnvar)
             
@@ -774,8 +781,12 @@ class dev_dly(LabeledControl):
     text = 'Device Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
-
-
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Calibrate'}
+    
+    def on_button(self):
+        self.master.btnvars['dev_dly'].set(68)
 
 
 #SIMULATION SETTINGS WINDOW

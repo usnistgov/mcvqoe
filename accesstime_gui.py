@@ -47,6 +47,7 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
             BgNoise,
             DetectFailure,
             time_expand,
+            dev_dly
             )
         
     
@@ -91,9 +92,17 @@ class DetectFailure(SubCfgFrame):
         
     
     
+ 
     
-#controls
-
+    
+    
+    
+    
+    
+    
+    
+#------------------------------controls--------------------------------------
+from shared import dev_dly
 
 class audio_files(shared.audio_files):
     """Audio files to use for testing.
@@ -285,7 +294,7 @@ class Access_fromGui(shared.SignalOverride, adly.Access):
                 'It looks like your device delay has not been calibrated.'+
                 ' Run calibration now?')
             if ync:
-                self.dev_dly = dev_dly_calibration()
+                self.dev_dly = 67 #dev_dly_calibration()
             elif ync is None:
                 raise Abort_by_User()
     
@@ -296,16 +305,3 @@ class Access_fromGui(shared.SignalOverride, adly.Access):
 
 
 
-
-
-
-
-
-
-
-
-
-#------------------------ Device Delay calibration ---------------------------
-    
-def dev_dly_calibration():
-    print('DOING THE THING')
