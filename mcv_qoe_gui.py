@@ -16,8 +16,10 @@ import json
 import datetime
 import pickle
 import functools
+import os
 from os import path, listdir
 import gc
+import subprocess as sp
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -96,7 +98,8 @@ control_list = {
         's_thresh',
         's_tries',
         'stop_rep',
-        'trials'
+        'trials',
+        'dev_dly',
     ],
     
     'PSuDFrame' : [
@@ -1257,10 +1260,15 @@ class PostProcessingFrame(ttk.Frame):
     
     def __init__(self, master, btnvars, **kwargs):
         self.btnvars = btnvars
+        self.folder = ''
         super().__init__(master, **kwargs)
         
         ttk.Label(self, text='Test Complete').pack(padx=10, pady=10, fill=tk.X)
         
+        ttk.Button(self,
+                   text='Open Output Folder',
+                   command = self.open_folder
+                   ).pack(padx=10, pady=10, fill=tk.X)
         
         self.elements = []
         self.canvasses = []
@@ -1300,9 +1308,18 @@ class PostProcessingFrame(ttk.Frame):
         
         self.canvasses = []
         self.elements = []
+    
+    def open_folder(self, e=None):
+        """open the outdir folder in os file explorer"""
+        dir_ = path.normpath(path.join(os.getcwd(), self.outdir))
         
-
-
+        try:
+            sp.Popen(['explorer', dir_])
+        except (FileNotFoundError, OSError):
+            try:
+                sp.Popen(['open', dir_])
+            except (FileNotFoundError, OSError): pass
+        
 
 
 
@@ -1648,11 +1665,20 @@ def run(root_cfg):
         
         # set progress update callback
         my_obj.progress_update = progress
+        
+        
+        ppf = main.win.frames['PostProcessingFrame']
         # set postprocessing info callback
-        my_obj.gui_show_element = main.win.frames[
-                                'PostProcessingFrame'].add_element
+        my_obj.gui_show_element = ppf.add_element
         # remove post-processing info from frame
-        main.win.frames['PostProcessingFrame'].reset()
+        ppf.reset()
+        
+        # put outdir folder into frame
+        ppf.outdir = cfg['outdir']
+        
+        
+        
+        
         
         # if recovery
         if 'data_file' in cfg and cfg['data_file'] != "":
