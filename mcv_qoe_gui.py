@@ -381,6 +381,7 @@ class MCVQoEGui(tk.Tk):
             **DEFAULTS['HdwSettings'])
         
         
+        _get_dev_dly()
         
 
     def _select_test(self):
@@ -453,7 +454,7 @@ class MCVQoEGui(tk.Tk):
         for fname, f in self.frames.items():
             f.btnvars.set(DEFAULTS[fname])
             
-        
+        _get_dev_dly()
         self.is_simulation.set(False)
         
         # user shouldn't be prompted to save the default config
@@ -484,6 +485,7 @@ class MCVQoEGui(tk.Tk):
             self.is_simulation.set(dct['is_simulation'])
             self.selected_test.set(dct['selected_test'])
             self.set_step(1)
+            _get_dev_dly()
 
             # the user has not modified the new config, so it is saved
             self.set_saved_state(True)
@@ -646,6 +648,13 @@ class MCVQoEGui(tk.Tk):
             # back to config
             self.set_step(1)
             return False
+        except Abort_by_User:
+            return False
+        
+        except Exception:
+            traceback.print_exc()
+            return False
+            
         else:
             # clear all controls of redness
             for ctrl in self._red_controls:
@@ -1799,6 +1808,22 @@ def param_modify(root_cfg):
     
     
     
+    if 'dev_dly' in cfg:
+        
+        dev_dly = _get_dev_dly()
+        
+        if dev_dly is None or cfg['dev_dly'] != dev_dly:
+            ync = tk.messagebox.askyesnocancel('Device Delay',
+                'It looks like your device delay has not been calibrated.'+
+                ' Run calibration now?')
+            if ync:
+                print('DOING CHARACTERIZATION TEST')
+                cfg['dev_dly'] = 42 #dev_dly_calibration()
+            elif ync is None:
+                raise Abort_by_User()
+    
+    
+    
     
     # check: audio_files should not be empty
     if not ('audio_files' in cfg
@@ -1973,6 +1998,48 @@ def _set_values_from_cfg(my_obj, cfg):
 
 
 
+# TODO: implement the following frame?
+class char_dev_dly(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, title='Device Delay Characterization', **kwargs)
+        
+        ttk.Label(self, text='\
+It seems like you have not yet done a characterization test. \
+A characterization test is a Mouth-to-Ear test that is run with the audio output \
+directly fed into the input, as shown below.\
+').pack(fill=tk.X, wraplength=300, padx=10, pady=10)
+
+        ttk.Label(self, text='Once finished, enter the device delay below')
+        
+        self.dev_dly = tk.DoubleVar()
+        ttk.Entry(textvariable=self.dev_dly).pack(padx=10,pady=10)
+        
+        ttk.Button(text='Skip Characterization (not recommended)'
+                   ).pack()
+        
+        
+        
+        self.finished = False
+                   
+    
+    def skip(self):
+        pass
+        
+        
+    
+def _get_dev_dly(ignore_error = True):
+    
+    try:
+        dev_dly = loadandsave.Config('dev_dly.json').load()['dev_dly']
+    except FileNotFoundError:
+        if not ignore_error:
+            raise
+        dev_dly = 0
+    else:
+        main.win.frames['AccssDelay'].btnvars['dev_dly'].set(dev_dly)
+    
+        return dev_dly
+    
 
 
 

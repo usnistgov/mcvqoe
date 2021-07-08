@@ -32,6 +32,7 @@ class AccssDFrame(TestCfgFrame):
             ptt_step,
             ptt_rep,
             ptt_gap,
+            dev_dly,
             RadioCheck,
             AutoStop,
             ptt_delay,
@@ -47,7 +48,6 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
             BgNoise,
             DetectFailure,
             time_expand,
-            dev_dly
             )
         
     
@@ -280,24 +280,8 @@ class advanced(shared.advanced):
 
 
 class Access_fromGui(shared.SignalOverride, adly.Access):
-    
-    def param_check(self):
+   
 
-        
-        try:
-            dev_dly = loadandsave.Config('dev_dly.json').load()['dev_dly']
-        except FileNotFoundError:
-            dev_dly = None
-        
-        if dev_dly is None or self.dev_dly != dev_dly:
-            ync = tk.messagebox.askyesnocancel('Device Delay',
-                'It looks like your device delay has not been calibrated.'+
-                ' Run calibration now?')
-            if ync:
-                self.dev_dly = 67 #dev_dly_calibration()
-            elif ync is None:
-                raise Abort_by_User()
-    
     def run(self):
         self.test(recovery=False)
         #TODO: implement recovery
