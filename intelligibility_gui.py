@@ -8,6 +8,7 @@ Created on Thu Jul  8 16:22:33 2021
 import mcvqoe.intelligibility as igtiby
 
 import shared
+import tkinter.ttk as ttk
 
 
 class IgtibyFrame(shared.TestCfgFrame):
@@ -16,11 +17,12 @@ class IgtibyFrame(shared.TestCfgFrame):
         return (
             audio_files,
             _BrowseForFolder,
+            outdir,
             trials,
+            save_tx_audio,
             ptt_wait,
             ptt_gap,
             intell_est,
-            outdir,
             )
 
 
@@ -51,6 +53,19 @@ class intell_est(shared.MultiChoice):
                    'aggregate': 'After Test',
                    'none': 'Never',
                    }
+    
+class save_tx_audio(shared.LabeledControl):
+    
+    MCtrl = ttk.Checkbutton
+    MCtrlkwargs = {'text': 'Save Transmitted Audio'}
+    
+    variable_arg = 'variable'
+    
+    do_font_scaling = False
+    
+    
+    
+    
 
 
 
