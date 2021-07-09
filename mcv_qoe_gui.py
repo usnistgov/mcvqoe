@@ -123,6 +123,7 @@ control_list = {
         'ptt_wait',
         'ptt_gap',
         'intell_est',
+        'save_tx_audio',
     ],
         
     'SimSettings': [
@@ -1696,6 +1697,13 @@ def run(root_cfg):
         
         # put outdir folder into frame
         ppf.outdir = cfg['outdir']
+        
+        # prevent logging excess of information
+        my_obj.no_log = my_obj.no_log + (
+            'progress_update',
+            'gui_show_element',
+            'get_post_notes',
+        )
         
         
         
