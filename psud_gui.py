@@ -21,11 +21,11 @@ class PSuDFrame(shared.TestCfgFrame):
         return (
             audio_files,
             _BrowseForFolder,
+            outdir,
             trials,
             ptt_wait,
             ptt_gap,
             intell_est,
-            outdir,
             advanced,
             )
     

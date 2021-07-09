@@ -25,12 +25,12 @@ class M2eFrame(TestCfgFrame):
         
     def get_controls(self):
         return (
-            test,
             audio_files,
             _BrowseForFolder,
-            trials,
-            ptt_wait,
             outdir,
+            trials,
+            test,
+            ptt_wait,
             advanced
             )
     
