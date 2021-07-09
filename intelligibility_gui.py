@@ -19,10 +19,10 @@ class IgtibyFrame(shared.TestCfgFrame):
             _BrowseForFolder,
             outdir,
             trials,
-            save_tx_audio,
             ptt_wait,
             ptt_gap,
             intell_est,
+            save_tx_audio,
             )
 
 
