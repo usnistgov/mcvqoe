@@ -11,16 +11,16 @@ import shared
 
 
 class IgtibyFrame(shared.TestCfgFrame):
-    
+    text = 'Intelligibility Test'
     def get_controls(self):
         return (
             audio_files,
             _BrowseForFolder,
             trials,
-            outdir,
             ptt_wait,
             ptt_gap,
             intell_est,
+            outdir,
             )
 
 
@@ -59,4 +59,5 @@ class intell_est(shared.MultiChoice):
 
 
 class Igtiby_from_Gui(shared.SignalOverride, igtiby.measure):
-    pass
+    def param_check(self):
+        pass

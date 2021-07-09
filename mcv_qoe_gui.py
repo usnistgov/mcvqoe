@@ -49,6 +49,8 @@ import m2e_gui
 from m2e_gui import M2eFrame
 import psud_gui
 from psud_gui import PSuDFrame
+import intelligibility_gui
+from intelligibility_gui import IgtibyFrame
 
 
 # basic config
@@ -112,6 +114,16 @@ control_list = {
         'm2e_min_corr',
         'intell_est',
     ],
+    
+    'IgtibyFrame': [
+        'audio_files',
+        'audio_path',
+        'trials',
+        'outdir',
+        'ptt_wait',
+        'ptt_gap',
+        'intell_est',
+    ],
         
     'SimSettings': [
         'overplay',
@@ -131,13 +143,14 @@ control_list = {
         'dev_dly',
         'blocksize',
         'buffersize',
-        ]
+        ],
 }
 
 initial_measure_objects = {
     'M2eFrame': m2e_gui.m2e.measure(),
     'AccssDFrame': accesstime_gui.adly.Access(),
     'PSuDFrame' : psud_gui.psud.measure(),
+    'IgtibyFrame': intelligibility_gui.igtiby.measure(),
     'SimSettings': QoEsim(),
     'HdwSettings': shared._HdwPrototype()
     }
@@ -355,7 +368,7 @@ class MCVQoEGui(tk.Tk):
             M2eFrame,
             AccssDFrame,
             PSuDFrame,
-            
+            IgtibyFrame,
         ]
                 
         self.frames = {}
@@ -1002,7 +1015,7 @@ class TestTypeFrame(tk.Frame):
                         variable=sel_txt, value='PSuDFrame').pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Intelligibility',
-                        variable=sel_txt, value='IntgblFrame').pack(fill=tk.X)
+                        variable=sel_txt, value='IgtibyFrame').pack(fill=tk.X)
         
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
@@ -1648,11 +1661,11 @@ def test_audio(root_cfg, on_finish=None):
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
     
-    # TODO implement other tests here
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
-        'PSuDFrame' : psud_gui.PSuD_fromGui
+        'PSuDFrame' : psud_gui.PSuD_fromGui,
+        'IgtibyFrame': intelligibility_gui.Igtiby_from_Gui,
             }
     
     
@@ -1674,7 +1687,6 @@ def run(root_cfg):
         
         # set progress update callback
         my_obj.progress_update = progress
-        
         
         ppf = main.win.frames['PostProcessingFrame']
         # set postprocessing info callback
@@ -1751,13 +1763,15 @@ def run(root_cfg):
         with ri as my_obj.ri:
         
             #run test
-            my_obj.run()
+            result = my_obj.run()
             
-
+        if sel_tst in ('IgtibyFrame',):
+            my_obj.gui_show_element(f'Intelligibility Estimate: {result}')
+            
         if sel_tst in ('M2eFrame',):
             my_obj.plot()
     
-            
+        
     #gathers posttest notes without showing error
     except Abort_by_User:pass
     
