@@ -53,6 +53,9 @@ import intelligibility_gui
 from intelligibility_gui import IgtibyFrame
 
 
+#TODO: remove the following
+hardware.RadioInterface = QoEsim
+
 # basic config
 TITLE_ = 'MCV QoE'
 
@@ -353,6 +356,7 @@ class MCVQoEGui(tk.Tk):
         self._red_controls = []
         self.cnf_filepath = None
         self.is_destroyed = False
+        self._pre_notes = None
         self.set_step(0)
 
 
@@ -595,11 +599,6 @@ class MCVQoEGui(tk.Tk):
         for framename, frame in self.frames.items():
             obj[framename] = frame.btnvars.get()
         
-        txt_box = self.frames['TestInfoGuiFrame'].pre_notes
-        
-        # gets 'Pre Test Notes' from text widget
-        obj['TestInfoGuiFrame']['Pre Test Notes'] = txt_box.get(1.0, tk.END)
-        
         
         
         return obj
@@ -612,102 +611,95 @@ class MCVQoEGui(tk.Tk):
             
         except InvalidParameter as e:
             # highlight the offending control in red
-            
-            if e.param_loc == 'SimSettings':
-                shared.SimSettings(self, self.simulation_settings)
-                loc = self
-            elif e.param_loc == 'HdwSettings':
-                shared.HdwSettings(self, self.hardware_settings)
-                loc = self
-            else:
-                loc = self.frames[root_cfg['selected_test']]
-                
-            try:
-                ctrl = loc.controls[e.parameter].m_ctrl
-            except AttributeError:
-                ctrl = None
-            
-            if ctrl is not None:
-                # make the control red
-                ctrl.configure(style='Error.' + ctrl.winfo_class())
-                
-                # create a tooltip
-                tw = shared.ToolTip(
-                    ctrl,
-                    e.message,
-                    style='Error.McvToolTip.TLabel')
-                # get location of control
-                x, y, cx, cy = ctrl.bbox("insert")
-                rootx = self.winfo_rootx()
+            pass
         
-                # calculate location of tooltip
-                x = x + ctrl.winfo_rootx() - tw.winfo_width()
-                y = y + cy + ctrl.winfo_rooty() + 27
-        
-                #ensure tooltip does not fall off left edge of window
-                if x < rootx + 20: x = rootx + 20
-                
-                # set position of tooltip
-                tw.wm_geometry("+%d+%d" % (x, y))
-                ctrl.bind('<FocusOut>', lambda _e: tw.destroy())
-                
-                #show tooltip
-                tw.show()
-                
-                #focus the offending control
-                ctrl.focus_force()
-            
-                self._red_controls.append(ctrl)
-            
-            # back to config
-            self.set_step(1)
-            return False
-        except Abort_by_User:
-            return False
-        
-        except Exception:
-            traceback.print_exc()
-            return False
-            
+    @in_thread('GuiThread', wait=False)    
+    def show_invalid_parameter(self, e):
+        if e.param_loc == 'SimSettings':
+            shared.SimSettings(self, self.simulation_settings)
+            loc = self
+        elif e.param_loc == 'HdwSettings':
+            shared.HdwSettings(self, self.hardware_settings)
+            loc = self
         else:
-            # clear all controls of redness
-            for ctrl in self._red_controls:
-                # unbind lost focus function
-                ctrl.unbind_all('<FocusOut>')
-                
-                # reset style
-                ctrl.configure(style=ctrl.winfo_class())
-            self._red_controls = []
+            loc = self.frames[self.selected_test.get()]
             
+        try:
+            ctrl = loc.controls[e.parameter].m_ctrl
+        except AttributeError:
+            ctrl = None
+        
+        if ctrl is not None:
+            # try to make the control red
+            try:
+                ctrl.configure(style='Error.' + ctrl.winfo_class())
+            except:pass
             
-        return True
+            # create a tooltip
+            tw = shared.ToolTip(
+                ctrl,
+                e.message,
+                style='Error.McvToolTip.TLabel')
+            # get location of control
+            x, y, cx, cy = ctrl.bbox("insert")
+            rootx = self.winfo_rootx()
+    
+            # calculate location of tooltip
+            x = x + ctrl.winfo_rootx() - tw.winfo_width()
+            y = y + cy + ctrl.winfo_rooty() + 27
+    
+            #ensure tooltip does not fall off left edge of window
+            if x < rootx + 20: x = rootx + 20
+            
+            # set position of tooltip
+            tw.wm_geometry("+%d+%d" % (x, y))
+            ctrl.bind('<FocusOut>', lambda _e: tw.destroy())
+            
+            #show tooltip
+            tw.show()
+            
+            #focus the offending control
+            ctrl.focus_force()
+        
+            # save reference to be made not red again later
+            self._red_controls.append(ctrl)
+        
+        # back to config
+        self.set_step(1)
     
     
+    
+    @in_thread('GuiThread', wait=True)
     def pretest(self):
         
-        if self.verify_config(self.get_cnf()):
-            self.set_step(2)
+        self._pre_notes = None
+        self._pre_notes_wait = True
+        self.set_step(2)
+        
+    def _pretest_submit(self):
+        # get test info from entry controls
+        self._pre_notes = self.frames['TestInfoGuiFrame'].btnvars.get()
             
+        txt_box = self.frames['TestInfoGuiFrame'].pre_notes
+        # gets 'Pre Test Notes' from text widget
+        self._pre_notes['Pre Test Notes'] = txt_box.get(1.0, tk.END)
+        
+        self._pre_notes_wait = False
+        
+    def _pretest_cancel(self):
+        
+        self._pre_notes_wait = False
+        
+        self.set_step(1)
             
-            
-            
-            
-            
-            
-
     def run(self):
         progress('pre', 0, 0)
-        
-        #set step to 'running'
-        self.set_step(3)
-        
+                
         #retrieve configuration from controls
         root_cfg = self.get_cnf()
         
-        if self.verify_config(root_cfg):
-        
-            #runs the test
-            run(root_cfg)
+        #runs the test
+        run(root_cfg)
 
     def abort(self):
         """Aborts the test by raising KeyboardInterrupt
@@ -726,22 +718,18 @@ class MCVQoEGui(tk.Tk):
             return True
     
     @in_thread('GuiThread', wait=False)
-    def post_test(self, error):
+    def post_test(self):
         self.set_step(5)
         
-        err_class, err_msg, trace = error
-        if err_class and err_class not in (KeyboardInterrupt,):
-            tk.messagebox.showerror(
-               err_class.__name__, err_msg)
         
-    def submit_post_test(self):
+    def _post_test_submit(self):
         
         txt_box = self.frames['PostTestGuiFrame'].post_test
         
         # retrieve post_notes
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
         
-               
+        
     
     @in_thread('GuiThread')
     def set_step(self, step):
@@ -761,16 +749,16 @@ class MCVQoEGui(tk.Tk):
             # test configuration
             self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
-            next_btn = self.pretest
+            next_btn = self.run
             back_btn = lambda : self.set_step(0)
         
         elif step == 2:
             # test info gui
             self.show_frame('TestInfoGuiFrame')
-            next_btn_txt = 'Run Test'
-            next_btn = self.run
-            back_btn = self.configure_test
-        
+            next_btn_txt = 'Submit'
+            next_btn = self._pretest_submit
+            back_btn = self._pretest_cancel
+            
         elif step == 3:
             # progress bar
             self.show_frame('TestProgressFrame')
@@ -783,15 +771,16 @@ class MCVQoEGui(tk.Tk):
             self.show_frame('TestProgressFrame')
             self.frames['TestProgressFrame'].primary_text.set('Aborting...')
             
-            next_btn_txt = 'Cancel Abort'
-            next_btn = lambda : self.set_step(3)
-            back_btn = None
+            next_btn_txt = 'Force Stop'
+            next_btn = _thread.interrupt_main
+            back_btn = lambda : self.set_step(3)
+            back_btn_txt = 'Cancel Abort'
             
         elif step == 5:
             #post_test
             self.show_frame('PostTestGuiFrame')
             next_btn_txt = 'Submit'
-            next_btn = self.submit_post_test
+            next_btn = self._post_test_submit
             back_btn = None
             
         
@@ -799,7 +788,7 @@ class MCVQoEGui(tk.Tk):
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
             next_btn = lambda : self.set_step(0)
-            back_btn = lambda : self.set_step(2)
+            back_btn = lambda : self.run
             back_btn_txt = 'Run Again'
             
         
@@ -810,10 +799,28 @@ class MCVQoEGui(tk.Tk):
         self.set_back_btn(back_btn_txt, back_btn)
     
     @in_thread('GuiThread', wait=False)
-    def clear_notes(self):
+    def clear_old_entries(self):
+        """
+        Clears pre-notes, post-notes, and invalid parameter controls
+        to prepare for the next test
+
+        
+
+        """
+        
         # clears pre_test and post_test notes
         self.frames['TestInfoGuiFrame'].pre_notes.delete(1.0, tk.END)
         self.frames['PostTestGuiFrame'].post_test.delete(1.0, tk.END)
+        
+        
+        # clear any previous invalid parameters of redness
+        for ctrl in self._red_controls:
+            # unbind lost focus function
+            ctrl.unbind_all('<FocusOut>')
+            
+            # reset style
+            ctrl.configure(style=ctrl.winfo_class())
+        self._red_controls = []
 
 
 
@@ -1653,7 +1660,7 @@ def test_audio(root_cfg, on_finish=None):
                 
                 
     except Exception as error:
-        tk.messagebox.showerror(error.__class__.__name__, str(error))
+        show_error(error)
     
     if on_finish:
         on_finish()
@@ -1670,12 +1677,9 @@ def run(root_cfg):
             }
     
     
-    # extract test configuration and notes from root_cfg
+    # extract test configuration
     sel_tst = root_cfg['selected_test']
-    is_sim = root_cfg['is_simulation']
     cfg = root_cfg[sel_tst]
-    pre_notes = root_cfg['TestInfoGuiFrame']
-    
     
     
     
@@ -1723,6 +1727,9 @@ def run(root_cfg):
                     setattr(my_obj, k, v)
         
         else:
+            
+            # prepare config and check for invalid parameters
+            param_modify(root_cfg)
                         
             # put config into object
             _set_values_from_cfg(my_obj, cfg)
@@ -1730,6 +1737,19 @@ def run(root_cfg):
             # Check for value errors with instance variables
             my_obj.param_check()
         
+        
+        
+        
+        # Gather pretest notes and parameters
+        my_obj.info = get_pre_notes()
+        if my_obj.info is None: 
+            #user pressed 'Cancel' in test info gui
+            return
+        
+        
+        
+        #show progress bar in gui
+        main.win.set_step(3)
         
         # PSuD handles this by itself
         if sel_tst in ('M2eFrame', 'AccssDFrame'):
@@ -1743,18 +1763,12 @@ def run(root_cfg):
             # Fill 'Arguments' within info dictionary
             my_obj.info.update(write_log.fill_log(my_obj))
     
-            # Gather pretest notes and parameters
-            my_obj.info.update(pre_notes)
-    
-    
             # Write pretest notes and info to tests.log
             write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
             
-        else:
-            my_obj.info = pre_notes
-    
-        # clear notes from window
-        main.win.clear_notes()
+            
+        # clear pretest notes from window
+        main.win.clear_old_entries()
         
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
@@ -1779,6 +1793,18 @@ def run(root_cfg):
         if sel_tst in ('M2eFrame',):
             my_obj.plot()
     
+    
+    except InvalidParameter as e:
+        # highlight offending parameter in red
+        main.win.show_invalid_parameter(e)
+        return
+        
+    except ValueError as e:
+        # shows error message and returns
+        traceback.print_exc()
+        tk.messagebox.showerror('Invalid Parameter', str(e))
+        return
+        
         
     #gathers posttest notes without showing error
     except Abort_by_User:pass
@@ -1791,7 +1817,6 @@ def run(root_cfg):
         
     except Exception:
         # Gather posttest notes and write to log
-        traceback.print_exc()
         post_dict = get_post_notes()
         write_log.post(info=post_dict, outdir=my_obj.outdir)
         
@@ -1827,6 +1852,7 @@ def param_modify(root_cfg):
     sel_tst = root_cfg['selected_test']
     is_sim = root_cfg['is_simulation']
     cfg = root_cfg[sel_tst]
+    
     
     
     
@@ -1945,6 +1971,25 @@ def param_modify(root_cfg):
                     message='Must be greater than 15 if auto-stop is enabled')
         
         
+    
+    # open audio_- and radio_interface for testing
+    _get_interfaces(root_cfg)
+        
+        
+
+
+
+
+
+def get_pre_notes():
+    main.win.pretest()
+    
+    #wait for user submit or program close
+    while main.win._pre_notes_wait and not main.win.is_destroyed:
+        time.sleep(0.1)
+     
+    return main.win._pre_notes
+        
 def get_post_notes(error_only=False):
     
     #get current error status, will be None if we are not handling an error
@@ -1956,9 +2001,12 @@ def get_post_notes(error_only=False):
         #nothing to do, bye!
         return {}
     
+    if error and error not in (KeyboardInterrupt,):
+        show_error(root_error)
+    
     
     main.win.post_test_info = None
-    main.win.post_test(root_error)
+    main.win.post_test()
     
     # wait for completion or program close
     
@@ -1994,12 +2042,16 @@ def _get_interfaces(root_cfg):
             if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
                 radioport = hdw_cfg['radioport']
             else:
-                radioport = None
-                
-            ri = hardware.RadioInterface(radioport)
+                radioport = ''
+            try:
+                ri = hardware.RadioInterface(radioport)
+            except RuntimeError:
+                ri = None
             
             ap = hardware.AudioPlayer()
             
+                
+                
             _set_values_from_cfg(ap, hdw_cfg)
             
             
@@ -2066,6 +2118,38 @@ def _get_dev_dly(ignore_error = True):
 
 
 
+
+
+
+
+def show_error(exc=None):
+    
+    
+    traceback.print_exc()
+    
+    if exc is None:
+        exc = sys.exc_info()[1]
+    if isinstance(exc, tuple):
+        exc = exc[1]
+    
+    print(exc)
+    
+    msg = str(exc)
+    err_name = exc.__class__.__name__
+    
+    if not exc:
+        #no error
+        return
+    
+    if not msg:
+        msg = f'A {err_name} occurred.'
+        err_name = 'Error'
+    
+    _show_error(err_name, msg)
+    
+@in_thread('GuiThread')
+def _show_error(err_name, msg):
+    tk.messagebox.showerror(err_name, msg)
 
 
         
