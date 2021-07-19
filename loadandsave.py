@@ -10,7 +10,6 @@ from appdirs import user_data_dir as udd
 import json
 import tkinter as tk
 
-from access_time import int_or_inf
 
 
 class TkVarDict(dict):
@@ -190,7 +189,7 @@ class Vec1Or2Var:
 
 
 
-class IntOrInf(tk.StringVar):
+class IntOrInf_OLD(tk.StringVar):
     
     def __init__(self, master=None, value=0, name=None):
         
@@ -211,7 +210,8 @@ class IntOrInf(tk.StringVar):
         super().set(val)
         
     def get(self):
-        return int_or_inf(super().get())
+        #return int_or_inf(super().get())
+        pass
     
     
     

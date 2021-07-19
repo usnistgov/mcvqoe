@@ -27,7 +27,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from mcvqoe import write_log
+from mcvqoe.base import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
 from mcvqoe import hardware
 
@@ -152,7 +152,7 @@ control_list = {
 
 initial_measure_objects = {
     'M2eFrame': m2e_gui.m2e.measure(),
-    'AccssDFrame': accesstime_gui.adly.Access(),
+    'AccssDFrame': accesstime_gui.adly.measure(),
     'PSuDFrame' : psud_gui.psud.measure(),
     'IgtibyFrame': intelligibility_gui.igtiby.measure(),
     'SimSettings': QoEsim(),
