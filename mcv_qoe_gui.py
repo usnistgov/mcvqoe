@@ -20,6 +20,7 @@ from os import path, listdir
 import gc
 import subprocess as sp
 from appdirs import user_data_dir as udd
+from warnings import warn
 
 
 import matplotlib
@@ -1180,7 +1181,7 @@ class TestProgressFrame(tk.LabelFrame):
         self.pack_configure(expand=True, fill=tk.BOTH)
     
     def __init__(self, master, btnvars, *args, **kwargs):
-        self.start_time = time.time()
+        self.stopwatch = _StopWatch()
         self.btnvars = btnvars
         
         super().__init__(master, *args, text='', **kwargs)
@@ -1206,7 +1207,16 @@ class TestProgressFrame(tk.LabelFrame):
         
         
     @in_thread('GuiThread', wait=True)
-    def progress(self, prog_type, num_trials, current_trial, err_msg='') -> bool:
+    def progress(self,
+                prog_type,
+                num_trials=0,
+                current_trial=0,
+                err_msg='',
+                clip_name='',
+                delay='',
+                file='',
+                new_file=''
+                ) -> bool:
         
         
         if main.win.step == 4:
@@ -1224,16 +1234,17 @@ class TestProgressFrame(tk.LabelFrame):
                       f'Trial {current_trial} of {num_trials}'),
             
             'check-fail' : ('Test encountered an error.',
-                f'Trial {current_trial+1} of {num_trials}')
+                f'Trial {current_trial+1} of {num_trials}'),
+            
+            'check-resume' : ()
             
             }
         
         
+        if prog_type in messages:
         
-        
-        self.primary_text.set(messages[prog_type][0])
-        
-        self.secondary_text.set(messages[prog_type][1])
+            self.primary_text.set(messages[prog_type][0])
+            self.secondary_text.set(messages[prog_type][1])
                 
         
         if not num_trials:
@@ -1253,10 +1264,11 @@ class TestProgressFrame(tk.LabelFrame):
             # estimate time remaining
             
             if current_trial == 0:
-                self.start_time = time.time()
+                self.stopwatch.reset()
+                self.stopwatch.start()
                 self.tertiary_text.set('')
             else:
-                time_elapsed = time.time() - self.start_time
+                time_elapsed = self.stopwatch.get()
                 
                 time_total = time_elapsed * num_trials / current_trial
                 
@@ -1276,9 +1288,78 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
         
-            
+        if prog_type == 'warning':
+            warn(err_msg, stacklevel=2)
         
         return True
+    
+    
+    
+    def user_check(self,
+                   reason,
+                   message,
+                   trials=None,
+                   time=None) -> bool:
+        
+        # don't count paused time in time-remaining calculation
+        self.stopwatch.pause()
+        
+        if not reason:
+            reason = 'Test Paused'
+        
+        tk.messagebox.showinfo(reason,
+                               message+'\n\n'+
+                               'Press OK to continue.')
+        
+        # resume 
+        self.stopwatch.start()
+        
+        return False
+    
+class _StopWatch:
+    def __init__(self):
+        self.paused = True
+        self.elapsed_time = 0
+        self.start_time = 0
+        
+            
+    def reset(self):
+        self.elapsed_time = 0
+        
+    def stop(self):
+        self.pause()
+        self.reset()
+        
+    def start(self):
+        self._update_elapsed_time()
+        self.paused = False
+        
+    def pause(self):
+        self._update_elapsed_time()
+        self.paused = True
+    def get(self):
+        
+        self._update_elapsed_time()
+        
+        return self.elapsed_time
+        
+    def _update_elapsed_time(self):
+        now = time.time()
+        
+        # don't count the time since last update if the timer has been paused
+        if not self.paused:
+            new_elapsed = now - self.start_time
+            
+            self.elapsed_time = self.elapsed_time + new_elapsed
+            
+            
+        self.start_time = now
+        
+    
+    
+    
+    
+    
 
 class PostProcessingFrame(ttk.Frame):
     
