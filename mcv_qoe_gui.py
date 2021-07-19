@@ -20,6 +20,8 @@ import os
 from os import path, listdir
 import gc
 import subprocess as sp
+from appdirs import user_data_dir as udd
+
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -1341,8 +1343,8 @@ class PostProcessingFrame(ttk.Frame):
     
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
-        dir_ = path.normpath(path.join(os.getcwd(), self.outdir))
-        
+        dir_ = path.normpath(self.outdir)
+        print(self.outdir, dir_)
         try:
             sp.Popen(['explorer', dir_])
         except (FileNotFoundError, OSError):
@@ -1699,8 +1701,7 @@ def run(root_cfg):
         # remove post-processing info from frame
         ppf.reset()
         
-        # put outdir folder into frame
-        ppf.outdir = cfg['outdir']
+        
         
         # prevent logging excess of information
         my_obj.no_log = my_obj.no_log + (
@@ -1832,7 +1833,9 @@ def run(root_cfg):
         write_log.post(info=post_dict, outdir=my_obj.outdir)
         
         
-        
+    # put outdir folder into frame
+    ppf.outdir = my_obj.outdir
+    
     #show post-processing frame
     main.win.set_step(6)
     
@@ -1917,6 +1920,14 @@ def param_modify(root_cfg):
     
     
     
+    # relative outdirs will go into the user's appdir folder
+    appdir = udd('mcvqoe', 'nist')
+    if cfg['outdir'] == '':
+        cfg['outdir'] = appdir
+    else:
+        cfg['outdir'] = path.join(appdir, cfg['outdir'])
+    
+    print(cfg['outdir'])
     
     # make trials an integer if it's not already (mainly for access time)
     bad_param = False
