@@ -280,11 +280,7 @@ class advanced(shared.advanced):
 
 
 class Access_fromGui(shared.SignalOverride, adly.measure):
-   
-
-    def run(self):
-        self.test(recovery=False)
-        #TODO: implement recovery
+    pass
     
 
 

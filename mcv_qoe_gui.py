@@ -1281,9 +1281,9 @@ class TestProgressFrame(tk.LabelFrame):
                 if self.pause_after is not None:
                     
                     time_left_set, time_unit_set = self.stopwatch.estimate_remaining(
-                        current_trial, self.pause_after)
+                        current_trial % self.pause_after, self.pause_after)
                     
-                    time_est = f'{time_est}\n{time_left_set} {time_unit_set} remaining...'
+                    time_est = f'{time_est}\n{time_left_set} {time_unit_set} until next pause.'
                 
 
                 
@@ -1856,22 +1856,6 @@ def run(root_cfg):
         #show progress bar in gui
         main.win.set_step(3)
         
-        # PSuD handles this by itself
-        if sel_tst in ('M2eFrame', 'AccssDFrame'):
-            # Get start time and date
-            time_n_date = datetime.datetime.now().replace(microsecond=0)
-            my_obj.info['Tstart'] = time_n_date
-        
-            # Add test to info dictionary.
-            my_obj.info['test'] = my_obj.test
-    
-            # Fill 'Arguments' within info dictionary
-            my_obj.info.update(write_log.fill_log(my_obj))
-    
-            # Write pretest notes and info to tests.log
-            write_log.pre(info=my_obj.info, outdir=my_obj.outdir)
-            
-            
         # clear pretest notes from window
         main.win.clear_old_entries()
         
@@ -1930,12 +1914,6 @@ def run(root_cfg):
         return
 
     
-    #PSuD, m2e handle this internally
-    if sel_tst in ('AccssDFrame'):
-        # Gather posttest notes and write to log
-        post_dict = get_post_notes()
-        write_log.post(info=post_dict, outdir=my_obj.outdir)
-        
         
     # put outdir folder into frame
     ppf.outdir = my_obj.outdir
