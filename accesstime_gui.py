@@ -7,7 +7,7 @@ Created on Fri Jun 11 12:50:45 2021
 
 import os
 
-import access_time as adly
+import mcvqoe.accesstime as adly
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -279,7 +279,7 @@ class advanced(shared.advanced):
 
 
 
-class Access_fromGui(shared.SignalOverride, adly.Access):
+class Access_fromGui(shared.SignalOverride, adly.measure):
    
 
     def run(self):
