@@ -1797,11 +1797,11 @@ def run(root_cfg):
         
         
         # set progress update callback
+        
         my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
         
         ppf = main.win.frames['PostProcessingFrame']
-        # set postprocessing info callback
-        my_obj.gui_show_element = ppf.add_element
+        
         # remove post-processing info from frame
         ppf.reset()
         
@@ -1810,7 +1810,6 @@ def run(root_cfg):
         # prevent logging excess of information
         my_obj.no_log = my_obj.no_log + (
             'progress_update',
-            'gui_show_element',
             'get_post_notes',
         )
         
@@ -1877,7 +1876,7 @@ def run(root_cfg):
             result = my_obj.run()
             
         if sel_tst in ('IgtibyFrame',):
-            my_obj.gui_show_element(f'Intelligibility Estimate: {result}')
+            ppf.add_element(f'Intelligibility Estimate: {result}')
             
         if sel_tst in ('M2eFrame',):
             my_obj.plot()
@@ -2112,45 +2111,56 @@ def get_post_notes(error_only=False):
 
 
 def _get_interfaces(root_cfg):
+    
+    if root_cfg['selected_test'] in ('AccssDFrame'):
+        channels = {
+            'playback_chans' : {'tx_voice':0, 'start_signal':1},
+            'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
+            }
+    
+    else:
+        channels = {}
+    
+    
     # in case of simulation test
-        if root_cfg['is_simulation']:
-            
-            sim = QoEsim()
-            
-            _set_values_from_cfg(sim, root_cfg['SimSettings'])
-                
-            
-            ri = sim
-            ap = sim
+    if root_cfg['is_simulation']:
         
+        sim = QoEsim(**channels)
+        
+        _set_values_from_cfg(sim, root_cfg['SimSettings'])
+            
+        
+        ri = sim
+        ap = sim
+    
+    else:
+        hdw_cfg = root_cfg['HdwSettings']
+        
+        
+        if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
+            radioport = hdw_cfg['radioport']
         else:
-            hdw_cfg = root_cfg['HdwSettings']
+            radioport = ''
+        try:
+            ri = hardware.RadioInterface(radioport)
+        except RuntimeError:
+            ri = None
+        
+        ap = hardware.AudioPlayer(**channels)
+        
             
             
-            if 'radioport' in hdw_cfg and hdw_cfg['radioport']:
-                radioport = hdw_cfg['radioport']
-            else:
-                radioport = ''
-            try:
-                ri = hardware.RadioInterface(radioport)
-            except RuntimeError:
-                ri = None
-            
-            ap = hardware.AudioPlayer()
-            
-                
-                
-            _set_values_from_cfg(ap, hdw_cfg)
-            
-            
-            ap.blocksize = hdw_cfg['blocksize']
-            ap.buffersize = hdw_cfg['buffersize']
-            ap.sample_rate = 48000
-            
-            ap.playback_chans = {'tx_voice':0, 'start_signal':1}
-            ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
-            
-        return (ri, ap)
+        _set_values_from_cfg(ap, hdw_cfg)
+        
+        
+        ap.blocksize = hdw_cfg['blocksize']
+        ap.buffersize = hdw_cfg['buffersize']
+        ap.sample_rate = 48000
+        
+        ap.playback_chans = {'tx_voice':0, 'start_signal':1}
+        ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
+        
+    return (ri, ap)
 
 def _set_values_from_cfg(my_obj, cfg):
     for k, v in cfg.items():
