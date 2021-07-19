@@ -16,7 +16,6 @@ import json
 import datetime
 import pickle
 import functools
-import os
 from os import path, listdir
 import gc
 import subprocess as sp
@@ -606,14 +605,7 @@ class MCVQoEGui(tk.Tk):
         return obj
     
 
-    def verify_config(self, root_cfg):
-        try:
-            #translate cfg items as necessary
-            param_modify(root_cfg)
-            
-        except InvalidParameter as e:
-            # highlight the offending control in red
-            pass
+    
         
     @in_thread('GuiThread', wait=False)    
     def show_invalid_parameter(self, e):
@@ -1849,7 +1841,6 @@ def run(root_cfg):
 def param_modify(root_cfg):
     
     sel_tst = root_cfg['selected_test']
-    is_sim = root_cfg['is_simulation']
     cfg = root_cfg[sel_tst]
     
     
