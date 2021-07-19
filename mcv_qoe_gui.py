@@ -1275,7 +1275,6 @@ class TestProgressFrame(tk.LabelFrame):
             else:
                 time_left, time_unit = self.stopwatch.estimate_remaining(
                     current_trial, num_trials)
-                print(self.stopwatch.get())
                 
                 time_est = f'{time_left} {time_unit} remaining...'
                 
