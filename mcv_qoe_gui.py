@@ -695,7 +695,7 @@ class MCVQoEGui(tk.Tk):
         self.set_step(1)
             
     def run(self):
-        progress('pre', 0, 0)
+        self.frames['TestProgressFrame'].progress('pre', 0, 0)
                 
         #retrieve configuration from controls
         root_cfg = self.get_cnf()
@@ -1344,7 +1344,6 @@ class PostProcessingFrame(ttk.Frame):
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
         dir_ = path.normpath(self.outdir)
-        print(self.outdir, dir_)
         try:
             sp.Popen(['explorer', dir_])
         except (FileNotFoundError, OSError):
@@ -1693,7 +1692,7 @@ def run(root_cfg):
         
         
         # set progress update callback
-        my_obj.progress_update = progress
+        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
         
         ppf = main.win.frames['PostProcessingFrame']
         # set postprocessing info callback
@@ -1844,10 +1843,7 @@ def run(root_cfg):
     print('\n\n\n')
     
     
-def progress(prog_type, num_trials, current_trial, err_msg='') -> bool:
-    return main.win.frames['TestProgressFrame'].progress(
-        prog_type, num_trials, current_trial, err_msg)
-    
+
 
 
 def param_modify(root_cfg):
@@ -1927,7 +1923,6 @@ def param_modify(root_cfg):
     else:
         cfg['outdir'] = path.join(appdir, cfg['outdir'])
     
-    print(cfg['outdir'])
     
     # make trials an integer if it's not already (mainly for access time)
     bad_param = False
