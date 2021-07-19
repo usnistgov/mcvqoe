@@ -1182,6 +1182,10 @@ class TestProgressFrame(tk.LabelFrame):
     
     def __init__(self, master, btnvars, *args, **kwargs):
         self.stopwatch = _StopWatch()
+        self.stopwatch.start()
+        
+        self.pause_after = None
+        
         self.btnvars = btnvars
         
         super().__init__(master, *args, text='', **kwargs)
@@ -1230,13 +1234,15 @@ class TestProgressFrame(tk.LabelFrame):
             'proc' : ('Processing test data...',
                       f'Processing trial {current_trial+1} of {num_trials}'),
             
-            'test' : ('Performing tests...',
-                      f'Trial {current_trial} of {num_trials}'),
+            'test' : ('Performing trials...',
+                      f'Trial {current_trial+1} of {num_trials}'),
             
-            'check-fail' : ('Test encountered an error.',
-                f'Trial {current_trial+1} of {num_trials}'),
+            'check-fail' : ('Trial failed...',
+                f'Trial {current_trial+1} of {num_trials}\n{err_msg}'),
             
-            'check-resume' : ()
+            'check-resume' : ('Resuming test...',
+                f'Trial {current_trial+1} of {num_trials}\n{err_msg}')
+            
             
             }
         
@@ -1265,28 +1271,24 @@ class TestProgressFrame(tk.LabelFrame):
             
             if current_trial == 0:
                 self.stopwatch.reset()
-                self.stopwatch.start()
                 self.tertiary_text.set('')
             else:
-                time_elapsed = self.stopwatch.get()
+                time_left, time_unit = self.stopwatch.estimate_remaining(
+                    current_trial, num_trials)
+                print(self.stopwatch.get())
                 
-                time_total = time_elapsed * num_trials / current_trial
+                time_est = f'{time_left} {time_unit} remaining...'
                 
-                time_left = time_total - time_elapsed
+                if self.pause_after is not None:
+                    
+                    time_left_set, time_unit_set = self.stopwatch.estimate_remaining(
+                        current_trial, self.pause_after)
+                    
+                    time_est = f'{time_est}\n{time_left_set} {time_unit_set} remaining...'
                 
-                time_left = time_left / 60
+
                 
-                if time_left < 60:
-                    time_left = round(time_left)
-                    time_unit = 'minutes'
-                elif time_left < 60 * 24:
-                    time_left = round(time_left // 60)
-                    time_unit = 'hours'
-                else:
-                    time_left = round(time_left // 60 // 24)
-                    time_unit = 'days'
-                
-                self.tertiary_text.set(f'{time_left} {time_unit} remaining...')
+                self.tertiary_text.set(time_est)
         
         if prog_type == 'warning':
             warn(err_msg, stacklevel=2)
@@ -1301,17 +1303,31 @@ class TestProgressFrame(tk.LabelFrame):
                    trials=None,
                    time=None) -> bool:
         
+        if trials:
+            self.pause_after = trials
+        
+        
+        if main.win.step == 4:
+            # indicate that the test should not continue
+            return True
+        
+        
+        
         # don't count paused time in time-remaining calculation
         self.stopwatch.pause()
         
-        if not reason:
-            reason = 'Test Paused'
+        if reason == 'normal-stop':
+            tk.messagebox.showinfo('Test Paused',
+                                   message+'\n\n'+
+                                   'Press OK to continue.')
+            
+        elif reason == 'problem-stop':
+            tk.messagebox.showerror('Test Paused',
+                                    message+'\n\n'+
+                                    'Press OK to continue.')
         
-        tk.messagebox.showinfo(reason,
-                               message+'\n\n'+
-                               'Press OK to continue.')
         
-        # resume 
+        # resume timer
         self.stopwatch.start()
         
         return False
@@ -1324,6 +1340,7 @@ class _StopWatch:
         
             
     def reset(self):
+        self._update_elapsed_time()
         self.elapsed_time = 0
         
     def stop(self):
@@ -1338,10 +1355,32 @@ class _StopWatch:
         self._update_elapsed_time()
         self.paused = True
     def get(self):
-        
         self._update_elapsed_time()
-        
         return self.elapsed_time
+    
+    def estimate_remaining(self, current_trial, num_trials):
+        time_elapsed = self.get()
+        
+        time_total = time_elapsed * num_trials / current_trial
+        
+        time_left = time_total - time_elapsed
+        
+        time_left = time_left / 60
+        
+        if time_left < 60:
+            time_left = round(time_left)
+            time_unit = 'minutes'
+        elif time_left < 60 * 24:
+            time_left = round(time_left // 60)
+            time_unit = 'hours'
+        else:
+            time_left = round(time_left // 60 // 24)
+            time_unit = 'days'
+    
+        return (time_left, time_unit)
+    
+    
+    
         
     def _update_elapsed_time(self):
         now = time.time()
@@ -1354,12 +1393,6 @@ class _StopWatch:
             
             
         self.start_time = now
-        
-    
-    
-    
-    
-    
 
 class PostProcessingFrame(ttk.Frame):
     
