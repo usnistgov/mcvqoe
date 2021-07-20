@@ -1279,10 +1279,14 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 time_est = f'{time_left} {time_unit} remaining...'
                 
-                if self.pause_after is not None:
+                if self.pause_after not in (None, np.inf):
+                    
+                    ct_in_set = (current_trial % self.pause_after) + 1
+                    
+                    next_stop = current_trial + self.pause_after - ct_in_set
                     
                     time_left_set, time_unit_set = self.stopwatch.estimate_remaining(
-                        current_trial % self.pause_after, self.pause_after)
+                        current_trial, next_stop)
                     
                     time_est = f'{time_est}\n{time_left_set} {time_unit_set} until next pause.'
                 
@@ -1801,17 +1805,7 @@ def run(root_cfg):
     my_obj = constructors[sel_tst]()
     
     try:
-        
-        
-        
-        # set progress update callback
-        
-        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
-        
-        ppf = main.win.frames['PostProcessingFrame']
-        
-        # remove post-processing info from frame
-        ppf.reset()
+
         
         
         
@@ -1849,7 +1843,23 @@ def run(root_cfg):
             # Check for value errors with instance variables
             my_obj.param_check()
         
+                
         
+        
+        # set progress update callback
+        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
+        
+        if sel_tst == 'AccssDFrame':
+            #set user check callback
+            my_obj.user_check = main.win.frames['TestProgressFrame'].user_check
+            main.win.frames['TestProgressFrame'].pause_after = my_obj.trials
+        else:
+            main.win.frames['TestProgressFrame'].pause_after = None
+        
+        ppf = main.win.frames['PostProcessingFrame']
+        
+        # remove post-processing info from frame
+        ppf.reset()
         
         
         # Gather pretest notes and parameters
