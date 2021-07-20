@@ -1943,7 +1943,7 @@ def run(root_cfg):
     except KeyboardInterrupt: pass
     
     #indicates end of test
-    except SystemExit: return
+    except SystemExit: pass
         
     except Exception as e:
         if show_errors:
@@ -1957,7 +1957,8 @@ def run(root_cfg):
     
         
     # put outdir folder into frame
-    ppf.outdir = my_obj.outdir
+    try: ppf.outdir = my_obj.outdir
+    except AttributeError: ppf.outdir = ''
     
     #show post-processing frame
     main.win.set_step(6)
@@ -2149,7 +2150,10 @@ def get_post_notes(error_only=False):
         #nothing to do, bye!
         return {}
     
-    if error and error not in (KeyboardInterrupt,):
+    if error and error not in (KeyboardInterrupt,
+                               SystemExit,
+                               Abort_by_User,
+                               InvalidParameter):
         show_error(root_error)
     
     
