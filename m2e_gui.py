@@ -129,7 +129,7 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
             raise ValueError("\nIncorrect test type")
             
         
-    def plot(self,name=None):
+    def _get_std(self,name=None):
         
         if( not name):
             name=self.data_filename
@@ -146,7 +146,6 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         #convert to numpy array
         m2e_dat=np.array(m2e_dat)
         
-        #----------------------------[Generate Plots]------------------------------
         
         # Overall mean delay
         ovrl_dly = np.mean(m2e_dat)
@@ -159,34 +158,7 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         
         std_msg = "StD: %.2fus" % std_delay
         
-        print(std_msg, flush=True)
+        return std_msg
         
-        
-        # Create trial scatter plot
-        fig1 = Figure()
-        a = fig1.add_subplot()
-        
-        x2 = range(1, len(m2e_dat)+1)
-        a.scatter(x2,m2e_dat, color='blue')
-        a.set_xlabel("Trial Number")
-        a.set_ylabel("Delay(s)")
-        
-        
-        # Create histogram for mean
-        fig2 = Figure()
-        a = fig2.add_subplot()
-        uniq = np.unique(m2e_dat)
-        dlymin = np.amin(m2e_dat)
-        dlymax = np.amax(m2e_dat)
-        a.hist(m2e_dat, bins=len(uniq), range=(dlymin, dlymax), rwidth=0.5)
-        fig2.suptitle("Mean: %.5fs" % ovrl_dly)
-        a.set_xlabel("Delay(s)")
-        a.set_ylabel("Frequency of indicated delay")
-        
-        
-        #show this info in window
-        self.gui_show_element(std_msg)
-        self.gui_show_element(fig1)
-        self.gui_show_element(fig2)
 
 

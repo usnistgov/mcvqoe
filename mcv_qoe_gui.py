@@ -13,18 +13,19 @@ import _thread
 from threading import Thread
 import threading
 import json
-import datetime
 import pickle
 import functools
 from os import path, listdir
 import gc
 import subprocess as sp
-from appdirs import user_data_dir as udd
+from appdirs import user_data_dir
 from warnings import warn
-
-
 import matplotlib
-matplotlib.use('TkAgg')
+
+#alternate rendering for pyplot to avoid conflicts with tkinter
+try:matplotlib.use('Qt5Agg')
+except:pass
+
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
@@ -783,7 +784,7 @@ class MCVQoEGui(tk.Tk):
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
             next_btn = lambda : self.set_step(0)
-            back_btn = lambda : self.run
+            back_btn = lambda : self.set_step(1)
             back_btn_txt = 'Run Again'
             
         
@@ -1416,8 +1417,9 @@ class PostProcessingFrame(ttk.Frame):
         
         Parameters
         ----------
-        element : UNION[str, Figure]
-            A string or matplotlib figure to be added into the window
+        element :
+            A string, matplotlib figure, or tk widget class to be added into
+            the window
 
         """
         
@@ -1429,6 +1431,9 @@ class PostProcessingFrame(ttk.Frame):
             
         elif isinstance(element, str):
             widget = ttk.Label(self, text=element)
+            
+        else:
+            widget = element(self)
 
         widget.pack(fill=tk.X, expand=True, padx=10, pady=10)
         
@@ -1875,11 +1880,25 @@ def run(root_cfg):
             #run test
             result = my_obj.run()
             
-        if sel_tst in ('IgtibyFrame',):
+        if sel_tst == 'IgtibyFrame':
+            #show intelligibility estimate
             ppf.add_element(f'Intelligibility Estimate: {result}')
             
-        if sel_tst in ('M2eFrame',):
-            my_obj.plot()
+        elif sel_tst == 'M2eFrame':
+            #show std_dev
+            ppf.add_element(str(my_obj._get_std()))
+            
+            #create "show plots" button
+            class ShowPlots(ttk.Button):
+                def __init__(self, master):
+                    super().__init__(master,
+                        text='Show Plots',
+                        command=self.plot)
+                
+                @in_thread('MainThread', wait=False)
+                def plot(self):my_obj.plot()
+            
+            ppf.add_element(ShowPlots)
     
     
     except InvalidParameter as e:
@@ -1895,13 +1914,13 @@ def run(root_cfg):
         
         
     #gathers posttest notes without showing error
-    except Abort_by_User:pass
+    except Abort_by_User: pass
     
     #gathers posttest notes without showing error
-    except KeyboardInterrupt:pass
+    except KeyboardInterrupt: pass
     
     #indicates end of test
-    except SystemExit:return
+    except SystemExit: return
         
     except Exception:
         # Gather posttest notes and write to log
@@ -1929,7 +1948,26 @@ def run(root_cfg):
 
 
 def param_modify(root_cfg):
+    """parses user-entered data into acceptable formats for the measure obj vars
+    and checks for errors
     
+    Parameters are only changed and checked as needed.
+    
+
+    Parameters
+    ----------
+    root_cfg : dict
+        the tree of entered data.
+
+    Raises
+    ------
+    Abort_by_User
+        if the user presses 'cancel' when asked to calibrate dev_dly.
+    InvalidParameter
+        if a parameter cannot be parsed, or if it is missing
+
+    
+    """
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
     
@@ -1998,7 +2036,7 @@ def param_modify(root_cfg):
     
     
     # relative outdirs will go into the user's appdir folder
-    appdir = udd('mcvqoe', 'nist')
+    appdir = user_data_dir('mcvqoe', 'nist')
     if cfg['outdir'] == '':
         cfg['outdir'] = appdir
     else:
