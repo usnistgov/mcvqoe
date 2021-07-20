@@ -1780,6 +1780,9 @@ def test_audio(root_cfg, on_finish=None):
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
     
+    show_errors = True
+    show_post_test = False
+    
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
@@ -1852,8 +1855,9 @@ def run(root_cfg):
         # Gather pretest notes and parameters
         my_obj.info = get_pre_notes()
         if my_obj.info is None: 
-            #user pressed 'Cancel' in test info gui
+            #user pressed 'back' in test info gui
             return
+        
         
         
         
@@ -1866,6 +1870,8 @@ def run(root_cfg):
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
         
+        #indicate that in case of error, show the post_test_gui
+        show_post_test = True
         
         
         
@@ -1876,9 +1882,15 @@ def run(root_cfg):
        
         # Enter RadioInterface object
         with ri as my_obj.ri:
-        
-            #run test
+            
+            # errors will be handled through get_post_notes()
+            show_errors = False
+            
+            # run the test
             result = my_obj.run()
+            
+            
+                
             
         if sel_tst == 'IgtibyFrame':
             #show intelligibility estimate
@@ -1907,9 +1919,10 @@ def run(root_cfg):
         return
         
     except ValueError as e:
-        # shows error message and returns
-        traceback.print_exc()
-        tk.messagebox.showerror('Invalid Parameter', str(e))
+        if show_errors:
+            # shows error message and returns
+            traceback.print_exc()
+            tk.messagebox.showerror('Invalid Parameter', str(e))
         return
         
         
@@ -1922,14 +1935,14 @@ def run(root_cfg):
     #indicates end of test
     except SystemExit: return
         
-    except Exception:
-        # Gather posttest notes and write to log
-        post_dict = get_post_notes()
-        write_log.post(info=post_dict, outdir=my_obj.outdir)
-        
-        #show postprocessing frame
-        main.win.set_step(6)
-        return
+    except Exception as e:
+        if show_errors:
+            if show_post_test:
+                my_obj.get_post_notes()
+            else:
+                show_error(e)
+        else:
+            traceback.print_exc()
 
     
         
@@ -2278,7 +2291,18 @@ def show_error(exc=None):
         return
     
     if not msg:
-        msg = f'A {err_name} occurred.'
+        if 'error' in err_name.lower():
+            descriptor = ''
+        else:
+            descriptor = ' error'
+        if err_name[0].lower() in 'aeiou':
+            article = 'An'
+        else:
+            article = 'A'
+            
+        msg = f'{article} "{err_name}"{descriptor} occurred.'
+        
+        
         err_name = 'Error'
     
     _show_error(err_name, msg)
