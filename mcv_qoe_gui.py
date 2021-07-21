@@ -4,6 +4,7 @@ Created on Wed May 26 15:53:57 2021
 
 @author: marcus.zeender@nist.gov
 """
+import pdb
 
 import ctypes
 import traceback
@@ -1190,25 +1191,36 @@ class TestProgressFrame(tk.LabelFrame):
         self.btnvars = btnvars
         
         super().__init__(master, *args, text='', **kwargs)
+               
         
         # text above bar
         self.primary_text = txt = tk.StringVar()
-        
-        
         ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+        
+        
         
         # the progress bar
         self.bar = ttk.Progressbar(self, mode='indeterminate')
         self.bar.pack(fill=tk.X, padx=10, pady=10)
         
         
+        
         #the text below the bar
+        self.secondary_text = tk.StringVar()
+        self.time_estimate_ = tk.StringVar()
+        self.clip_name_     = tk.StringVar()
+        self.file_          = tk.StringVar()
+        self.delay_         = tk.StringVar()
         
-        self.secondary_text = txt = tk.StringVar()
-        ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+        for txt in (self.secondary_text,
+                    self.time_estimate_,
+                    self.clip_name_,
+                    self.file_,
+                    self.delay_,
+                    ):
+                    
+            ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
         
-        self.tertiary_text = txt = tk.StringVar()
-        ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
         
         
     @in_thread('GuiThread', wait=True)
@@ -1222,7 +1234,6 @@ class TestProgressFrame(tk.LabelFrame):
                 file='',
                 new_file=''
                 ) -> bool:
-        
         
         if main.win.step == 4:
             # indicate that the test should not continue
@@ -1258,7 +1269,7 @@ class TestProgressFrame(tk.LabelFrame):
             #indeterminate progress bar
             self.bar.configure(mode='indeterminate', maximum = 100)
             self.bar.start()
-            self.tertiary_text.set('')
+            self.time_estimate_.set('')
             
             
         else:
@@ -1272,7 +1283,7 @@ class TestProgressFrame(tk.LabelFrame):
             
             if current_trial == 0:
                 self.stopwatch.reset()
-                self.tertiary_text.set('')
+                self.time_estimate_.set('')
             else:
                 time_left, time_unit = self.stopwatch.estimate_remaining(
                     current_trial, num_trials)
@@ -1292,10 +1303,37 @@ class TestProgressFrame(tk.LabelFrame):
                 
 
                 
-                self.tertiary_text.set(time_est)
+                self.time_estimate_.set(time_est)
         
-        if prog_type == 'warning':
-            warn(err_msg, stacklevel=2)
+        
+        
+        
+        if prog_type == 'pre':
+            self.clip_name_.set('')
+            self.file_.set('')
+            self.delay_.set('')
+        
+        elif prog_type == 'warning':
+            WarningBox(self,
+                       f'WARNING: {err_msg}',
+                       color='yellow',
+                       )
+            
+        elif prog_type == 'csv-update':
+            self.clip_name_.set(f'Current Clip: {clip_name}')
+            self.file_.set(f'Storing data in: "{file}"')
+        
+        elif prog_type == 'acc-clip-update':
+            self.clip_name_.set(f'Current Clip: {clip_name}')
+            self.delay_.set(f'Delay : {delay:.3f}s\n')
+            
+        elif prog_type == 'csv-rename':
+            self.file_.set(f'Renaming "{file}"\nto "{new_file}"')
+        
+        
+        
+        
+        #pdb.set_trace(header='NOICE')
         
         return True
     
@@ -1397,6 +1435,24 @@ class _StopWatch:
             
             
         self.start_time = now
+        
+class WarningBox(tk.Frame):
+    def __init__(self, master, text, color='yellow', **kwargs):
+        super().__init__(master, background=color)
+        
+        tk.Button(self, text='x', command=self.destroy, background=color).pack(
+            side=tk.RIGHT, padx=10, pady=10)
+        
+        ttk.Label(self, text=text, background=color).pack(
+            side=tk.LEFT, padx=10, pady=10)
+        
+        self.pack(side=tk.BOTTOM, fill=tk.X)
+
+        
+        
+        
+        
+
 
 class PostProcessingFrame(ttk.Frame):
     
@@ -2184,6 +2240,7 @@ def _get_interfaces(root_cfg):
             }
     
     else:
+        # keep defaults
         channels = {}
     
     
@@ -2206,6 +2263,8 @@ def _get_interfaces(root_cfg):
             radioport = hdw_cfg['radioport']
         else:
             radioport = ''
+            
+        #TODO don't ignore this error
         try:
             ri = hardware.RadioInterface(radioport)
         except RuntimeError:
