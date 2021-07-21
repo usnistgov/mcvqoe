@@ -20,7 +20,6 @@ from os import path, listdir
 import gc
 import subprocess as sp
 from appdirs import user_data_dir
-from warnings import warn
 import matplotlib
 
 #alternate rendering for pyplot to avoid conflicts with tkinter
@@ -57,8 +56,6 @@ import intelligibility_gui
 from intelligibility_gui import IgtibyFrame
 
 
-#TODO: remove the following
-hardware.RadioInterface = QoEsim
 
 # basic config
 TITLE_ = 'MCV QoE'
@@ -2121,11 +2118,8 @@ def _get_interfaces(root_cfg):
         else:
             radioport = ''
             
-        #TODO don't ignore this error
-        try:
-            ri = hardware.RadioInterface(radioport)
-        except RuntimeError:
-            ri = None
+        
+        ri = hardware.RadioInterface(radioport)
         
         ap = hardware.AudioPlayer(**channels)
         
