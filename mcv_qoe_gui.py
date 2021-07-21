@@ -66,149 +66,6 @@ TITLE_ = 'MCV QoE'
 WIN_SIZE = (900, 750)
 
 
-control_list = {
-    'EmptyFrame': [],
-    
-    'TestInfoGuiFrame': [
-            'Test Type',
-            'Tx Device',
-            'Rx Device',
-            'System',
-            'Test Loc'
-            ],
-    
-    'PostTestGuiFrame': [],
-    
-    'TestProgressFrame': [],
-    
-    'PostProcessingFrame': [],
-    
-    'M2eFrame': [
-        'audio_files',
-        'bgnoise_file',
-        'bgnoise_volume',
-        'outdir',
-        'ptt_wait',
-        'test',
-        'trials'
-    ],
-
-    'AccssDFrame': [
-        'audio_files',
-        'audio_path',
-        'auto_stop',
-        'bgnoise_file',
-        'bgnoise_volume',
-        'data_file',
-        'outdir',
-        'ptt_gap',
-        'ptt_rep',
-        'ptt_step',
-        's_thresh',
-        's_tries',
-        'stop_rep',
-        'trials',
-        'dev_dly',
-    ],
-    
-    'PSuDFrame' : [
-        'audio_files',
-        'audio_path',
-        'trials',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'm2e_min_corr',
-        'intell_est',
-    ],
-    
-    'IgtibyFrame': [
-        'audio_files',
-        'audio_path',
-        'trials',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'intell_est',
-        'save_tx_audio',
-    ],
-        
-    'SimSettings': [
-        'overplay',
-        'channel_tech',
-        'channel_rate',
-        'm2e_latency',
-        'access_delay',
-        'rec_snr',
-        'PTT_sig_freq',
-        'PTT_sig_aplitude',
-    ],
-    
-    'HdwSettings' : [
-        
-        'overplay',
-        'radioport',
-        'dev_dly',
-        'blocksize',
-        'buffersize',
-        ],
-}
-
-initial_measure_objects = {
-    'M2eFrame': m2e_gui.m2e.measure(),
-    'AccssDFrame': accesstime_gui.adly.measure(),
-    'PSuDFrame' : psud_gui.psud.measure(),
-    'IgtibyFrame': intelligibility_gui.igtiby.measure(),
-    'SimSettings': QoEsim(),
-    'HdwSettings': shared._HdwPrototype()
-    }
-
-
-# load default values from objects
-DEFAULTS = {}
-for name_, key_group in control_list.items():
-    
-    DEFAULTS[name_] = {}
-    
-    if name_ in initial_measure_objects:
-        obj = initial_measure_objects[name_]
-        
-        for key in key_group:
-            if hasattr(obj, key):
-                DEFAULTS[name_][key] = getattr(obj, key)
-
-#values that require more than one control
-DEFAULTS['AccssDFrame']['_ptt_delay_min'] = initial_measure_objects[
-    'AccssDFrame'].ptt_delay[0]
-try:
-    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = str(initial_measure_objects[
-        'AccssDFrame'].ptt_delay[1])
-except IndexError:
-    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = '<default>'
-    
-for k in ('AccssDFrame','PSuDFrame'):
-    DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
-    try:
-        DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
-            k].time_expand[1])
-    except IndexError:
-        DEFAULTS[k]['_time_expand_f'] = '<default>'
-
-#the following should be a string, not any other type
-DEFAULTS['AccssDFrame']['trials'] = str(int(DEFAULTS['AccssDFrame']['trials']))
-
-DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
-
-
-# the following should be a float
-DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
-
-#free initial objects
-del initial_measure_objects
-del obj
-
-
-    
     
 def in_thread(thread, wait=True):
     """A function decorator to ensure that a function runs in the given thread.
@@ -2383,16 +2240,175 @@ def show_error(exc=None):
 @in_thread('GuiThread')
 def _show_error(err_name, msg):
     tk.messagebox.showerror(err_name, msg)
+    
 
 
+
+
+
+
+
+
+
+
+
+#---------------------- Get default values for parameters --------------------
+    
+control_list = {
+    'EmptyFrame': [],
+    
+    'TestInfoGuiFrame': [
+            'Test Type',
+            'Tx Device',
+            'Rx Device',
+            'System',
+            'Test Loc'
+            ],
+    
+    'PostTestGuiFrame': [],
+    
+    'TestProgressFrame': [],
+    
+    'PostProcessingFrame': [],
+    
+    'M2eFrame': [
+        'audio_files',
+        'bgnoise_file',
+        'bgnoise_volume',
+        'outdir',
+        'ptt_wait',
+        'test',
+        'trials'
+    ],
+
+    'AccssDFrame': [
+        'audio_files',
+        'audio_path',
+        'auto_stop',
+        'bgnoise_file',
+        'bgnoise_volume',
+        'data_file',
+        'outdir',
+        'ptt_gap',
+        'ptt_rep',
+        'ptt_step',
+        's_thresh',
+        's_tries',
+        'stop_rep',
+        'trials',
+        'dev_dly',
+    ],
+    
+    'PSuDFrame' : [
+        'audio_files',
+        'audio_path',
+        'trials',
+        'outdir',
+        'ptt_wait',
+        'ptt_gap',
+        'm2e_min_corr',
+        'intell_est',
+    ],
+    
+    'IgtibyFrame': [
+        'audio_files',
+        'audio_path',
+        'trials',
+        'outdir',
+        'ptt_wait',
+        'ptt_gap',
+        'intell_est',
+        'save_tx_audio',
+    ],
+        
+    'SimSettings': [
+        'overplay',
+        'channel_tech',
+        'channel_rate',
+        'm2e_latency',
+        'access_delay',
+        'rec_snr',
+        'PTT_sig_freq',
+        'PTT_sig_aplitude',
+    ],
+    
+    'HdwSettings' : [
+        
+        'overplay',
+        'radioport',
+        'dev_dly',
+        'blocksize',
+        'buffersize',
+        ],
+}
+
+initial_measure_objects = {
+    'M2eFrame': m2e_gui.m2e.measure(),
+    'AccssDFrame': accesstime_gui.adly.measure(),
+    'PSuDFrame' : psud_gui.psud.measure(),
+    'IgtibyFrame': intelligibility_gui.igtiby.measure(),
+    'SimSettings': QoEsim(),
+    'HdwSettings': shared._HdwPrototype()
+    }
+
+
+# load default values from objects
+DEFAULTS = {}
+for name_, key_group in control_list.items():
+    
+    DEFAULTS[name_] = {}
+    
+    if name_ in initial_measure_objects:
+        obj = initial_measure_objects[name_]
+        
+        for key in key_group:
+            if hasattr(obj, key):
+                DEFAULTS[name_][key] = getattr(obj, key)
+
+#values that require more than one control
+DEFAULTS['AccssDFrame']['_ptt_delay_min'] = initial_measure_objects[
+    'AccssDFrame'].ptt_delay[0]
+try:
+    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = str(initial_measure_objects[
+        'AccssDFrame'].ptt_delay[1])
+except IndexError:
+    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = '<default>'
+    
+for k in ('AccssDFrame','PSuDFrame'):
+    DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
+    try:
+        DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
+            k].time_expand[1])
+    except IndexError:
+        DEFAULTS[k]['_time_expand_f'] = '<default>'
+
+#the following should be a string, not any other type
+DEFAULTS['AccssDFrame']['trials'] = str(int(DEFAULTS['AccssDFrame']['trials']))
+
+try:
+    DEFAULTS['AccssDFrame']['dev_dly'] = str(_get_dev_dly(ignore_error=False))
+except FileNotFoundError:
+    DEFAULTS['AccssDFrame']['dev_dly'] = ''
+
+
+DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
+
+
+# the following should be a float
+DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+
+#free initial objects
+del initial_measure_objects
+del obj
+
+
+
+
+
+# on Windows, remove dpi scaling (otherwise text is blurry)
+if hasattr(ctypes, 'windll'):
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
         
 
 if __name__ == '__main__':
-    
-    # on Windows, remove dpi scaling (otherwise text is blurry)
-    if hasattr(ctypes, 'windll'):
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
-
-       
-    
     Main()
