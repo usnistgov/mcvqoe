@@ -5,6 +5,8 @@ Created on Wed Jun  9 11:03:39 2021
 @author: MkZee
 """
 
+from os import path
+
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
@@ -513,7 +515,7 @@ class audio_files(LabeledControl):
                 initialfile=self.btnvar.get(),
                 filetypes=[('WAV files', '*.wav')])
         if fp:
-            self.btnvar.set(fp)
+            self.btnvar.set([path.normpath(f) for f in fp])
             
             
 class _BrowseForFolder(LabeledControl):
@@ -531,7 +533,7 @@ class _BrowseForFolder(LabeledControl):
     def on_button(self):
         fp = fdl.askdirectory()
         if fp:
-            self.master.btnvars['audio_files'].set([fp])
+            self.master.btnvars['audio_files'].set([path.normpath(fp)])
             
 class trials(LabeledControl):
     """Number of trials to use for test."""
@@ -552,6 +554,7 @@ class outdir(LabeledControl):
     def on_button(self):
         dirp = fdl.askdirectory(parent=self.master)
         if dirp:
+            dirp = path.normpath(dirp)
             self.btnvar.set(dirp)
             
             
