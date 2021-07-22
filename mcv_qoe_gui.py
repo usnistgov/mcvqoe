@@ -1715,8 +1715,8 @@ def run(root_cfg):
     my_obj = constructors[sel_tst]()
     
     try:
-
-        
+        # open interfaces for testing
+        _get_interfaces(root_cfg)
         
         
         # prevent logging excess of information
@@ -1910,20 +1910,16 @@ def param_modify(root_cfg):
     
     if 'dev_dly' in cfg:
         
-        dev_dly = _get_dev_dly()
+        bad = False
         
-        if dev_dly is None or cfg['dev_dly'] != dev_dly:
-            ync = tk.messagebox.askyesnocancel('Device Delay',
-                'It looks like your device delay has not been calibrated.'+
-                ' Run calibration now?')
-            if ync:
-                print('DOING CHARACTERIZATION TEST')
-                cfg['dev_dly'] = 42 #dev_dly_calibration()
-            elif ync is None:
-                raise Abort_by_User()
-    
-    
-    
+        try: cfg['dev_dly'] = float(cfg['dev_dly'])
+        except ValueError: bad = True
+        
+        if bad: raise InvalidParameter('dev_dly',
+            message='Make sure to calibrate your device delay (recommended)\n\n'+
+            'Or, enter your known device delay here.')
+        
+        
     
     # check: audio_files should not be empty
     if not ('audio_files' in cfg
@@ -1992,16 +1988,6 @@ def param_modify(root_cfg):
     
     
     
-    # if channel_rate should be None, make it so
-    if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
-            'SimSettings']['channel_rate'] == 'None':
-        
-        # turn str(None) into None
-        root_cfg['SimSettings']['channel_rate'] = None
-    
-    
-    
-    
     
     # combine the 2 ptt_delays into a vector
     if '_ptt_delay_min' in cfg:
@@ -2031,8 +2017,6 @@ def param_modify(root_cfg):
         
         
     
-    # open audio_- and radio_interface for testing
-    _get_interfaces(root_cfg)
         
         
 
@@ -2087,7 +2071,18 @@ def get_post_notes(error_only=False):
 
 def _get_interfaces(root_cfg):
     
-    if root_cfg['selected_test'] in ('AccssDFrame'):
+    
+    # if channel_rate should be None, make it so
+    if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
+            'SimSettings']['channel_rate'] == 'None':
+        
+        # turn str(None) into None
+        root_cfg['SimSettings']['channel_rate'] = None
+        
+        
+        
+    
+    if root_cfg['selected_test'] in ('AccssDFrame',):
         channels = {
             'playback_chans' : {'tx_voice':0, 'start_signal':1},
             'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
@@ -2120,7 +2115,6 @@ def _get_interfaces(root_cfg):
             
         
         ri = hardware.RadioInterface(radioport)
-        
         ap = hardware.AudioPlayer(**channels)
         
             
