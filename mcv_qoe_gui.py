@@ -16,6 +16,7 @@ import threading
 import json
 import pickle
 import functools
+import os
 from os import path, listdir
 import gc
 import subprocess as sp
@@ -1367,7 +1368,7 @@ class PostProcessingFrame(ttk.Frame):
     
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
-        dir_ = path.normpath(self.outdir)
+        dir_ = self.outdir
         try:
             sp.Popen(['explorer', dir_])
         except (FileNotFoundError, OSError):
@@ -1964,13 +1965,19 @@ def param_modify(root_cfg):
         ct += 1
     
     
+    bad = False
+    # relative outdirs will go into the default outdir
+    cfg['outdir'] = path.join(DEFAULTS[sel_tst]['outdir'], cfg['outdir'])
+    try: os.makedirs(cfg['outdir'], exist_ok=True)
+    except OSError as e: 
+        error = str(e)
+        bad = True
+        
     
-    # relative outdirs will go into the user's appdir folder
-    appdir = user_data_dir('mcvqoe', 'nist')
-    if cfg['outdir'] == '':
-        cfg['outdir'] = appdir
-    else:
-        cfg['outdir'] = path.join(appdir, cfg['outdir'])
+    if bad:
+        raise InvalidParameter('outdir',
+            message = error)
+        
     
     
     # make trials an integer if it's not already (mainly for access time)
@@ -2352,6 +2359,26 @@ for name_, key_group in control_list.items():
         for key in key_group:
             if hasattr(obj, key):
                 DEFAULTS[name_][key] = getattr(obj, key)
+                
+                
+                
+                
+                
+                
+# ----------- Special default values different from measurement obj -----------
+dir_names = {
+    'M2eFrame': 'Mouth_2_Ear',
+    'AccssDFrame': 'Access_Time',
+    'PSuDFrame': 'PSuD',
+    'IgtibyFrame': 'Intelligibility'
+    }
+for name_, cfg in DEFAULTS.items():
+    if 'outdir' in cfg:
+        cfg['outdir'] = path.join(path.expanduser("~"),
+                                  'MCV-QoE',
+                                  dir_names[name_])
+
+
 
 #values that require more than one control
 DEFAULTS['AccssDFrame']['_ptt_delay_min'] = initial_measure_objects[
@@ -2385,6 +2412,15 @@ DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_r
 # the following should be a float
 DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
 
+
+
+
+
+
+
+
+
+
 #free initial objects
 del initial_measure_objects
 del obj
@@ -2393,10 +2429,20 @@ del obj
 
 
 
-# on Windows, remove dpi scaling (otherwise text is blurry)
-if hasattr(ctypes, 'windll'):
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+
+
+
+
+
+
+
         
 
 if __name__ == '__main__':
+    
+    # on Windows, remove dpi scaling (otherwise text is blurry)
+    if hasattr(ctypes, 'windll'):
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        
+    
     Main()
