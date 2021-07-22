@@ -1127,7 +1127,7 @@ class TestProgressFrame(tk.LabelFrame):
             self.time_estimate_.set('')
             
             
-        else:
+        elif prog_type in ('pre', 'proc', 'test'):
             # show current progress
             self.bar.stop()
             self.bar.configure(value=current_trial, maximum = num_trials,
@@ -1137,6 +1137,7 @@ class TestProgressFrame(tk.LabelFrame):
             # estimate time remaining
             
             if current_trial == 0:
+                # if on trial 0, start timer
                 self.stopwatch.reset()
                 self.time_estimate_.set('')
             else:
@@ -1145,8 +1146,9 @@ class TestProgressFrame(tk.LabelFrame):
                 
                 time_est = f'{time_left} {time_unit} remaining...'
                 
-                if self.pause_after not in (None, np.inf):
+                if self.pause_after not in (None, np.inf) and prog_type == 'test':
                     
+                    # time remaining until next pause
                     ct_in_set = (current_trial % self.pause_after) + 1
                     
                     next_stop = current_trial + self.pause_after - ct_in_set
@@ -1266,7 +1268,13 @@ class _StopWatch:
         
         if time_left < 60:
             time_left = round(time_left)
-            time_unit = 'minutes'
+            if time_left == 0:
+                time_left = 'Less than 1'
+                time_unit = 'minute'
+            elif time_left == 1:
+                time_unit = 'minute'
+            else:
+                time_unit = 'minutes'
         elif time_left < 60 * 24:
             time_left = round(time_left // 60)
             time_unit = 'hours'
