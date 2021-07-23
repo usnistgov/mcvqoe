@@ -217,6 +217,7 @@ class MCVQoEGui(tk.Tk):
         self._red_controls = []
         self.cnf_filepath = None
         self.is_destroyed = False
+        self._is_closing = False
         self._pre_notes = None
         self.set_step(0)
 
@@ -296,19 +297,48 @@ class MCVQoEGui(tk.Tk):
         self.set_saved_state(False)
 
     def on_close(self):
-        if self.ask_save():
-            # canceled by user
-            return
-        if main.is_running and self.abort():
-            # abort was canceled by user
-            return
         
+        # if the user already pressed close
+        if not self._is_closing:    
+            if self.ask_save():
+                # canceled by user
+                return
+            if main.is_running and self.abort():
+                # abort was canceled by user
+                return
+        else:
+            _thread.interrupt_main()
+            
+            
+        self._is_closing = True
         # destroy plots to prevent errors
         self.frames['PostProcessingFrame'].reset()
         
         main.stop()
-        #waits for test to close gracefully, then destroys window
-        self.after(50, self._wait_to_destroy)
+        
+        #waits for main thread to close gracefully
+        ct = 0
+        while main.is_running:
+            ct += 1
+            
+            # if get_post_notes() gets called, wait for user to enter notes
+            if self.step == 5:
+                self._wait_to_destroy()
+                return
+            
+            
+            time.sleep(0.1)
+            
+            # if main thread is frozen for 100 iterations, freeze the window too.
+            # this prevents a frozen program from being uncloseable
+            if ct < 100:
+                self.update_idletasks()
+            
+            
+        # close the gui
+        self.destroy()
+        
+        
         
         
     def _wait_to_destroy(self):
@@ -571,10 +601,7 @@ class MCVQoEGui(tk.Tk):
             # indicates cancelled by user
             return True
     
-    @in_thread('GuiThread', wait=False)
-    def post_test(self):
-        self.set_step(5)
-        
+       
         
     def _post_test_submit(self):
         
@@ -584,10 +611,13 @@ class MCVQoEGui(tk.Tk):
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
         
         
-    
-    @in_thread('GuiThread')
     def set_step(self, step):
         self.step = step
+        
+        self._set_step(step)
+        
+    @in_thread('GuiThread')
+    def _set_step(self, step):
         
         back_btn_txt = 'Back'
         
@@ -1726,7 +1756,7 @@ def test_audio(root_cfg, on_finish=None):
     if on_finish:
         on_finish()
 
-
+    
 
 
 
@@ -1926,7 +1956,6 @@ def run(root_cfg):
     main.win.set_step(6)
     
     
-    
 
 
 def param_modify(root_cfg):
@@ -2103,7 +2132,7 @@ def get_post_notes(error_only=False):
         return {}
     
     main.win.post_test_info = None
-    main.win.post_test()
+    main.win.set_step(5)
     
     # wait for completion or program close
     
