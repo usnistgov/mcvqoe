@@ -24,8 +24,12 @@ from appdirs import user_data_dir
 import matplotlib
 
 #alternate rendering for pyplot to avoid conflicts with tkinter
-try:matplotlib.use('Qt5Agg')
-except:pass
+try:
+    use_alternate_plot_rendering = True
+    import PyQt5
+except: use_alternate_rendering = False
+else:
+    matplotlib.use('Qt5Agg')
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -1727,7 +1731,6 @@ def test_audio(root_cfg, on_finish=None):
 
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
-    
     show_errors = True
     show_post_test = False
     
@@ -1854,17 +1857,20 @@ def run(root_cfg):
             #show std_dev
             ppf.add_element(str(my_obj._get_std()))
             
-            #create "show plots" button
-            class ShowPlots(ttk.Button):
-                def __init__(self, master):
-                    super().__init__(master,
-                        text='Show Plots',
-                        command=self.plot)
+            # plots will leak memory without this
+            if use_alternate_rendering:
                 
-                @in_thread('MainThread', wait=False)
-                def plot(self):my_obj.plot()
-            
-            ppf.add_element(ShowPlots)
+                #create "show plots" button
+                class ShowPlots(ttk.Button):
+                    def __init__(self, master):
+                        super().__init__(master,
+                            text='Show Plots',
+                            command=self.plot)
+                    
+                    @in_thread('MainThread', wait=False)
+                    def plot(self):my_obj.plot()
+                
+                ppf.add_element(ShowPlots)
     
     
     except InvalidParameter as e:
@@ -2389,7 +2395,6 @@ for name_, key_group in control_list.items():
         for key in key_group:
             if hasattr(obj, key):
                 DEFAULTS[name_][key] = getattr(obj, key)
-                
                 
                 
                 
