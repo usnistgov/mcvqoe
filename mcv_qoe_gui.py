@@ -1178,19 +1178,23 @@ class TestProgressFrame(tk.LabelFrame):
             
         elif prog_type == 'csv-update':
             self.clip_name_.set(f'Current Clip: {clip_name}')
-            self.file_.set(f'Storing data in: "{file}"')
+            self.file_.set(self._trim_text(f'Storing data in: "{file}"'))
         
         elif prog_type == 'acc-clip-update':
             self.clip_name_.set(f'Current Clip: {clip_name}')
             self.delay_.set(f'Delay : {delay:.3f}s\n')
             
         elif prog_type == 'csv-rename':
-            self.file_.set(f'Renaming "{file}"\nto "{new_file}"')
+            self.file_.set(self._trim_text(f'Renaming "{file}"')+
+                           '\n'+
+                           self._trim_text(f'to "{new_file}"'))
+            
+            
+            
         
         
         
         
-        #pdb.set_trace(header='NOICE')
         
         return True
     
@@ -1230,6 +1234,27 @@ class TestProgressFrame(tk.LabelFrame):
         self.stopwatch.start()
         
         return False
+    
+    
+    def _trim_text(self, text):
+        """remove characters to fit the width"""
+        
+        # pixel width that the text is confined to
+        w = self.winfo_width() - 20
+        
+        #estimate a safe character limit based on w and font size
+        w_char = round(w / shared.FONT_SIZE * 1.1)
+        
+        chop = len(text) - w_char
+        if chop <= 0:
+            # no chopping to do!
+            new = text
+        else:
+            # replace 'chop + 3' characters with a '...'
+            new = text[0:25] + '...' + text[25 + chop + 3: ]
+        
+        return new
+        
     
 class _StopWatch:
     def __init__(self):
@@ -2054,17 +2079,14 @@ def get_post_notes(error_only=False):
     root_error=sys.exc_info()
     error = root_error[0]
     
-    #check if there is no error and we should only show on error
-    if((not error) and error_only):
-        #nothing to do, bye!
-        return {}
-    
-    if error and error not in (KeyboardInterrupt,
-                               SystemExit,
-                               Abort_by_User,
-                               InvalidParameter):
+        
+    # ignore instances of BaseException that are not errors
+    if isinstance(error, Exception) and error != InvalidParameter:
         show_error(root_error)
     
+    elif error_only:
+        #nothing to do, bye!
+        return {}
     
     main.win.post_test_info = None
     main.win.post_test()
