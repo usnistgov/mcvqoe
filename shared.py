@@ -723,12 +723,17 @@ class BgNoise(SubCfgFrame):
 
 #------------------------ Global settings for hdw/simulation------------------
 
-class _HdwPrototype(AudioPlayer):
-    """Conveniently contains radioport so that all hardware settings
-    come from the same place
+class _HdwPrototype:
+    """Contains the default audioplayer settings.
+    
+    Settings must be drawn from here because the real audioplayer might throw a 
+    RuntimeError on program load if the interface is not found.
     
     """
     radioport = ''
+    blocksize=512
+    buffersize=20
+    overplay=1.0
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
