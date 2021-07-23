@@ -24,10 +24,10 @@ from appdirs import user_data_dir
 import matplotlib
 
 #alternate rendering for pyplot to avoid conflicts with tkinter
+use_alternate_plot_rendering = True
 try:
-    use_alternate_plot_rendering = True
     import PyQt5
-except: use_alternate_rendering = False
+except: use_alternate_plot_rendering = False
 else:
     matplotlib.use('Qt5Agg')
 
@@ -1734,6 +1734,8 @@ def run(root_cfg):
     show_errors = True
     show_post_test = False
     
+    ppf = main.win.frames['PostProcessingFrame']
+    
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
@@ -1803,7 +1805,7 @@ def run(root_cfg):
         else:
             main.win.frames['TestProgressFrame'].pause_after = None
         
-        ppf = main.win.frames['PostProcessingFrame']
+        
         
         # remove post-processing info from frame
         ppf.reset()
@@ -1858,7 +1860,7 @@ def run(root_cfg):
             ppf.add_element(str(my_obj._get_std()))
             
             # plots will leak memory without this
-            if use_alternate_rendering:
+            if use_alternate_plot_rendering:
                 
                 #create "show plots" button
                 class ShowPlots(ttk.Button):
