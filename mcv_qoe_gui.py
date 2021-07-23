@@ -20,7 +20,6 @@ import os
 from os import path, listdir
 import gc
 import subprocess as sp
-from appdirs import user_data_dir
 import matplotlib
 
 #alternate rendering for pyplot to avoid conflicts with tkinter
@@ -35,7 +34,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from mcvqoe.base import write_log
 from mcvqoe.simulation.QoEsim import QoEsim
 from mcvqoe import hardware
 
@@ -1731,6 +1729,10 @@ def test_audio(root_cfg, on_finish=None):
 
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
+    
+    # attempt to free memory and delete old RadioInterface to free up port
+    gc.collect(2)
+    
     show_errors = True
     show_post_test = False
     
@@ -1748,15 +1750,19 @@ def run(root_cfg):
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
     
-    
+
     
     #initialize test object
     my_obj = constructors[sel_tst]()
     
     try:
-        # open interfaces for testing
-        _get_interfaces(root_cfg)
         
+        # open interfaces for testing
+        try:
+            _get_interfaces(root_cfg)
+        except RuntimeError as e:
+            show_error(e)
+            return
         
         # prevent logging excess of information
         my_obj.no_log = my_obj.no_log + (
@@ -1880,13 +1886,7 @@ def run(root_cfg):
         main.win.show_invalid_parameter(e)
         return
         
-    except ValueError as e:
-        if show_errors:
-            # shows error message and returns
-            traceback.print_exc()
-            tk.messagebox.showerror('Invalid Parameter', str(e))
-        return
-        
+    
         
     #gathers posttest notes without showing error
     except Abort_by_User: pass
@@ -1911,6 +1911,11 @@ def run(root_cfg):
     # put outdir folder into frame
     try: ppf.outdir = my_obj.outdir
     except AttributeError: ppf.outdir = ''
+    
+    
+    #delete radio interface
+    my_obj.ri = None
+    ri = None
     
     #show post-processing frame
     main.win.set_step(6)
