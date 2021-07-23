@@ -67,7 +67,7 @@ WIN_SIZE = (900, 750)
 
 
     
-def in_thread(thread, wait=True):
+def in_thread(thread, wait=True, do_exceptions = False):
     """A function decorator to ensure that a function runs in the given thread.
     
     thread: can be {'GuiThread', 'MainThread'}
@@ -75,6 +75,10 @@ def in_thread(thread, wait=True):
     wait:
         whether to wait for the function to return in the other thread
         if this is false, it may or may not return None.
+        
+    exceptions:
+        whether to pass exceptions to the caller.
+        wait must be set to True
     
     Example:
         
@@ -106,15 +110,22 @@ def in_thread(thread, wait=True):
                 main.gui_thread.callback(switch_obj.callbacker)
             
             
-            # wait until function is finished if applicable
-            while wait and not switch_obj.finished:
-                if thread == 'MainThread':
-                    # keep the gui responsive
-                    main.win.update_idletasks()
-                    
-                time.sleep(0.1)
-                
             if wait:
+                # wait until function is finished if applicable
+                while not switch_obj.finished:
+                    if thread == 'MainThread':
+                        # keep the gui responsive
+                        main.win.update_idletasks()
+                        
+                    time.sleep(0.1)
+                    
+                if switch_obj.exc is not None:
+                    if do_exceptions:
+                        raise switch_obj.exc
+                    else:
+                        traceback.print_exc(switch_obj.exc)
+                
+                    
                 return switch_obj.return_val
                 
             
@@ -128,9 +139,15 @@ class _dec_return:
         self.finished = False
         self.args = args
         self.kwargs = kwargs
+        self.exc = None
+        self.return_val = None
 
     def callbacker(self):
-        self.return_val = self.func(*self.args, **self.kwargs)
+        try:
+            self.return_val = self.func(*self.args, **self.kwargs)
+        except BaseException as e:
+            self.exc = e
+            
         self.finished = True
         
 
@@ -1110,7 +1127,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         
         
-    @in_thread('GuiThread', wait=True)
+    @in_thread('GuiThread', wait=True, do_exceptions=True)
     def progress(self,
                 prog_type,
                 num_trials=0,
@@ -1124,7 +1141,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         if main.win.step == 4:
             # indicate that the test should not continue
-            return False
+            raise SystemExit()
         
         
         messages = {
@@ -1231,7 +1248,7 @@ class TestProgressFrame(tk.LabelFrame):
         return True
     
     
-    
+    @in_thread('GuiThread', do_exceptions=True)
     def user_check(self,
                    reason,
                    message,
