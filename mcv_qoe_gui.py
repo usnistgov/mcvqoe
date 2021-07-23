@@ -1727,6 +1727,11 @@ def test_audio(root_cfg, on_finish=None):
         on_finish()
 
 
+
+
+
+
+
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
     
@@ -1921,11 +1926,7 @@ def run(root_cfg):
     main.win.set_step(6)
     
     
-    # leave gap in console for next test
-    print('\n\n\n')
     
-    
-
 
 
 def param_modify(root_cfg):
