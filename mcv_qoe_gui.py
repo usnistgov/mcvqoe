@@ -969,11 +969,11 @@ class TestInfoGuiFrame(ttk.Labelframe):
         super().__init__(*args, text='Test Information', **kwargs)
         
         labels = {
-            'Test Type': 'Test Type',
-            'Tx Device': 'Transmit Device',
-            'Rx Device': 'Receive Device',
-            'System': 'System',
-            'Test Loc': 'Test Location'
+            'Test Type': 'Test Type:',
+            'Tx Device': 'Transmit Device:',
+            'Rx Device': 'Receive Device:',
+            'System': 'System:',
+            'Test Loc': 'Test Location:'
             }
         
         
@@ -991,7 +991,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
             
             
             ttk.Label(self, text=label).grid(column=0, row=ct,
-                       sticky='E', padx=padx, pady=pady)
+                       sticky='W', padx=padx, pady=pady)
             
             ttk.Entry(self, textvariable=self.btnvars[k]).grid(
                 column=1, row=ct, sticky='W', padx=padx, pady=pady)
@@ -1008,7 +1008,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
             sticky='NSEW', columnspan=2, row=ct, padx=padx, pady=pady)
         
         #text widget expand to fit frame
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
         self.rowconfigure(ct, weight=1)
         
         
