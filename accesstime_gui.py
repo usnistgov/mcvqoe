@@ -232,7 +232,7 @@ class s_thresh(LabeledControl):
     """The threshold of A-weight power for P2, in dB, below which a trial
     is considered to have no audio."""
     
-    text = 'Min Allowed Volume:'
+    text = 'Min Allowed Volume (dB):'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : -2**15 +1, 'to': 0, 'increment': 1}
 
