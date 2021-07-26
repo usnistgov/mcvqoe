@@ -329,6 +329,7 @@ class MCVQoEGui(tk.Tk):
                 # abort was canceled by user
                 return
         else:
+            # quit the main thread
             _thread.interrupt_main()
             
             
@@ -336,6 +337,7 @@ class MCVQoEGui(tk.Tk):
         # destroy plots to prevent errors
         self.frames['PostProcessingFrame'].reset()
         
+        # indicate that main thread should no longer perform operations
         main.stop()
         
         #waits for main thread to close gracefully
@@ -2330,7 +2332,19 @@ def _get_dev_dly(ignore_error = True):
 
 
 
-
+class GuiRecStop:
+    
+        
+    def __enter__(self, *args, **kwargs):
+        return self
+    
+    def __exit__(self, *args, **kwargs):
+        return False
+    
+    def is_done(self):
+        
+        return (main.win.step == 4) or main.win._is_closing
+        
 
 
 
