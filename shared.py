@@ -84,12 +84,16 @@ class TestCfgFrame(ttk.LabelFrame):
     """
     Base class for frames to configure and run a test
     
+    PARAMETERS
+    ----------
+    
     btnvars : TkVarDict
-    loads and stores the values in the controls
+        loads and stores the values in the controls
     
     
     
     ATTRIBUTES
+    ----------
     
     text : str
         The caption of the frame
