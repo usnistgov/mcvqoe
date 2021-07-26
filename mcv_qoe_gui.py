@@ -2176,7 +2176,7 @@ def get_interfaces(root_cfg):
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
     
-    
+    ri_needed = True
     # if channel_rate should be None, make it so
     if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
             'SimSettings']['channel_rate'] == 'None':
@@ -2204,6 +2204,7 @@ def get_interfaces(root_cfg):
             'playback_chans' : {},
             'rec_chans' : {"rx_voice": 0, "timecode": 1},
             }
+        ri_needed = False
     
     else:
         # keep defaults
@@ -2234,7 +2235,7 @@ def get_interfaces(root_cfg):
             radioport = ''
         
         
-        if 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
+        if not ri_needed:
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
@@ -2276,8 +2277,8 @@ class _SingletonRadioInterface(hardware.RadioInterface):
         return self
     
 class _FakeRadioInterface:
-    def __enter__(self): return self
-    def __exit__(self): pass
+    def __enter__(self, *args, **kwargs): return self
+    def __exit__(self, *args, **kwargs): return False
     
 def _set_values_from_cfg(my_obj, cfg):
     for k, v in cfg.items():
