@@ -2186,7 +2186,8 @@ def get_interfaces(root_cfg):
         
         
         
-    # set channels
+    #------------------------- set channels -----------------------------------
+    
     if sel_tst in ('AccssDFrame',):
         channels = {
             'playback_chans' : {'tx_voice':0, 'start_signal':1},
@@ -2208,7 +2209,7 @@ def get_interfaces(root_cfg):
     
     else:
         # keep defaults
-                channels = {
+        channels = {
             'playback_chans' : {'tx_voice':0},
             'rec_chans' : {'rx_voice':0},
             }
@@ -2253,8 +2254,6 @@ def get_interfaces(root_cfg):
         ap.buffersize = hdw_cfg['buffersize']
         ap.sample_rate = 48000
         
-        ap.playback_chans = {'tx_voice':0, 'start_signal':1}
-        ap.rec_chans = {'rx_voice':0, 'PTT_signal':1}
         
     return (ri, ap)
 
