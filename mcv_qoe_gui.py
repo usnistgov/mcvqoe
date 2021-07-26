@@ -2230,9 +2230,15 @@ def get_interfaces(root_cfg):
             radioport = hdw_cfg['radioport']
         else:
             radioport = ''
-            
         
-        ri = hardware.RadioInterface(radioport)
+        
+        if 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
+            # a real radiointerface is not needed
+            ri = _FakeRadioInterface()
+        else:
+            ri = hardware.RadioInterface(radioport)
+        
+        
         ap = hardware.AudioPlayer(**channels)
         
             
@@ -2267,7 +2273,9 @@ class _SingletonRadioInterface(hardware.RadioInterface):
             
         return self
     
-    
+class _FakeRadioInterface:
+    def __enter__(self): return self
+    def __exit__(self): pass
     
 def _set_values_from_cfg(my_obj, cfg):
     for k, v in cfg.items():
