@@ -19,6 +19,9 @@ from matplotlib.figure import Figure
 import numpy as np
 
 
+
+
+
 class M2eFrame(TestCfgFrame):
     
     text = 'Mouth-to-Ear Latency Test'
@@ -34,7 +37,12 @@ class M2eFrame(TestCfgFrame):
             advanced
             )
     
-            
+    
+    
+    
+    
+    
+
         
         #------------------ Controls ----------------------
 from shared import audio_files, _BrowseForFolder
@@ -161,4 +169,53 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         return std_msg
         
 
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------Dev dly characterization------------------------
+
+class DevDlyCharFrame(M2eFrame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # disable all parameters except for outdir
+        for k, v in self.controls.items():
+            if k != 'outdir':
+                if hasattr(v, 'm_ctrl'):
+                    try:
+                        v.m_ctrl['state'] = 'disabled'
+                    except: pass
+                    
+                if hasattr(v, 'r_ctrl'):
+                    try:
+                        v.r_ctrl.configure(state='disabled')
+                    except: pass
+
+
+
+
+
+
+
+
+
+class DevChar_Defaults(m2e.measure):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.test = 'm2e_1loc'
+
+
+
+class DevChar_fromGui(M2E_fromGui):
+    pass
+    
 

@@ -55,7 +55,7 @@ import loadandsave
 import accesstime_gui
 from accesstime_gui import AccssDFrame
 import m2e_gui
-from m2e_gui import M2eFrame
+from m2e_gui import M2eFrame, DevDlyCharFrame
 import psud_gui
 from psud_gui import PSuDFrame
 import intelligibility_gui
@@ -251,6 +251,8 @@ class MCVQoEGui(tk.Tk):
             PostTestGuiFrame,
             TestProgressFrame,
             PostProcessingFrame,
+            
+            DevDlyCharFrame,
             
             M2eFrame,
             AccssDFrame,
@@ -1677,7 +1679,6 @@ class Main():
                 
                 
                 
-                
             except Abort_by_User:pass
                 
             except SystemExit:
@@ -2396,6 +2397,17 @@ control_list = {
     
     'PostProcessingFrame': [],
     
+    
+    'DevDlyCharFrame': [
+        'audio_files',
+        'bgnoise_file',
+        'bgnoise_volume',
+        'outdir',
+        'ptt_wait',
+        'test',
+        'trials'
+    ],
+    
     'M2eFrame': [
         'audio_files',
         'bgnoise_file',
@@ -2468,6 +2480,7 @@ control_list = {
 }
 
 initial_measure_objects = {
+    'DevDlyCharFrame': m2e_gui.DevChar_Defaults(),
     'M2eFrame': m2e_gui.m2e.measure(),
     'AccssDFrame': accesstime_gui.adly.measure(),
     'PSuDFrame' : psud_gui.psud.measure(),
@@ -2496,6 +2509,7 @@ for name_, key_group in control_list.items():
                 
 # ----------- Special default values different from measurement obj -----------
 dir_names = {
+    'DevDlyCharFrame': 'Device_Delay_Characterization',
     'M2eFrame': 'Mouth_2_Ear',
     'AccssDFrame': 'Access_Time',
     'PSuDFrame': 'PSuD',
