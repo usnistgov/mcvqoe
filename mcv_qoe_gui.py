@@ -34,7 +34,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
+
 from mcvqoe.simulation.QoEsim import QoEsim
+
+
 from mcvqoe import hardware
 
 
@@ -1244,7 +1247,6 @@ class TestProgressFrame(tk.LabelFrame):
         
         
         
-        
         return True
     
     
@@ -1732,7 +1734,7 @@ def test_audio(root_cfg, on_finish=None):
         
         
         
-        radio_interface, ap = _get_interfaces(root_cfg)
+        radio_interface, ap = get_interfaces(root_cfg)
         
         
         # get selected audio file
@@ -1811,7 +1813,7 @@ def run(root_cfg):
         
         # open interfaces for testing
         try:
-            _get_interfaces(root_cfg)
+            get_interfaces(root_cfg)
         except RuntimeError as e:
             show_error(e)
             return
@@ -1892,7 +1894,7 @@ def run(root_cfg):
         
         
         
-        ri, ap = _get_interfaces(root_cfg)
+        ri, ap = get_interfaces(root_cfg)
         
     
         my_obj.audio_interface = ap
@@ -2166,7 +2168,10 @@ def get_post_notes(error_only=False):
     
 
 
-def _get_interfaces(root_cfg):
+def get_interfaces(root_cfg):
+    
+    sel_tst = root_cfg['selected_test']
+    cfg = root_cfg[sel_tst]
     
     
     # if channel_rate should be None, make it so
@@ -2178,16 +2183,31 @@ def _get_interfaces(root_cfg):
         
         
         
-    
-    if root_cfg['selected_test'] in ('AccssDFrame',):
+    # set channels
+    if sel_tst in ('AccssDFrame',):
         channels = {
             'playback_chans' : {'tx_voice':0, 'start_signal':1},
             'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
             }
     
+    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_tx':
+        channels = {
+            'playback_chans' : {"tx_voice": 0},
+            'rec_chans' : {"timecode": 1},
+            }
+        
+    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
+        channels = {
+            'playback_chans' : {},
+            'rec_chans' : {"rx_voice": 0, "timecode": 1},
+            }
+    
     else:
         # keep defaults
-        channels = {}
+                channels = {
+            'playback_chans' : {'tx_voice':0},
+            'rec_chans' : {'rx_voice':0},
+            }
     
     
     # in case of simulation test
@@ -2228,6 +2248,26 @@ def _get_interfaces(root_cfg):
         
     return (ri, ap)
 
+
+class _SingletonRadioInterface(hardware.RadioInterface):
+    """ a radio_interface that will be left open based on its radioport
+    
+    NOT YET IMPLEMENTED
+    """
+    
+    _interface_objects = {}
+    
+    def __new__(cls, radioport):
+            
+        if radioport in cls._interface_objects:
+            self = cls._interface_objects[radioport]
+        else:
+            self = super().__new__(radioport)
+            
+        return self
+    
+    
+    
 def _set_values_from_cfg(my_obj, cfg):
     for k, v in cfg.items():
         if hasattr(my_obj, k):
