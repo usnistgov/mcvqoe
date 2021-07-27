@@ -1792,8 +1792,8 @@ def run(root_cfg):
     
     show_errors = True
     show_post_test = False
-    
     ppf = main.win.frames['PostProcessingFrame']
+    tpf = main.win.frames['TestProgressFrame']
     
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
@@ -1853,20 +1853,21 @@ def run(root_cfg):
             _set_values_from_cfg(my_obj, cfg)
              
             # Check for value errors with instance variables
+            # this is last resort and should not be needed after param_modify()
             my_obj.param_check()
         
                 
         
         
         # set progress update callback
-        my_obj.progress_update = main.win.frames['TestProgressFrame'].progress
+        my_obj.progress_update = tpf.progress
         
         if sel_tst == 'AccssDFrame':
             #set user check callback
-            my_obj.user_check = main.win.frames['TestProgressFrame'].user_check
-            main.win.frames['TestProgressFrame'].pause_after = my_obj.trials
+            my_obj.user_check = tpf.user_check
+            tpf.pause_after = my_obj.trials
         else:
-            main.win.frames['TestProgressFrame'].pause_after = None
+            tpf.pause_after = None
         
         
         
