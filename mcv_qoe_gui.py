@@ -1917,7 +1917,7 @@ def run(root_cfg):
             # run the test
             result = my_obj.run()
             
-            
+            show_errors = True
                 
             
         if sel_tst == 'IgtibyFrame':
