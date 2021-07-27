@@ -1924,7 +1924,7 @@ def run(root_cfg):
             #show intelligibility estimate
             ppf.add_element(f'Intelligibility Estimate: {result}')
             
-        elif sel_tst == 'M2eFrame':
+        elif sel_tst == 'M2eFrame' and my_obj.test == 'm2e_1loc':
             #show mean and std_dev
             mean_msg, std_msg = my_obj.get_mean_and_std()
             
