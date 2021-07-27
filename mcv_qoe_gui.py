@@ -1920,8 +1920,11 @@ def run(root_cfg):
             ppf.add_element(f'Intelligibility Estimate: {result}')
             
         elif sel_tst == 'M2eFrame':
-            #show std_dev
-            ppf.add_element(str(my_obj._get_std()))
+            #show mean and std_dev
+            mean_msg, std_msg = my_obj.get_mean_and_std()
+            
+            ppf.add_element(mean_msg)
+            ppf.add_element(std_msg)
             
             # plots will leak memory without this
             if use_alternate_plot_rendering:
@@ -1937,7 +1940,8 @@ def run(root_cfg):
                     def plot(self):my_obj.plot()
                 
                 ppf.add_element(ShowPlots)
-    
+            else:
+                ppf.add_element('To show plots, please install PyQt5')
     
     except InvalidParameter as e:
         # highlight offending parameter in red

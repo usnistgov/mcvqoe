@@ -137,7 +137,7 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
             raise ValueError("\nIncorrect test type")
             
         
-    def _get_std(self,name=None):
+    def get_mean_and_std(self,name=None):
         
         if( not name):
             name=self.data_filename
@@ -158,6 +158,8 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         # Overall mean delay
         ovrl_dly = np.mean(m2e_dat)
         
+        mean_msg = "Mean: %.5fs" % ovrl_dly
+        
         # Get standard deviation
         std_delay = np.std(m2e_dat, dtype=np.float64)
         std_delay = std_delay*(1e6)
@@ -166,7 +168,7 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         
         std_msg = "StD: %.2fus" % std_delay
         
-        return std_msg
+        return mean_msg, std_msg
         
 
 
