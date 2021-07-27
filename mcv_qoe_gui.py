@@ -2236,7 +2236,7 @@ def get_interfaces(root_cfg):
         sim = QoEsim(**channels)
         
         _set_values_from_cfg(sim, root_cfg['SimSettings'])
-            
+        
         
         ri = sim
         ap = sim
@@ -2268,10 +2268,11 @@ def get_interfaces(root_cfg):
         ap.blocksize = hdw_cfg['blocksize']
         ap.buffersize = hdw_cfg['buffersize']
         ap.sample_rate = 48000
-        ap.rec_stop = rec_stop
         
         
-    return (ri, ap)
+    ap.rec_stop = rec_stop
+    
+    return ri, ap
 
 
 class _SingletonRadioInterface(hardware.RadioInterface):
