@@ -635,13 +635,13 @@ class MCVQoEGui(tk.Tk):
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
         
         
-    def set_step(self, step):
+    def set_step(self, step, extra=None):
         self.step = step
         
-        self._set_step(step)
+        self._set_step(step, extra=extra)
         
     @in_thread('GuiThread')
-    def _set_step(self, step):
+    def _set_step(self, step, extra=None):
         
         back_btn_txt = 'Back'
         
@@ -670,8 +670,13 @@ class MCVQoEGui(tk.Tk):
         elif step == 3:
             # progress bar
             self.show_frame('TestProgressFrame')
-            next_btn_txt = 'Abort Test'
-            next_btn = lambda : self.set_step(4)
+            
+            if isinstance(extra, GuiRecStop):
+                next_btn_txt = 'Stop Recording'
+                next_btn = extra.stop
+            else:
+                next_btn_txt = 'Abort Test'
+                next_btn = lambda : self.set_step(4)
             back_btn = None
             
         elif step == 4:
@@ -1098,6 +1103,7 @@ class TestProgressFrame(tk.LabelFrame):
         self.stopwatch.start()
         
         self.pause_after = None
+        self.rec_stop = None
         
         self.btnvars = btnvars
         
@@ -1131,7 +1137,11 @@ class TestProgressFrame(tk.LabelFrame):
                     ):
                     
             ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
-        
+    
+    def check_for_abort(self):
+        if main.win.step == 4:
+            # indicate that the test should not continue
+            raise SystemExit()
         
         
     @in_thread('GuiThread', wait=True, do_exceptions=True)
@@ -1146,9 +1156,7 @@ class TestProgressFrame(tk.LabelFrame):
                 new_file=''
                 ) -> bool:
         
-        if main.win.step == 4:
-            # indicate that the test should not continue
-            raise SystemExit()
+        self.check_for_abort()
         
         
         messages = {
@@ -1265,9 +1273,7 @@ class TestProgressFrame(tk.LabelFrame):
             self.pause_after = trials
         
         
-        if main.win.step == 4:
-            # indicate that the test should not continue
-            return True
+        self.check_for_abort()
         
         
         
@@ -1816,7 +1822,7 @@ def run(root_cfg):
         
         # open interfaces for testing
         try:
-            get_interfaces(root_cfg)
+            ri, ap = get_interfaces(root_cfg)
         except RuntimeError as e:
             show_error(e)
             return
@@ -1869,7 +1875,7 @@ def run(root_cfg):
         else:
             tpf.pause_after = None
         
-        
+        tpf.rec_stop = ap.rec_stop
         
         # remove post-processing info from frame
         ppf.reset()
@@ -1885,7 +1891,7 @@ def run(root_cfg):
         
         
         #show progress bar in gui
-        main.win.set_step(3)
+        main.win.set_step(3, extra=ap.rec_stop)
         
         # clear pretest notes from window
         main.win.clear_old_entries()
@@ -1898,7 +1904,6 @@ def run(root_cfg):
         
         
         
-        ri, ap = get_interfaces(root_cfg)
         
     
         my_obj.audio_interface = ap
@@ -2182,6 +2187,8 @@ def get_interfaces(root_cfg):
     cfg = root_cfg[sel_tst]
     
     ri_needed = True
+    rec_stop = None
+    
     # if channel_rate should be None, make it so
     if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
             'SimSettings']['channel_rate'] == 'None':
@@ -2211,6 +2218,9 @@ def get_interfaces(root_cfg):
             'rec_chans' : {"rx_voice": 0, "timecode": 1},
             }
         ri_needed = False
+        
+        rec_stop = GuiRecStop()
+        
     
     else:
         # keep defaults
@@ -2258,6 +2268,7 @@ def get_interfaces(root_cfg):
         ap.blocksize = hdw_cfg['blocksize']
         ap.buffersize = hdw_cfg['buffersize']
         ap.sample_rate = 48000
+        ap.rec_stop = rec_stop
         
         
     return (ri, ap)
@@ -2339,6 +2350,12 @@ def _get_dev_dly(ignore_error = True):
 
 class GuiRecStop:
     
+    def __init__(self):
+        self._stopped = False
+    
+    def stop(self):
+        self._stopped = True
+    
         
     def __enter__(self, *args, **kwargs):
         return self
@@ -2348,7 +2365,7 @@ class GuiRecStop:
     
     def is_done(self):
         
-        return (main.win.step == 4) or main.win._is_closing
+        return self._stopped
         
 
 
