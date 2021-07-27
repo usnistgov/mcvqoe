@@ -2185,6 +2185,7 @@ def get_interfaces(root_cfg):
     
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
+    is_sim = root_cfg['is_simulation']
     
     ri_needed = True
     rec_stop = None
@@ -2213,6 +2214,13 @@ def get_interfaces(root_cfg):
             }
         
     elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
+        
+        if is_sim:
+            # 2loc_rx test not allowed in simulation
+            raise InvalidParameter('test',
+                    message='A 2-location receiver cannot be simulated.')
+        
+        
         channels = {
             'playback_chans' : {},
             'rec_chans' : {"rx_voice": 0, "timecode": 1},
@@ -2231,7 +2239,7 @@ def get_interfaces(root_cfg):
     
     
     # in case of simulation test
-    if root_cfg['is_simulation']:
+    if is_sim:
         
         sim = QoEsim(**channels)
         
