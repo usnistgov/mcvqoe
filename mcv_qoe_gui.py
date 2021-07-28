@@ -1823,7 +1823,7 @@ def run(root_cfg):
         # open interfaces for testing
         try:
             ri, ap = get_interfaces(root_cfg)
-        except RuntimeError as e:
+        except (RuntimeError, ValueError) as e:
             show_error(e)
             return
         
@@ -2211,8 +2211,7 @@ def get_interfaces(root_cfg):
         
         if is_sim:
             # 2loc_rx test not allowed in simulated
-            raise InvalidParameter('test',
-                    message='A 2-location test cannot be simulated.')
+            raise ValueError('A 2-location test cannot be simulated.')
         
         channels = {
             'playback_chans' : {"tx_voice": 0},
@@ -2223,8 +2222,7 @@ def get_interfaces(root_cfg):
         
         if is_sim:
             # 2loc_rx test not allowed in simulated
-            raise InvalidParameter('test',
-                    message='A 2-location test cannot be simulated.')
+            raise ValueError('A 2-location test cannot be simulated.')
         
         
         channels = {
