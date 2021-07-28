@@ -1748,8 +1748,10 @@ def test_audio(root_cfg, on_finish=None):
         
         
         # get selected audio file
-        if 'audio_files' in cfg:
+        if 'audio_files' in cfg and cfg['audio_files'] and cfg['audio_files'][0]:
+            
             fp = cfg['audio_files'][0]
+            
             
             
             if path.isdir(fp):
