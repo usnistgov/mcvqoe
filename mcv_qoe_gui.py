@@ -1948,6 +1948,11 @@ def run(root_cfg):
                 ppf.add_element(ShowPlots)
             else:
                 ppf.add_element('To show plots, please install PyQt5')
+                
+        elif sel_tst == 'M2eFrame' and my_obj.test == 'm2e_2loc_tx':
+            ppf.add_element('Data collection complete, you may now stop data\n' +
+                            'collection on the receiving end')
+
     
     except InvalidParameter as e:
         # highlight offending parameter in red
