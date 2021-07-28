@@ -1172,8 +1172,9 @@ class TestProgressFrame(tk.LabelFrame):
                 f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
             'check-resume' : ('Resuming test...',
-                f'Trial {current_trial+1} of {num_trials}\n{msg}')
+                f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
+            'status' : ('', msg),
             
             }
         
@@ -1253,8 +1254,8 @@ class TestProgressFrame(tk.LabelFrame):
                            '\n'+
                            self._trim_text(f'to "{new_file}"'))
             
-            
-            
+        
+        
         
         
         
