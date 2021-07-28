@@ -883,8 +883,8 @@ class channel_rate(LabeledControl):
         
         for rate in rates:
             #add a dropdown list option
-            self.menu.add_command(label=repr(rate),
-                        command=tk._setit(self.btnvar, repr(rate)))
+            self.menu.add_command(label=str(rate),
+                        command=tk._setit(self.btnvar, str(rate)))
 
 
 
