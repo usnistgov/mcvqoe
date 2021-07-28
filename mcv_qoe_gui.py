@@ -1640,6 +1640,7 @@ class Main():
         self._break = False
         self._callbacks = []
         self.is_running = False
+        self.last_error = None
 
         # constructs gui in new thread
         self.gui_thread = GuiThread()
@@ -1799,8 +1800,6 @@ def run(root_cfg):
     # attempt to free memory and delete old RadioInterface to free up port
     gc.collect(2)
     
-    show_errors = True
-    show_post_test = False
     ppf = main.win.frames['PostProcessingFrame']
     tpf = main.win.frames['TestProgressFrame']
     
@@ -1902,8 +1901,6 @@ def run(root_cfg):
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
         
-        #indicate that in case of error, show the post_test_gui
-        show_post_test = True
         
         
         
@@ -1914,13 +1911,10 @@ def run(root_cfg):
         # Enter RadioInterface object
         with ri as my_obj.ri:
             
-            # errors will be handled through get_post_notes()
-            show_errors = False
             
             # run the test
             result = my_obj.run()
             
-            show_errors = True
                 
             
         if sel_tst == 'IgtibyFrame':
@@ -1973,11 +1967,8 @@ def run(root_cfg):
     except SystemExit: pass
         
     except Exception as e:
-        if show_errors:
-            if show_post_test:
-                my_obj.get_post_notes()
-            else:
-                show_error(e)
+        if main.last_error is not e:
+            show_error(e)
         else:
             traceback.print_exc()
 
