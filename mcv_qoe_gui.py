@@ -1149,7 +1149,7 @@ class TestProgressFrame(tk.LabelFrame):
                 prog_type,
                 num_trials=0,
                 current_trial=0,
-                err_msg='',
+                msg='',
                 clip_name='',
                 delay='',
                 file='',
@@ -1169,10 +1169,10 @@ class TestProgressFrame(tk.LabelFrame):
                       f'Trial {current_trial+1} of {num_trials}'),
             
             'check-fail' : ('Trial failed...',
-                f'Trial {current_trial+1} of {num_trials}\n{err_msg}'),
+                f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
             'check-resume' : ('Resuming test...',
-                f'Trial {current_trial+1} of {num_trials}\n{err_msg}')
+                f'Trial {current_trial+1} of {num_trials}\n{msg}')
             
             
             }
@@ -1236,7 +1236,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         elif prog_type == 'warning':
             WarningBox(self,
-                       f'WARNING: {err_msg}',
+                       f'WARNING: {msg}',
                        color='yellow',
                        )
             
