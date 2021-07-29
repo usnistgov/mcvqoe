@@ -601,7 +601,7 @@ class MCVQoEGui(tk.Tk):
         self.set_step(1)
             
     def run(self):
-        self.frames['TestProgressFrame'].progress('pre', 0, 0)
+        gui_progress_update('pre', 0, 0)
                 
         #retrieve configuration from controls
         root_cfg = self.get_cnf()
@@ -1104,6 +1104,8 @@ class TestProgressFrame(tk.LabelFrame):
         
         self.pause_after = None
         self.rec_stop = None
+        self._is_paused = False
+        self.warnings = []
         
         self.btnvars = btnvars
         
@@ -1137,6 +1139,8 @@ class TestProgressFrame(tk.LabelFrame):
                     ):
                     
             ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
+            
+        
     
     def check_for_abort(self):
         if main.win.step == 4:
@@ -1145,7 +1149,7 @@ class TestProgressFrame(tk.LabelFrame):
         
         
     @in_thread('GuiThread', wait=True, do_exceptions=True)
-    def progress(self,
+    def gui_progress_update(self,
                 prog_type,
                 num_trials=0,
                 current_trial=0,
@@ -1157,7 +1161,6 @@ class TestProgressFrame(tk.LabelFrame):
                 ) -> bool:
         
         self.check_for_abort()
-        
         
         messages = {
             'pre' : ('Loading...', ''),
@@ -1174,7 +1177,7 @@ class TestProgressFrame(tk.LabelFrame):
             'check-resume' : ('Resuming test...',
                 f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
-            'status' : ('', msg),
+            'status' : ('', msg)
             
             }
         
@@ -1234,12 +1237,20 @@ class TestProgressFrame(tk.LabelFrame):
             self.clip_name_.set('')
             self.file_.set('')
             self.delay_.set('')
+            self._is_paused = False
+            [w.destroy() for w in self.warnings]
+            self.warnings = []
         
         elif prog_type == 'warning':
-            WarningBox(self,
+            w = WarningBox(self,
                        f'WARNING: {msg}',
                        color='yellow',
                        )
+            if w not in self.warnings:
+                self.warnings.append(w)
+                w.pack()
+            
+            
             
         elif prog_type == 'csv-update':
             self.clip_name_.set(f'Current Clip: {clip_name}')
@@ -1255,21 +1266,18 @@ class TestProgressFrame(tk.LabelFrame):
                            self._trim_text(f'to "{new_file}"'))
             
         
-        
-        
-        
-        
-        
         return True
     
     
     @in_thread('GuiThread', do_exceptions=True)
     def user_check(self,
                    reason,
-                   message,
+                   message=None,
                    trials=None,
-                   time=None) -> bool:
-        
+                   time=None,
+                   msg=None) -> bool:
+        if msg is not None:
+            message = msg
         if trials:
             self.pause_after = trials
         
@@ -1396,8 +1404,16 @@ class WarningBox(tk.Frame):
         ttk.Label(self, text=text, background=color).pack(
             side=tk.LEFT, padx=10, pady=10)
         
-        self.pack(side=tk.BOTTOM, fill=tk.X)
-
+        
+        self.text = text
+        
+        
+    def __eq__(self, other):
+        return isinstance(other, WarningBox) and self.text == other.text
+    
+    def pack(self, *args, **kwargs):
+        
+        super().pack(*args, side=tk.BOTTOM, fill=tk.X, **kwargs)
         
         
         
@@ -1868,7 +1884,7 @@ def run(root_cfg):
         
         
         # set progress update callback
-        my_obj.progress_update = tpf.progress
+        my_obj.progress_update = gui_progress_update
         
         if sel_tst == 'AccssDFrame':
             #set user check callback
@@ -2133,7 +2149,60 @@ def param_modify(root_cfg):
     
         
         
+def gui_progress_update(prog_type,
+             num_trials=0,
+             current_trial=0,
+             msg='',
+             clip_name='',
+             delay='',
+             file='',
+             new_file=''
+             ) -> bool:
+    """
+    
 
+    Parameters
+    ----------
+    prog_type : str
+        the event type.
+    num_trials : int, optional
+        total trials. The default is 0.
+    current_trial : int, optional
+        the current working trial. The default is 0.
+    msg : str, optional
+        the message associated with some events. The default is ''.
+    clip_name : str, optional
+        the currently processed clip. The default is ''.
+    delay : float, optional
+        the current PTT delay for access_time. The default is ''.
+    file : str, optional
+        The default is ''.
+    new_file : str, optional
+        The default is ''.
+
+    RAISES
+    ------
+    SystemExit
+        to abort the test
+
+    """
+    
+    tpf = main.win.frames['TestProgressFrame']
+    
+    ret = tpf.gui_progress_update(prog_type,
+                                  num_trials,
+                                  current_trial,
+                                  msg,
+                                  clip_name,
+                                  delay,
+                                  file,
+                                  new_file,
+                                  )
+    
+    while tpf._is_paused:
+        time.sleep(0.1)
+        
+    return ret
 
 
 
