@@ -1951,13 +1951,13 @@ def run(root_cfg):
             # run the test
             result = my_obj.run()
             
-                
-            
+                 
         if sel_tst == 'IgtibyFrame':
             #show intelligibility estimate
             ppf.add_element(f'Intelligibility Estimate: {result}')
-            
-        elif sel_tst == 'M2eFrame' and my_obj.test == 'm2e_1loc':
+        
+        
+        elif sel_tst == 'M2eFrame' and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
             mean_msg, std_msg = my_obj.get_mean_and_std()
             
