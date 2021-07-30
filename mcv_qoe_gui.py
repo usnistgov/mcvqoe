@@ -1110,6 +1110,10 @@ class TestProgressFrame(tk.LabelFrame):
         self.btnvars = btnvars
         
         super().__init__(master, *args, text='', **kwargs)
+        
+        
+        #pause button
+        ttk.Button(self, text='Pause', command=self.pause).pack(padx=10, pady=10)
                
         
         # text above bar
@@ -1264,6 +1268,14 @@ class TestProgressFrame(tk.LabelFrame):
             self.file_.set(self._trim_text(f'Renaming "{file}"')+
                            '\n'+
                            self._trim_text(f'to "{new_file}"'))
+        
+        
+        
+        
+        if self._is_paused:
+            self.user_check('_pause_by_user')
+            self._is_paused = False
+            
             
         
         return True
@@ -1272,7 +1284,7 @@ class TestProgressFrame(tk.LabelFrame):
     @in_thread('GuiThread', do_exceptions=True)
     def user_check(self,
                    reason,
-                   message=None,
+                   message='',
                    trials=None,
                    time=None,
                    msg=None) -> bool:
@@ -1298,6 +1310,10 @@ class TestProgressFrame(tk.LabelFrame):
             tk.messagebox.showerror('Test Paused',
                                     message+'\n\n'+
                                     'Press OK to continue.')
+            
+        elif reason == '_pause_by_user':
+            tk.messagebox.showinfo('Test Paused',
+                                   'Press OK to continue.')
         
         
         # resume timer
@@ -1324,6 +1340,10 @@ class TestProgressFrame(tk.LabelFrame):
             new = text[0:25] + '...' + text[25 + chop + 3: ]
         
         return new
+    
+    
+    def pause(self):
+        self._is_paused = True
         
     
 class _StopWatch:
