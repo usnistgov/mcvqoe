@@ -2303,7 +2303,7 @@ def get_interfaces(root_cfg):
         
         channels = {
             'playback_chans' : {"tx_voice": 0},
-            'rec_chans' : {"timecode": 1},
+            'rec_chans' : {"IRIGB_timecode": 1},
             }
         
     elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
@@ -2315,7 +2315,7 @@ def get_interfaces(root_cfg):
         
         channels = {
             'playback_chans' : {},
-            'rec_chans' : {"rx_voice": 0, "timecode": 1},
+            'rec_chans' : {"rx_voice": 0, "IRIGB_timecode": 1},
             }
         ri_needed = False
         
