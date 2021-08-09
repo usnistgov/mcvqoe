@@ -30,12 +30,9 @@ class AccssDFrame(TestCfgFrame):
             audio_files,
             outdir,
             ptt_step,
-            ptt_rep,
             ptt_gap,
             dev_dly,
             RadioCheck,
-            AutoStop,
-            ptt_delay,
             data_file,
             advanced
             )
@@ -45,6 +42,11 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
     
     def get_controls(self):
         return (
+            
+            ptt_rep,
+            ptt_delay,
+            
+            AutoStop,
             BgNoise,
             DetectFailure,
             time_expand,
