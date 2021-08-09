@@ -271,7 +271,7 @@ class MCVQoEGui(tk.Tk):
         
         cs = self.frames['AccssDFrame'].controls
         
-        cs['trials'].m_ctrl.configure(state=state)
+        cs['pause_trials'].m_ctrl.configure(state=state)
         cs['_limited_trials'].m_ctrl.configure(state=state)
         
         
@@ -1949,7 +1949,7 @@ def run(root_cfg):
         if sel_tst == 'AccssDFrame':
             #set user check callback
             my_obj.user_check = tpf.user_check
-            tpf.pause_after = my_obj.trials
+            tpf.pause_after = my_obj.pause_trials
         else:
             tpf.pause_after = None
         
@@ -2163,25 +2163,26 @@ def param_modify(root_cfg):
         
     
     
-    # make trials an integer if it's not already (mainly for access time)
-    bad_param = False
-    try:
-        cfg['trials'] = int(cfg['trials'])
-    except ValueError:
-        if 'inf' in cfg['trials'].lower():
-            cfg['trials'] = np.inf
-        else:
-            bad_param = True
+    # make pause_trials an integer or np.inf
+    
+    if 'pause_trials' in cfg:
+        try:
+            cfg['pause_trials'] = int(cfg['pause_trials'])
+        except ValueError:
+            if 'inf' in cfg['pause_trials'].lower():
+                cfg['pause_trials'] = np.inf
+            else:
+                bad_param = True
+                
+        if root_cfg['is_simulation']:
             
-    if sel_tst == 'AccssDFrame' and root_cfg['is_simulation']:
-        
-        # don't do pauses in a simulation in access time
-        cfg['trials'] = np.inf
-        bad_param = False
-        
-    if bad_param:
-        raise InvalidParameter('trials',
-                    message='Number of trials must be a whole number')
+            # don't do pauses in a simulation in access time
+            cfg['pause_trials'] = np.inf
+            bad_param = False
+            
+        if bad_param:
+            raise InvalidParameter('pause_trials',
+                        message='Number of trials must be a whole number')
     
     
     
@@ -2635,7 +2636,7 @@ control_list = {
         's_thresh',
         's_tries',
         'stop_rep',
-        'trials',
+        'pause_trials',
         'dev_dly',
     ],
     
@@ -2744,7 +2745,7 @@ for k in ('AccssDFrame','PSuDFrame'):
         DEFAULTS[k]['_time_expand_f'] = '<default>'
 
 #the following should be a string, not any other type
-DEFAULTS['AccssDFrame']['trials'] = str(int(DEFAULTS['AccssDFrame']['trials']))
+DEFAULTS['AccssDFrame']['pause_trials'] = str(int(DEFAULTS['AccssDFrame']['pause_trials']))
 
 try:
     DEFAULTS['AccssDFrame']['dev_dly'] = str(_get_dev_dly(ignore_error=False))
