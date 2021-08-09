@@ -64,7 +64,7 @@ class RadioCheck(SubCfgFrame):
     def get_controls(self):
         return (
             _limited_trials,
-            trials,
+            pause_trials,
             )
     
     
@@ -111,7 +111,7 @@ class audio_files(shared.audio_files):
     are given, then the test is run in succession for each file."""
 
 class _limited_trials(LabeledControl):
-    """When disabled, sets the number of trials to infinite"""
+    """When disabled, sets the number of pause_trials to infinite"""
     
     
     MCtrl = ttk.Checkbutton
@@ -126,7 +126,7 @@ class _limited_trials(LabeledControl):
         super().__init__(master, row, *args, **kwargs)
         
         self.btnvar.trace_add('write', self.on_button)
-        self.master.btnvars['trials'].trace_add('write', self.update)
+        self.master.btnvars['pause_trials'].trace_add('write', self.update)
         self.update()
         
         
@@ -136,11 +136,11 @@ class _limited_trials(LabeledControl):
         else:
             val = 'inf'
             
-        self.master.btnvars['trials'].set(val)
+        self.master.btnvars['pause_trials'].set(val)
     
     def update(self, *args, **kwargs):
         
-        v = self.master.btnvars['trials'].get()
+        v = self.master.btnvars['pause_trials'].get()
         
         other = v != 'inf'
         this = self.btnvar.get()
@@ -155,7 +155,7 @@ class _limited_trials(LabeledControl):
         
     
         
-class trials(shared.trials):
+class pause_trials(shared.trials):
     """Number of trials to run before pausing to perform a radio check."""
     
     text = 'Trials between check:'
