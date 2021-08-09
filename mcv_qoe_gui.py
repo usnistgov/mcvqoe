@@ -246,7 +246,7 @@ class MCVQoEGui(tk.Tk):
         self.set_step(0)
 
     def _rm_waits_in_sim(self):
-        """ disables ptt_wait and ptt_gap controls in case of a simulation
+        """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
         
         """
         
@@ -265,6 +265,14 @@ class MCVQoEGui(tk.Tk):
                 # set control's state
                 frame.controls[key].m_ctrl.configure(state=state)
         
+        
+        
+        # disables radio check in Access time
+        
+        cs = self.frames['AccssDFrame'].controls
+        
+        cs['trials'].m_ctrl.configure(state=state)
+        cs['_limited_trials'].m_ctrl.configure(state=state)
 
     def _init_frames(self):
         """consructs the test-specific frames"""
@@ -2151,10 +2159,17 @@ def param_modify(root_cfg):
     try:
         cfg['trials'] = int(cfg['trials'])
     except ValueError:
-        if cfg['trials'].lower() == 'inf':
+        if 'inf' in cfg['trials'].lower():
             cfg['trials'] = np.inf
         else:
             bad_param = True
+            
+    if sel_tst == 'AccssDFrame' and root_cfg['is_simulation']:
+        
+        # don't do pauses in a simulation in access time
+        cfg['trials'] = np.inf
+        bad_param = False
+        
     if bad_param:
         raise InvalidParameter('trials',
                     message='Number of trials must be a whole number')
@@ -2169,7 +2184,8 @@ def param_modify(root_cfg):
             cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
         except ValueError:pass
         
-        
+    
+    # combine time_expand into a 2 vector
     if '_time_expand_i' in cfg:
         cfg['time_expand'] = [cfg['_time_expand_i']]
         try:
@@ -2198,7 +2214,8 @@ def param_modify(root_cfg):
         for key in ('ptt_wait', 'ptt_gap'):
             if key in cfg:
                 cfg[key] = 0
-    
+        
+        
         
         
 def gui_progress_update(prog_type,
