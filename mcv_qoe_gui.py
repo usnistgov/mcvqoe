@@ -196,6 +196,10 @@ class MCVQoEGui(tk.Tk):
         self.selected_test.trace_add(
             'write', lambda a, b, c: self._select_test())
         
+        # disable/enable some controls when simulation is set/unset
+        self.is_simulation.trace_add(
+            'write', lambda a, b, c: self._rm_waits_in_sim())
+        
         # initiate left frame with logo and test selections
         self.LeftFrame = LeftFrame(self, main_=self)
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
@@ -241,7 +245,26 @@ class MCVQoEGui(tk.Tk):
         self._pre_notes = None
         self.set_step(0)
 
-
+    def _rm_waits_in_sim(self):
+        """ disables ptt_wait and ptt_gap controls in case of a simulation
+        
+        """
+        
+        state = ('!disabled', 'disabled')[self.is_simulation.get()]
+        
+        for key in ('ptt_gap', 'ptt_wait'):
+            
+            # loop over every frame looking for 'ptt_wait' and 'ptt_gap' configs
+            
+            for framename, frame in self.frames.items():
+                if not hasattr(frame, 'controls'):
+                    continue
+                if key not in frame.controls:
+                    continue
+                
+                # set control's state
+                frame.controls[key].m_ctrl.configure(state=state)
+        
 
     def _init_frames(self):
         """consructs the test-specific frames"""
@@ -2165,7 +2188,16 @@ def param_modify(root_cfg):
         raise InvalidParameter('ptt_rep',
                     message='Must be greater than 15 if auto-stop is enabled')
         
+    
+    
+    
+    if root_cfg['is_simulation']:
         
+        # ptt_gap and ptt_wait should be set to 0 in simulations
+        
+        for key in ('ptt_wait', 'ptt_gap'):
+            if key in cfg:
+                cfg[key] = 0
     
         
         
