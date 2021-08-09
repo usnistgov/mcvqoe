@@ -277,7 +277,11 @@ class LabeledControl():
             except AttributeError:
                 btnvar = None
             if btnvar is None:
-                raise KeyError(f'{self.__class__.__name__} is missing a default value')
+                raise KeyError(f" The parameter '{self.__class__.__name__}' "+
+                               f"from '{self.master.__class__.__name__}' "+
+                               'is missing its default value. '+
+                               "Make sure it is declared in 'control_list', "+
+                               "and that it is an accepted type")
                 
             if self.variable_arg:
                 MCtrlkwargs[self.variable_arg] = self.btnvar
