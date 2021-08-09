@@ -249,7 +249,7 @@ class MCVQoEGui(tk.Tk):
         """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
         
         """
-        
+        # !disabled means not disabled
         state = ('!disabled', 'disabled')[self.is_simulation.get()]
         
         for key in ('ptt_gap', 'ptt_wait'):
@@ -273,6 +273,15 @@ class MCVQoEGui(tk.Tk):
         
         cs['trials'].m_ctrl.configure(state=state)
         cs['_limited_trials'].m_ctrl.configure(state=state)
+        
+        
+        # disables m2e location in simulation
+        
+        self.frames['M2eFrame'].controls['test'].m_ctrl.configure(state=state)
+        if state == 'disabled':
+            
+            # make it a 1-loc test
+            self.frames['M2eFrame'].btnvars['test'].set('m2e_1loc')
 
     def _init_frames(self):
         """consructs the test-specific frames"""

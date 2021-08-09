@@ -451,12 +451,20 @@ class _MultiChoice_Frame(tk.Frame):
     def __init__(self, *args, association, textvariable, **kwargs):
         
         super().__init__(*args, **kwargs)
-        
+        self.controls = []
         
         #initialize
         for val, text in association.items():
-            ttk.Radiobutton(self, variable=textvariable, value=val,
-                text=text).pack(fill=tk.X)
+            c = ttk.Radiobutton(self, variable=textvariable, value=val,
+                text=text)
+            
+            c.pack(fill=tk.X)
+            
+            self.controls.append(c)
+            
+    def configure(self, *args, **kwargs):
+        for ctrl in self.controls:
+            ctrl.configure(*args, **kwargs)
 
 class MultiChoice(LabeledControl):
     association = {}
