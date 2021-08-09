@@ -4,7 +4,7 @@ Created on Wed Jun  2 08:52:09 2021
 
 @author: MkZee
 """
-
+import pdb
 import mcvqoe.mouth2ear.m2e as m2e
 
 import tkinter.ttk as ttk
@@ -34,6 +34,7 @@ class M2eFrame(TestCfgFrame):
             trials,
             test,
             ptt_wait,
+            ptt_gap,
             advanced
             )
     
@@ -47,7 +48,7 @@ class M2eFrame(TestCfgFrame):
         #------------------ Controls ----------------------
 from shared import audio_files, _BrowseForFolder
 from shared import BgNoise
-from shared import trials, ptt_wait, outdir
+from shared import trials, ptt_wait, ptt_gap, outdir
 
 
 

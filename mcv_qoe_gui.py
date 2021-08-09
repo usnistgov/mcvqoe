@@ -2609,6 +2609,7 @@ control_list = {
         'bgnoise_volume',
         'outdir',
         'ptt_wait',
+        'ptt_gap',
         'test',
         'trials'
     ],
@@ -2619,6 +2620,7 @@ control_list = {
         'bgnoise_volume',
         'outdir',
         'ptt_wait',
+        'ptt_gap',
         'test',
         'trials'
     ],
@@ -2759,7 +2761,6 @@ DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_r
 
 # the following should be a float
 DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
-
 
 
 
