@@ -122,16 +122,17 @@ class GuiThread(Thread):
         self.setDaemon(True)
         self._callbacks = []
         self.win_class = win_class
+        self.win = None
         
     
     
     def run(self):
         
         # construct window
-        main.win = self.win_class()
+        self.win = self.win_class()
         
-        main.win.after(500, self._main_loop_ext)
-        main.win.mainloop()
+        self.win.after(500, self._main_loop_ext)
+        self.win.mainloop()
 
     def _main_loop_ext(self):
         
@@ -146,9 +147,9 @@ class GuiThread(Thread):
                 #don't crash in case of error
                 traceback.print_exc()
                 
-                
+        
         #run this function again
-        main.win.after(200, self._main_loop_ext)
+        self.win.after(200, self._main_loop_ext)
 
   
         
@@ -165,11 +166,16 @@ class Main():
         self._callbacks = []
         self.is_running = False
         self.last_error = None
-        self.win = None
 
         # constructs gui in new thread
         self.gui_thread = GuiThread(win_class)
         self.gui_thread.start()
+        
+        while self.gui_thread.win is None:
+            time.sleep(0.01)
+        
+        self.win = self.gui_thread.win
+        
         
         
 
