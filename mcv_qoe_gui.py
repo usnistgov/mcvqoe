@@ -8,7 +8,7 @@ Created on Wed May 26 15:53:57 2021
 
 
 """
-
+import pdb
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
@@ -20,22 +20,13 @@ from tk_threading import in_thread
 from tk_threading import Main
 
 
-
-
-
-
-import pdb
-
 import ctypes
 import traceback
 import sys
 import time
 import _thread
-from threading import Thread
-import threading
 import json
 import pickle
-import functools
 import os
 from os import path, listdir
 import gc
@@ -230,13 +221,10 @@ class MCVQoEGui(tk.Tk):
             
             btnvars = loadandsave.TkVarDict(**DEFAULTS[F.__name__])
             
-            if F in (AccssDFrame, PostProcessingFrame):
-                parent=self.RightFrame
-            else:
-                parent=self
+            
             
             # initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=parent, btnvars=btnvars)
+            self.frames[F.__name__] = F(master=self, btnvars=btnvars)
 
             # when user changes a control
             btnvars.on_change = self.on_change
