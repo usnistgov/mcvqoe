@@ -2207,7 +2207,7 @@ def param_modify(root_cfg):
         
         
         
-    """# InvalidParameter() does not work for advanced features.
+    """# InvalidParameter() does not work in advanced window
     
     # check auto_stop with ptt_rep
     if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
