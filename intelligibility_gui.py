@@ -15,8 +15,6 @@ class IgtibyFrame(shared.TestCfgFrame):
     text = 'Intelligibility Test'
     def get_controls(self):
         return (
-            audio_files,
-            _BrowseForFolder,
             outdir,
             trials,
             ptt_wait,
@@ -31,7 +29,7 @@ class IgtibyFrame(shared.TestCfgFrame):
 
 #--------------------------Controls-------------------------------------------
 
-from shared import audio_files, _BrowseForFolder, trials, outdir, ptt_wait
+from shared import trials, outdir, ptt_wait
 from shared import ptt_gap
 
 
