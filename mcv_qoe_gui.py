@@ -4,9 +4,6 @@ Created on Wed May 26 15:53:57 2021
 
 @author: marcus.zeender@nist.gov
 
-
-
-
 """
 import pdb
 import tkinter.messagebox as msb
