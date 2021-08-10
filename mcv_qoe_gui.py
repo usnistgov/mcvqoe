@@ -309,9 +309,12 @@ class MCVQoEGui(tk.Tk):
         
         
         
+        # add bottom buttons into equation
+        h += self.BottomButtons.winfo_reqheight()
         
         #set the LeftFrame's auto-disappear threshold
         self.LeftFrame.MenuShowWidth = w
+        
         
         #leave the left-most frame's width out of the width equation
             # because it automatically hides.
