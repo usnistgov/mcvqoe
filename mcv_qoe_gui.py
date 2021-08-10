@@ -69,11 +69,6 @@ from intelligibility_gui import IgtibyFrame
 # basic config
 TITLE_ = 'MCV QoE'
 
-WIN_SIZE = (900, 750)
-
-
-    
-
 
 
 class MCVQoEGui(tk.Tk):
@@ -97,9 +92,6 @@ class MCVQoEGui(tk.Tk):
         # indicates that the user does not need to save the configuration
         self.set_saved_state(True)
 
-        # dimensions
-        self.minsize(width=600, height=370)
-        self.geometry(f'{WIN_SIZE[0]}x{WIN_SIZE[1]}')
 
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
@@ -118,11 +110,17 @@ class MCVQoEGui(tk.Tk):
         self.LeftFrame.pack(side=tk.LEFT, fill=tk.Y)
         
         # initiate row of buttons on bottom of window
-        BottomButtons(master=self).pack(side=tk.BOTTOM, fill=tk.X,
-                                        padx=10, pady=10)
+        self.BottomButtons = BottomButtons(master=self)
+        self.BottomButtons.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
         
-        # the frame containing the meat of the software
+        # a scrollable frame (currently not used)
         self.RightFrame = shared.ScrollableFrame(self)
+        
+        # create test-specific frames
+        self._init_frames()
+        
+        # set window size
+        self._set_dimensions()
         
 
         # handling changing of window size
@@ -141,9 +139,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
         
-        # create test-specific frames
         
-        self._init_frames()
         
         # sets the current frame to be blank
         self.currentframe = self.frames['EmptyFrame']
@@ -198,6 +194,8 @@ class MCVQoEGui(tk.Tk):
 
     def _init_frames(self):
         """consructs the test-specific frames"""
+        
+        
         frame_types = [
             EmptyFrame,
             TestInfoGuiFrame,
@@ -212,7 +210,10 @@ class MCVQoEGui(tk.Tk):
             PSuDFrame,
             IgtibyFrame,
         ]
-                
+        
+   
+        
+        
         self.frames = {}
         for F in frame_types:
             
@@ -221,10 +222,14 @@ class MCVQoEGui(tk.Tk):
             
             
             # initializes the frame, with its key being its own classname
-            self.frames[F.__name__] = F(master=self, btnvars=btnvars)
+            f = F(master=self, btnvars=btnvars)
+            
+            self.frames[F.__name__] = f
 
             # when user changes a control
             btnvars.on_change = self.on_change
+            
+            
         
         self.simulation_settings = loadandsave.TkVarDict(
             **DEFAULTS['SimSettings'])
@@ -235,6 +240,132 @@ class MCVQoEGui(tk.Tk):
         
         _get_dev_dly()
         
+        
+        
+    
+    def _set_dimensions(self):
+        
+        # which frames should set the minimum size
+        important_frame_types = (
+            DevDlyCharFrame,
+            M2eFrame,
+            PSuDFrame,
+            IgtibyFrame,
+        )
+        
+        
+        # hide the window to prevent random movement
+        self.withdraw()
+        
+        # get screen dimensions
+        screenh = self.winfo_screenheight()
+        screenw = self.winfo_screenwidth()
+        
+        max_ = False
+        
+        # get cached dimensions
+        try:
+            
+            
+            cache = loadandsave.Config('window_cache.json').load()
+            assert cache.keys() == {'x':0,'y':0,'w':0,'h':0}.keys()
+            
+            max_ = ((abs(cache['x']) < 50) +
+                    (abs(cache['y']) < 50) +
+                    (abs(cache['w'] + cache['x'] - screenw) < 50) +
+                    (abs(cache['h'] + cache['y'] - screenh) < 50)
+                    ) >= 3
+            
+            assert cache['x'] >= -25
+            assert cache['y'] >= -25
+            assert cache['x'] + cache['w'] <= screenw + 50
+            assert cache['y'] + cache['h'] <= screenh + 50
+            
+        except (FileNotFoundError, AssertionError):
+            cache = None
+        
+        
+        h = w = 0
+        
+        for f_name, f in self.frames.items():
+             
+            if f.__class__ in important_frame_types:
+                
+                # updates the sizing of the window
+                f.pack(side=tk.RIGHT, padx=10, pady=10)
+                self.update_idletasks()
+                # get the dimensions of the window
+                h_f = self.winfo_reqheight()
+                w_f = self.winfo_reqwidth()
+                
+                
+                # get largest possible h_f and store in h, etc
+                h = (h, h_f)[h < h_f]
+                w = (w, w_f)[w < w_f]
+                
+                
+                # hide the frame: it won't be needed until later
+                f.pack_forget()
+        
+        
+        
+        
+        #set the LeftFrame's auto-disappear threshold
+        self.LeftFrame.MenuShowWidth = w
+        
+        #leave the left-most frame's width out of the width equation
+            # because it automatically hides.
+            
+        minw = w - self.LeftFrame.winfo_reqwidth()
+        
+        minh = h
+        
+        
+        # dimensions to ensure all frames fit in the window
+        self.minsize(width=minw, height=minh)
+        
+        
+        if cache is not None and not max_:
+            x, y, w, h = cache['x'], cache['y'], cache['w'], cache['h']
+        else:
+            # initial size should fit in the screen
+            h = (h, screenh)[h > screenh]
+            w = (w, screenw)[w > screenw]
+            
+            # center window on screen
+            x = (screenw - w) // 2
+            y = (screenh - h) // 2
+        
+        
+        #set the initial size
+        self.geometry(f'{w}x{h}')
+        
+        #set inintial position
+        self.geometry(f'+{x}+{y}')
+        
+        
+        # maximize the window if the cache indicates it should be maximized
+        if max_:
+            try:
+                # may not work on some systems
+                self.wm_attributes('-zoomed', 1)
+                
+            except:
+                try:
+                    self.state("zoomed")
+                except: pass
+                    
+        
+        # show the window
+        self.deiconify()
+        
+    def _cache_dimensions(self):
+        loadandsave.Config('window_cache.json',
+                           x = self.winfo_x(),
+                           y = self.winfo_y(),
+                           w = self.winfo_width(),
+                           h = self.winfo_height()
+            ).dump()
 
     def _select_test(self):
         if self.step in (0, 1):
@@ -307,7 +438,9 @@ class MCVQoEGui(tk.Tk):
             # this prevents a frozen program from being uncloseable
             if ct < 100:
                 self.update_idletasks()
-            
+        
+        # cache window dimensions
+        self._cache_dimensions()
             
         # close the gui
         self.destroy()
@@ -765,8 +898,8 @@ class LeftFrame(tk.Frame):
         # stores the main Tk window
         self.main_ = main_
 
-        # The window's minimum width at which the menu is shown
-        self.MenuShowWidth = WIN_SIZE[0]
+        # The window's minimum width at which the menu is shown. will be set later
+        self.MenuShowWidth = np.inf
 
         self.DoMenu = False
         self.MenuVisible = True
@@ -1546,9 +1679,6 @@ def dpi_scaling(root):
             raise Exception()
     except:  # in case of invalid dpi scale
         dpi_scale = 1
-    global WIN_SIZE
-    WIN_SIZE = (round(WIN_SIZE[0] * dpi_scale),
-                round(WIN_SIZE[1] * dpi_scale))
 
     # font
     shared.FONT_SIZE = round(shared.FONT_SIZE * dpi_scale)
