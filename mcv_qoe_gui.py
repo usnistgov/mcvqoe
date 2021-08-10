@@ -126,7 +126,10 @@ class MCVQoEGui(tk.Tk):
         # handling changing of window size
         self.bind('<Configure>', self.LeftFrame.on_change_size)
         
-        # binding keyboard shortcuts
+        
+        # --------binding keyboard shortcuts-----------
+        
+        #save (as), open, close
         self.bind('<Control-s>', self.save)
         self.bind('<Control-S>', self.save)
         self.bind('<Control-o>', self.open_)
@@ -136,10 +139,22 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
         
+        #back, next
+        nxt = lambda *a, **k: self.BottomButtons._nxt_btn_wgt.invoke()
+        self.bind('<Control-Return>', nxt)
+        self.bind('<Alt-n>', nxt)
+        self.bind('<Alt-N>', nxt)
+        
+        bck = lambda *a, **k: self.BottomButtons._bck_btn_wgt.invoke()
+        self.bind('<Alt-b>', bck)
+        self.bind('<Alt-B>', bck)
+        
         #scrolling the scrollbar
         self.bind('<MouseWheel>', self.RightFrame.scroll)
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
+        
+        
         
         
         
