@@ -884,6 +884,7 @@ class channel_rate(LabeledControl):
 
     
     def update(self, *args, **kwargs):
+    
         
         chan_tech = self.master.btnvars['channel_tech'].get()
         
@@ -891,7 +892,9 @@ class channel_rate(LabeledControl):
         
         default, rates = QoEsim().get_channel_rates(chan_tech)
         
-        self.btnvar.set(default)
+        old = self.btnvar.get()
+        if old not in rates:
+            self.btnvar.set(default)
         
         for rate in rates:
             #add a dropdown list option
