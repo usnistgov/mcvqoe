@@ -135,6 +135,8 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-Shift-S>', self.save_as)
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
+        
+        #scrolling the scrollbar
         self.bind('<MouseWheel>', self.RightFrame.scroll)
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
@@ -2261,7 +2263,14 @@ def get_interfaces(root_cfg):
         
         # turn str(None) into None
         root_cfg['SimSettings']['channel_rate'] = None
-        
+    
+    
+    # convert simulated m2e-latency to optional float
+    try:
+        root_cfg['SimSettings']['m2e_latency'] = float(
+                root_cfg['SimSettings']['m2e_latency'])
+    except ValueError:
+        root_cfg['SimSettings']['m2e_latency'] = None
         
         
     #------------------------- set channels -----------------------------------
@@ -2672,7 +2681,7 @@ except FileNotFoundError:
 
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
-
+DEFAULTS['SimSettings']['m2e_latency'] = str(DEFAULTS['SimSettings']['m2e_latency'])
 
 # the following should be a float
 DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
