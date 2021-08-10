@@ -905,7 +905,9 @@ class channel_rate(LabeledControl):
 
 
 class m2e_latency(LabeledControl):
-    """Simulated mouth to ear latency for the channel in seconds."""
+    """Simulated mouth to ear latency for the channel in seconds.
+    
+    Defaults to the minimum latency allowed by the channel tech."""
     
     text = 'Mouth-to-ear Latency:'
     MCtrl = ttk.Spinbox

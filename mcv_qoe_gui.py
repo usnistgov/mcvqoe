@@ -2696,7 +2696,7 @@ except FileNotFoundError:
 
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
-DEFAULTS['SimSettings']['m2e_latency'] = str(DEFAULTS['SimSettings']['m2e_latency'])
+DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
 
 # the following should be a float
 DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
