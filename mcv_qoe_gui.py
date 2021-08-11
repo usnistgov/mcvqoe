@@ -5,6 +5,24 @@ Created on Wed May 26 15:53:57 2021
 @author: marcus.zeender@nist.gov
 
 """
+# -----------------------------basic config------------------------------------
+TITLE_ = 'MCV QoE'
+icon = 'MCV-sm.ico'
+appid = 'nist.mcvqoe.gui.1_0_0'
+
+
+import ctypes
+# on Windows:
+if hasattr(ctypes, 'windll'):
+    # remove dpi scaling (otherwise text is blurry)
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    
+    
+    # allows icon setting on taskbar
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
+    
+
+#--------------------------imports---------------------------------------------
 import pdb
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
@@ -17,7 +35,7 @@ from tk_threading import in_thread
 from tk_threading import Main
 
 
-import ctypes
+
 import traceback
 import sys
 import time
@@ -30,25 +48,9 @@ import gc
 import subprocess as sp
 import matplotlib
 
-#alternate rendering for pyplot to avoid conflicts with tkinter
-use_alternate_plot_rendering = True
-try:
-    import PyQt5
-except: use_alternate_plot_rendering = False
-else:
-    matplotlib.use('Qt5Agg')
-
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
-
 
 from mcvqoe.simulation.QoEsim import QoEsim
-
-
 from mcvqoe import hardware
-
-
 
 
 
@@ -65,9 +67,17 @@ import intelligibility_gui
 from intelligibility_gui import IgtibyFrame
 
 
+#alternate rendering for pyplot to avoid conflicts with tkinter
+use_alternate_plot_rendering = True
+try:
+    import PyQt5
+except: use_alternate_plot_rendering = False
+else:
+    matplotlib.use('Qt5Agg')
 
-# basic config
-TITLE_ = 'MCV QoE'
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 
 
 
@@ -80,7 +90,11 @@ class MCVQoEGui(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        # prevents random window flashing
+        self.withdraw()
         
+        #set the title- and taskbar icon
+        self.iconbitmap(path.abspath(icon))
         
         
         # when the user closes the window
@@ -170,6 +184,11 @@ class MCVQoEGui(tk.Tk):
         self._is_closing = False
         self._pre_notes = None
         self.set_step(0)
+        
+        
+        
+        # show the window
+        self.deiconify()
 
     def _rm_waits_in_sim(self):
         """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
@@ -271,8 +290,6 @@ class MCVQoEGui(tk.Tk):
         )
         
         
-        # hide the window to prevent random movement
-        self.withdraw()
         
         # get screen dimensions
         screenh = self.winfo_screenheight()
@@ -376,8 +393,6 @@ class MCVQoEGui(tk.Tk):
                 except: pass
                     
         
-        # show the window
-        self.deiconify()
         
     def _cache_dimensions(self):
         loadandsave.Config('window_cache.json',
@@ -2728,9 +2743,8 @@ del obj
 
 if __name__ == '__main__':
     
-    # on Windows, remove dpi scaling (otherwise text is blurry)
-    if hasattr(ctypes, 'windll'):
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+
+
         
     
     main = Main(MCVQoEGui)
