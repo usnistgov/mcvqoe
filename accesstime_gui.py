@@ -59,16 +59,7 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
     
     
     
-    
-class RadioCheck(SubCfgFrame):
-    text = 'Regular Radio Checks'
-    
-    def get_controls(self):
-        return (
-            _limited_trials,
-            pause_trials,
-            )
-    
+ 
     
 class AutoStop(SubCfgFrame):
     text = 'Auto-Stop'
@@ -104,7 +95,7 @@ class DetectFailure(SubCfgFrame):
     
     
 #------------------------------controls--------------------------------------
-from shared import dev_dly
+from shared import dev_dly, RadioCheck
 
 class audio_files(shared.audio_files):
     """Audio files to use for testing.
@@ -112,55 +103,7 @@ class audio_files(shared.audio_files):
     the same name and a .csv extension. If a multiple audio files
     are given, then the test is run in succession for each file."""
 
-class _limited_trials(LabeledControl):
-    """When disabled, sets the number of pause_trials to infinite"""
-    
-    
-    MCtrl = ttk.Checkbutton
-    do_font_scaling = False
-    variable_arg = 'variable'
-    
-    def __init__(self, master, row, *args, **kwargs):
-        self.MCtrlkwargs = {'text': 'Enable Radio Checks',}
-                
-        self.btnvar = tk.BooleanVar()
-        
-        super().__init__(master, row, *args, **kwargs)
-        
-        self.btnvar.trace_add('write', self.on_button)
-        self.master.btnvars['pause_trials'].trace_add('write', self.update)
-        self.update()
-        
-        
-    def on_button(self, *args, **kwargs):
-        if self.btnvar.get():
-            val = self.previous
-        else:
-            val = 'inf'
-            
-        self.master.btnvars['pause_trials'].set(val)
-    
-    def update(self, *args, **kwargs):
-        
-        v = self.master.btnvars['pause_trials'].get()
-        
-        other = v != 'inf'
-        this = self.btnvar.get()
-        
-        if other:
-            self.previous = v
-            
-        if other != this:
-            self.btnvar.set(other)
-        
-        
-        
-    
-        
-class pause_trials(shared.trials):
-    """Number of trials to run before pausing to perform a radio check."""
-    
-    text = 'Trials between check:'
+
         
 class auto_stop(LabeledControl):
     """Enable checking for access and stopping the test when it is detected."""

@@ -19,6 +19,7 @@ class IgtibyFrame(shared.TestCfgFrame):
             trials,
             ptt_wait,
             ptt_gap,
+            RadioCheck,
             intell_est,
             save_tx_audio,
             )
@@ -30,7 +31,7 @@ class IgtibyFrame(shared.TestCfgFrame):
 #--------------------------Controls-------------------------------------------
 
 from shared import trials, outdir, ptt_wait
-from shared import ptt_gap
+from shared import ptt_gap, RadioCheck
 
 
 class intell_est(shared.MultiChoice):
