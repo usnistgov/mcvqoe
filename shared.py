@@ -600,8 +600,69 @@ class ptt_gap(LabeledControl):
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
 
 
+   
+class RadioCheck(SubCfgFrame):
+    text = 'Regular Radio Checks'
+    
+    def get_controls(self):
+        return (
+            _limited_trials,
+            pause_trials,
+            )
 
-
+class _limited_trials(LabeledControl):
+    """When disabled, sets the number of pause_trials to infinite"""
+    
+    
+    MCtrl = ttk.Checkbutton
+    do_font_scaling = False
+    variable_arg = 'variable'
+    
+    def __init__(self, master, row, *args, **kwargs):
+        self.MCtrlkwargs = {'text': 'Enable Radio Checks',}
+                
+        self.btnvar = tk.BooleanVar()
+        
+        super().__init__(master, row, *args, **kwargs)
+        
+        self.btnvar.trace_add('write', self.on_button)
+        self.master.btnvars['pause_trials'].trace_add('write', self.update)
+        self.update()
+        
+        
+    def on_button(self, *args, **kwargs):
+        if self.btnvar.get():
+            val = self.previous
+        else:
+            val = 'inf'
+            
+        self.master.btnvars['pause_trials'].set(val)
+    
+    def update(self, *args, **kwargs):
+        
+        v = self.master.btnvars['pause_trials'].get()
+        
+        other = v != 'inf'
+        this = self.btnvar.get()
+        
+        if other:
+            self.previous = v
+            
+        if other != this:
+            self.btnvar.set(other)
+        
+        
+        
+    
+        
+class pause_trials(LabeledControl):
+    """Number of trials to run before pausing to perform a radio check."""
+    
+    text = 'Trials between check:'
+    
+       
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
 
 
 class time_expand(SubCfgFrame):

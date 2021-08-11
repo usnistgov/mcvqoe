@@ -197,7 +197,7 @@ class MCVQoEGui(tk.Tk):
         # !disabled means not disabled
         state = ('!disabled', 'disabled')[self.is_simulation.get()]
         
-        for key in ('ptt_gap', 'ptt_wait'):
+        for key in ('test', 'ptt_gap', 'ptt_wait', 'pause_trials', '_limited_trials'):
             
             # loop over every frame looking for 'ptt_wait' and 'ptt_gap' configs
             
@@ -212,17 +212,9 @@ class MCVQoEGui(tk.Tk):
         
         
         
-        # disables radio check in Access time
-        
-        cs = self.frames['AccssDFrame'].controls
-        
-        cs['pause_trials'].m_ctrl.configure(state=state)
-        cs['_limited_trials'].m_ctrl.configure(state=state)
-        
         
         # disables m2e location in simulation
         
-        self.frames['M2eFrame'].controls['test'].m_ctrl.configure(state=state)
         if state == 'disabled':
             
             # make it a 1-loc test
@@ -1894,7 +1886,7 @@ def run(root_cfg):
         # set progress update callback
         my_obj.progress_update = gui_progress_update
         
-        if sel_tst == 'AccssDFrame':
+        if 'pause_trials' in cfg:
             #set user check callback
             my_obj.user_check = tpf.user_check
             tpf.pause_after = my_obj.pause_trials
@@ -2113,7 +2105,7 @@ def param_modify(root_cfg):
     
     
     # make pause_trials an integer or np.inf
-    
+    bad_param = False
     if 'pause_trials' in cfg:
         try:
             cfg['pause_trials'] = int(cfg['pause_trials'])
@@ -2615,6 +2607,7 @@ control_list = {
         'outdir',
         'ptt_wait',
         'ptt_gap',
+        'pause_trials',
         'intell_est',
         'save_tx_audio',
     ],
@@ -2703,6 +2696,7 @@ for k in ('AccssDFrame','PSuDFrame'):
 
 #the following should be a string, not any other type
 DEFAULTS['AccssDFrame']['pause_trials'] = str(int(DEFAULTS['AccssDFrame']['pause_trials']))
+DEFAULTS['IgtibyFrame']['pause_trials'] = str(int(DEFAULTS['IgtibyFrame']['pause_trials']))
 
 try:
     DEFAULTS['AccssDFrame']['dev_dly'] = str(_get_dev_dly(ignore_error=False))
