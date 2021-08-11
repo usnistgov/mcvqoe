@@ -50,7 +50,7 @@ import matplotlib
 
 
 from mcvqoe.simulation.QoEsim import QoEsim
-from mcvqoe import hardware
+from mcvqoe import hardware, simulation
 
 
 
@@ -1830,6 +1830,7 @@ def run(root_cfg):
     # extract test configuration
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
+    is_sim = root_cfg['is_simulation']
     
 
     
@@ -1905,7 +1906,14 @@ def run(root_cfg):
             #user pressed 'back' in test info gui
             return
         
-        
+        if is_sim and root_cfg['SimSettings']['_enable_PBI']:
+            
+            pcfg = root_cfg['SimSettings']
+                        
+            my_obj.info['PBI P_a1']=str(pcfg['P_a1'])
+            my_obj.info['PBI P_a2']=str(pcfg['P_a2'])
+            my_obj.info['PBI P_r'] =str(pcfg['P_r'])
+            my_obj.info['PBI interval']=str(pcfg['interval'])
         
         
         #show progress bar in gui
@@ -2276,23 +2284,24 @@ def get_interfaces(root_cfg):
     cfg = root_cfg[sel_tst]
     is_sim = root_cfg['is_simulation']
     
+    sim_cfg = root_cfg['SimSettings']
+    
     ri_needed = True
     rec_stop = None
     
     # if channel_rate should be None, make it so
-    if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
-            'SimSettings']['channel_rate'] == 'None':
+    if 'channel_rate' in sim_cfg and sim_cfg['channel_rate'] == 'None':
         
         # turn str(None) into None
-        root_cfg['SimSettings']['channel_rate'] = None
+        sim_cfg['channel_rate'] = None
     
     
     # convert simulated m2e-latency to optional float
     try:
-        root_cfg['SimSettings']['m2e_latency'] = float(
-                root_cfg['SimSettings']['m2e_latency'])
+        sim_cfg['m2e_latency'] = float(
+                sim_cfg['m2e_latency'])
     except ValueError:
-        root_cfg['SimSettings']['m2e_latency'] = None
+        sim_cfg['m2e_latency'] = None
         
         
     #------------------------- set channels -----------------------------------
@@ -2343,11 +2352,26 @@ def get_interfaces(root_cfg):
         
         sim = QoEsim(**channels)
         
-        _set_values_from_cfg(sim, root_cfg['SimSettings'])
+        _set_values_from_cfg(sim, sim_cfg)
         
+        if sim_cfg['_enable_PBI']:
+            
+            prob=simulation.PBI()
+            
+            prob.P_a1=sim_cfg['P_a1']
+            prob.P_a2=sim_cfg['P_a2']
+            prob.P_r=sim_cfg['P_r']
+            prob.interval=sim_cfg['interval']
+            
+
+            
+            sim.pre_impairment=prob.process_audio
+
         
         ri = sim
         ap = sim
+        
+        
     
     else:
         hdw_cfg = root_cfg['HdwSettings']
