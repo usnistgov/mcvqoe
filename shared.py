@@ -13,6 +13,7 @@ import tkinter.filedialog as fdl
 
 
 from mcvqoe.simulation.QoEsim import QoEsim
+from mcvqoe import simulation
 from mcvqoe.hardware.audio_player import AudioPlayer
 
 PADX = 10
@@ -402,6 +403,31 @@ class ToolTip(tk.Toplevel):
         self.update_idletasks()
     
     def show(self):self.deiconify()
+
+
+
+
+
+
+
+
+
+
+class LabeledNumber(LabeledControl):
+    
+    RCtrl = None
+    
+    MCtrl = ttk.Spinbox
+    
+    min_ = 0
+    max_ = 2**15 - 1
+    increment = 1
+    
+    def __init__(self, *args, **kwargs):
+        
+        self.MCtrlkwargs = MCtrlkwargs = {'increment':self.increment,
+                                          'from_':self.min_,
+                                          'to':self.max_}
 
 
 class LabeledSlider(LabeledControl):
@@ -821,8 +847,6 @@ class HdwSettings(AdvancedConfigGUI):
         return (
             AudioSettings,
             overplay,
-            #TODO: device delay
-            #dev_dly,
             radioport,
             )
     
@@ -872,6 +896,20 @@ class dev_dly(LabeledControl):
     
     def on_button(self):
         self.master.btnvars['dev_dly'].set(68)
+        
+        
+        
+
+
+
+
+
+
+
+class _SimPrototype(QoEsim, simulation.PBI):
+    def __init__(self):
+        QoEsim.__init__(self)
+        simulation.PBI.__init__(self)
 
 
 #SIMULATION SETTINGS WINDOW
@@ -893,6 +931,7 @@ class SimSettings(AdvancedConfigGUI):
             PTT_sig_freq,
             PTT_sig_aplitude,
             
+            Probabilityizer,            
             )
 
 class channel_tech(LabeledControl):
@@ -1008,15 +1047,37 @@ class PTT_sig_aplitude(LabeledControl):
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
 
 
+class Probabilityizer(SubCfgFrame):
+    
+    text = 'Probabilityizer'
+    
+    def get_controls(self):
+        return (
+            P_a1,
+            P_a2,
+            P_r,
+            interval,
+            )
 
 
 
+class P_a1(LabeledSlider):
+    
+    text = 'P_a1:'
 
+class P_a2(LabeledSlider):
+    
+    text = 'P_a2:'
 
+class P_r(LabeledSlider):
+    
+    text = 'P_r:'
 
-
-
-
+class interval(LabeledNumber):
+    
+    text = 'P_Interval'
+    
+    
 
 
 

@@ -2621,6 +2621,12 @@ control_list = {
         'rec_snr',
         'PTT_sig_freq',
         'PTT_sig_aplitude',
+        
+        'P_a1',
+        'P_a2',
+        'P_r',
+        'interval'
+        
     ],
     
     'HdwSettings' : [
@@ -2639,7 +2645,7 @@ initial_measure_objects = {
     'AccssDFrame': accesstime_gui.adly.measure(),
     'PSuDFrame' : psud_gui.psud.measure(),
     'IgtibyFrame': intelligibility_gui.igtiby.measure(),
-    'SimSettings': QoEsim(),
+    'SimSettings': shared._SimPrototype(),
     'HdwSettings': shared._HdwPrototype()
     }
 
@@ -2710,7 +2716,8 @@ DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
 # the following should be a float
 DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
 
-
+for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
+    DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
 
 
 
