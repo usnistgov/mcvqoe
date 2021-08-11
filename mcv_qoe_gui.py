@@ -2532,7 +2532,9 @@ def _show_error(err_name, msg):
 
 
 #---------------------- Get default values for parameters --------------------
-    
+
+
+# declare values here to pull default values from measure (or interface) class
 control_list = {
     'EmptyFrame': [],
     
@@ -2622,10 +2624,11 @@ control_list = {
         'PTT_sig_freq',
         'PTT_sig_aplitude',
         
+        '_enable_PBI',
         'P_a1',
         'P_a2',
         'P_r',
-        'interval'
+        'interval',
         
     ],
     
@@ -2720,6 +2723,9 @@ for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
     DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
 
 
+
+# the following do not have a default value
+DEFAULTS['SimSettings']['_enable_PBI'] = False
 
 
 

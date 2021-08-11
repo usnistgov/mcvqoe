@@ -4,7 +4,7 @@ Created on Wed Jun  9 11:03:39 2021
 
 @author: MkZee
 """
-
+import pdb
 from os import path
 
 import tkinter as tk
@@ -150,7 +150,7 @@ class SubCfgFrame(TestCfgFrame):
         
         master.controls.update(self.controls)
 
-
+    
 
 class AdvancedConfigGUI(tk.Toplevel):
     """A Toplevel window containing advanced options for the test
@@ -164,6 +164,7 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         super().__init__(master, *args, **kwargs)
         
+        self.traces_ = []
         
         self.title(self.text)
         #sets the controls in this window
@@ -192,11 +193,18 @@ class AdvancedConfigGUI(tk.Toplevel):
         
         
         
+        
+        
             
     def get_controls(self):
         pass
     
-
+    def destroy(self):
+        super().destroy()
+        
+        for var, trace_id in self.traces_:
+            var.trace_remove('write', trace_id)
+                
 
         
     
@@ -353,7 +361,7 @@ class HelpIcon(ttk.Button):
         
         # get location of help icon
         x, y, cx, cy = self.bbox("insert")
-        rootx = self._get_master().winfo_rootx()
+        rootx = _get_master(self).winfo_rootx()
         
         # calculate location of tooltip
         x = x + self.winfo_rootx() - self.tw.winfo_width()
@@ -375,12 +383,12 @@ class HelpIcon(ttk.Button):
         self.tw.destroy()
         self.tw = None
         
-    def _get_master(self):
-        m = self
+def _get_master(m, targets = (tk.Tk, tk.Toplevel)):
+        
         while hasattr(m, 'master'):
-            m = m.master
-            if isinstance(m, (tk.Tk, tk.Toplevel)):
+            if isinstance(m, targets):
                 return m
+            m = m.master
         
 
 class ToolTip(tk.Toplevel):
@@ -425,9 +433,10 @@ class LabeledNumber(LabeledControl):
     
     def __init__(self, *args, **kwargs):
         
-        self.MCtrlkwargs = MCtrlkwargs = {'increment':self.increment,
+        self.MCtrlkwargs = {'increment':self.increment,
                                           'from_':self.min_,
                                           'to':self.max_}
+        super().__init__(*args, **kwargs)
 
 
 class LabeledSlider(LabeledControl):
@@ -448,8 +457,10 @@ class LabeledSlider(LabeledControl):
         ttk.Label(master, textvariable=self.txtvar).grid(
             column=3, row=row, sticky='W')
     
-        ttk.Scale(master, variable=self.btnvar,
-            from_=0, to=1).grid(
+        self.m_ctrl = ttk.Scale(master, variable=self.btnvar,
+            from_=0, to=1)
+        
+        self.m_ctrl.grid(
             column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
     
     def on_change(self, *args, **kwargs):
@@ -504,6 +515,23 @@ class MultiChoice(LabeledControl):
     def __init__(self, *args, **kwargs):
         self.MCtrlkwargs = self.MCtrlkwargs.copy()
         self.MCtrlkwargs['association'] = self.association
+        
+        super().__init__(*args, **kwargs)
+
+
+
+class LabeledCheckbox(LabeledControl):
+    
+    MCtrl = ttk.Checkbutton
+    do_font_scaling = False
+    variable_arg = 'variable'
+    
+    def __init__(self, *args, **kwargs):
+        
+        
+        self.MCtrlkwargs = {'text': self.text}
+        
+        self.text = ''
         
         super().__init__(*args, **kwargs)
 
@@ -1047,18 +1075,52 @@ class PTT_sig_aplitude(LabeledControl):
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
 
 
+
+
+
+
 class Probabilityizer(SubCfgFrame):
     
     text = 'Probabilityizer'
     
+    def __init__(self, master, *args, **kwargs):
+        
+        super().__init__(master, *args, **kwargs)
+        
+        btv = self.btnvars['_enable_PBI']
+        trace_id = btv.trace_add('write',lambda *a,**k:self.update())
+        
+        # mark the trace for deletion, otherwise causes errors
+        _get_master(self).traces_.append((btv, trace_id))
+        
+        self.update()
     def get_controls(self):
         return (
+            _enable_PBI,
             P_a1,
             P_a2,
             P_r,
             interval,
             )
+    
+    def update(self):
+        
+        state = ('disabled', '!disabled')[self.btnvars['_enable_PBI'].get()]
+        
+        # disable other controls
+        for ctrlname, ctrl in self.controls.items():
+            if ctrlname == '_enable_PBI':
+                continue
+            
+            ctrl.m_ctrl.configure(state=state)
+        
 
+
+class _enable_PBI(LabeledCheckbox):
+    
+    text = 'Enable P.B.I Impairments'
+    
+    
 
 
 class P_a1(LabeledSlider):
