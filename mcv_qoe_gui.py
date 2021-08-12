@@ -387,12 +387,12 @@ class MCVQoEGui(tk.Tk):
         
         
     def _cache_dimensions(self):
-        loadandsave.Config('window_cache.json',
+            loadandsave.dim_cache.update(
                            x = self.winfo_x(),
                            y = self.winfo_y(),
                            w = self.winfo_width(),
                            h = self.winfo_height()
-            ).dump()
+            )
 
     def _select_test(self):
         if self.step in (0, 1):
@@ -468,6 +468,9 @@ class MCVQoEGui(tk.Tk):
         
         # cache window dimensions
         self._cache_dimensions()
+        
+        # save all caches
+        loadandsave.dump_cache()
             
         # close the gui
         self.destroy()
@@ -511,12 +514,17 @@ class MCVQoEGui(tk.Tk):
             return
 
         fpath = fdl.askopenfilename(
-            filetypes=[('json files', '*.json')]
+            filetypes=[('json files', '*.json')],
+            initialdir = loadandsave.fdl_cache['main']
+            
         )
 
         if not fpath:
             # canceled by user
             return
+        
+        # cache the folder for next time
+        loadandsave.fdl_cache.put('main', fpath)
 
         with open(fpath, 'r') as fp:
 
@@ -548,9 +556,17 @@ class MCVQoEGui(tk.Tk):
 
         """
         fp = fdl.asksaveasfilename(filetypes=[('json files', '*.json')],
-                                   defaultextension='.json')
+                                   defaultextension='.json',
+                                   initialdir = loadandsave.fdl_cache['main'])
         if fp:
+            
+            # set the current open filepath
             self.cnf_filepath = fp
+            
+            # cache the folder for later use in the dialog
+            loadandsave.fdl_cache.put('main', fp)
+            
+            # save it
             return self.save()
         else:
             return True

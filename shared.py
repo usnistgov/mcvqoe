@@ -11,6 +11,8 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 
+import loadandsave
+
 
 from mcvqoe.simulation.QoEsim import QoEsim
 from mcvqoe import simulation
@@ -581,8 +583,21 @@ class audio_files(LabeledControl):
     
     
     def on_button(self):
+        try:
+            comn = path.commonpath(self.btnvar.get())
+            if not comn:
+                raise Exception()
+            elif path.isfile(comn):
+                initpath = path.split(comn)
+            elif path.isdir(comn):
+                initpath = comn
+        
+        except:
+            initpath = loadandsave.fdl_cache[f'{self.master.__class__.__name__}.audio_files']
+        
+        
         fp = fdl.askopenfilenames(parent=self.master,
-                initialfile=self.btnvar.get(),
+                initialdir=initpath,
                 filetypes=[('WAV files', '*.wav')])
         if fp:
             self.btnvar.set([path.normpath(f) for f in fp])
