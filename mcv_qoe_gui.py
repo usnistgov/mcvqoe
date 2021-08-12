@@ -338,13 +338,16 @@ class MCVQoEGui(tk.Tk):
                 # hide the frame: it won't be needed until later
                 f.pack_forget()
         
-        
-        
-        # add bottom buttons into equation (not sure why they are not already?)
-        h += self.BottomButtons.winfo_reqheight()
-        
         #set the LeftFrame's auto-disappear threshold
         self.LeftFrame.MenuShowWidth = w
+        
+        # breathing room
+        w += 50
+        
+        # add bottom buttons into equation (not sure why they are not already?)
+        h += 50 + self.BottomButtons.winfo_reqheight()
+        
+         
         
         
         #leave the left-most frame's width out of the width equation
@@ -359,7 +362,7 @@ class MCVQoEGui(tk.Tk):
         self.minsize(width=minw, height=minh)
         
         
-        if cache is not None:
+        if cache is not None and not max_:
             x, y, w, h = cache['x'], cache['y'], cache['w'], cache['h']
         else:
             # initial size should fit in the screen
@@ -474,8 +477,6 @@ class MCVQoEGui(tk.Tk):
         # cache window dimensions
         self._cache_dimensions()
         
-        # save all caches
-        loadandsave.dump_cache()
             
         # close the gui
         self.destroy()
@@ -2457,6 +2458,10 @@ def _set_values_from_cfg(my_obj, cfg):
 
 
 
+
+        
+
+
 # TODO: implement the following frame?
 class char_dev_dly(tk.Toplevel):
     def __init__(self, *args, **kwargs):
@@ -2600,6 +2605,7 @@ control_list = {
     
     'DevDlyCharFrame': [
         'audio_files',
+        'audio_path',
         'bgnoise_file',
         'bgnoise_volume',
         'outdir',
@@ -2611,6 +2617,7 @@ control_list = {
     
     'M2eFrame': [
         'audio_files',
+        'audio_path',
         'bgnoise_file',
         'bgnoise_volume',
         'outdir',
@@ -2622,6 +2629,7 @@ control_list = {
 
     'AccssDFrame': [
         'audio_files',
+        'audio_path',
         'audio_path',
         'auto_stop',
         'bgnoise_file',
@@ -2640,6 +2648,7 @@ control_list = {
     
     'PSuDFrame' : [
         'audio_files',
+        'audio_path',
         'audio_path',
         'trials',
         'outdir',
@@ -2728,6 +2737,15 @@ for name_, cfg in DEFAULTS.items():
         cfg['outdir'] = path.join(path.expanduser("~"),
                                   'MCV-QoE',
                                   dir_names[name_])
+        
+        
+        
+    if 'audio_files' in cfg and 'audio_path' in cfg:
+        
+        cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
+            cfg['audio_path'], cfg['audio_files'])
+
+
 
 
 
