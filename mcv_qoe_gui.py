@@ -272,6 +272,9 @@ class MCVQoEGui(tk.Tk):
         
     
     def _set_dimensions(self):
+        """Algorithm to place and size the window on the screen
+        
+        """
         
         # which frames should set the minimum size
         important_frame_types = (
@@ -293,15 +296,17 @@ class MCVQoEGui(tk.Tk):
         try:
             
             
-            cache = loadandsave.Config('window_cache.json').load()
+            cache = loadandsave.dim_cache
             assert cache.keys() == {'x':0,'y':0,'w':0,'h':0}.keys()
             
+            # assumes window was maximized if >=3 borders touch edge of screen
             max_ = ((abs(cache['x']) < 50) +
                     (abs(cache['y']) < 50) +
                     (abs(cache['w'] + cache['x'] - screenw) < 50) +
                     (abs(cache['h'] + cache['y'] - screenh) < 50)
                     ) >= 3
             
+            # cached window should be mostly on the screen
             assert cache['x'] >= -25
             assert cache['y'] >= -25
             assert cache['x'] + cache['w'] <= screenw + 50
@@ -335,7 +340,7 @@ class MCVQoEGui(tk.Tk):
         
         
         
-        # add bottom buttons into equation
+        # add bottom buttons into equation (not sure why they are not already?)
         h += self.BottomButtons.winfo_reqheight()
         
         #set the LeftFrame's auto-disappear threshold
@@ -354,7 +359,7 @@ class MCVQoEGui(tk.Tk):
         self.minsize(width=minw, height=minh)
         
         
-        if cache is not None and not max_:
+        if cache is not None:
             x, y, w, h = cache['x'], cache['y'], cache['w'], cache['h']
         else:
             # initial size should fit in the screen
