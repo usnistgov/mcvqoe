@@ -572,7 +572,9 @@ class LabeledCheckbox(LabeledControl):
 
 
 class audio_files(LabeledControl):
-    """Audio files to use for test"""
+    """Audio files to use for testing.
+    
+    If left blank, all the files in "Audio Folder" are used. """
     
     text = 'Audio File(s):'
     RCtrl = ttk.Button
@@ -613,11 +615,7 @@ class audio_files(LabeledControl):
             
             
 class audio_path(LabeledControl):
-    """The source folder containing the audio files.
-    
-    
-    
-    """
+    """The source folder containing the audio files."""
     
     
     text = 'Audio Folder:'
@@ -638,6 +636,8 @@ class audio_path(LabeledControl):
         
         fp = fdl.askdirectory(initialdir = initpath)
         if fp:
+            
+            fp = path.normpath(fp)
             
             path_, files = format_audio_files(path_=fp)
             

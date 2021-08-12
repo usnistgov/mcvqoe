@@ -2076,47 +2076,59 @@ def param_modify(root_cfg):
         
     
         
-    if 'audio_files' in cfg:
+    if 'audio_files' in cfg and 'audio_path' in cfg:
         
-        # check: audio_files should not be empty
-        if not (cfg['audio_files'] and cfg['audio_files'][0]):
-            
-            raise InvalidParameter('audio_files', message='Audio File is required.')
-            
-            
-        # check: audio files should all exist
-        ct = 0
-        cfg['full_audio_dir'] = False
-        for af in cfg['audio_files']:
-            if path.isdir(af) and ct == 0:
+        
+        # full audio dir? looking for something like '<entire audio folder>' in audio_files parameter
+        cfg['full_audio_dir'] = not (
+            cfg['audio_files'] and
+            cfg['audio_files'][0]
+        
+            ) or (
                 
-                # set audio_path and full_audio_dir
-                cfg['audio_path'] = p = af
-                cfg['full_audio_dir'] = True
-                cfg['audio_files'] = []
+            len(cfg['audio_files']) == 1 and
+            '<' in cfg['audio_files'][0] and
+            '>' in cfg['audio_files'][0]
+            )
+        
+        p = cfg['audio_path']
+        
+        
+        
+        
+        if cfg['full_audio_dir']:
+            
+            if not path.isdir(p):
+                raise InvalidParameter('audio_path',
+                                   message = 'Folder does not exist.')
+            # check for existence of at least one .wav file
+            success = False
+            for f in listdir(p):
+                fp = path.join(p, f)
                 
-                # check folder for audio files
-                success = False
-                for f in listdir(p):
-                    fp = path.join(p, f)
-                    if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
-                        success = True
-                        break
-                if not success:
+                if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
+                    success = True
+                    break
+                
+            if not success:
+                raise InvalidParameter('audio_path',
+                    message='Folder must contain .wav files') 
+            
+        else:
+            
+            
+            # check: audio files should all exist
+            for f in cfg['audio_files']:
+                af = path.join(p, f)
+                
+                if not path.isfile(af):
                     raise InvalidParameter('audio_files',
-                        message='Folder must contain .wav files') 
+                        message=f'"{af}" does not exist')
+                    
+                if not path.splitext(af)[1].lower() == '.wav':
+                    raise InvalidParameter('audio_files',
+                        message='All audio files must be .wav files')
                 
-                break
-            
-            
-            # else, make sure all file names are valid
-            if not path.isfile(af):
-                raise InvalidParameter('audio_files',
-                    message=f'"{af}" does not exist')
-            if not path.splitext(af)[1].lower() == '.wav':
-                raise InvalidParameter('audio_files',
-                    message='All audio files must be .wav files')
-            ct += 1
     
     
     bad = False

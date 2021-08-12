@@ -59,8 +59,9 @@ from shared import ptt_gap
 from shared import time_expand
 
 class audio_files(shared.audio_files):
-    """Path to audio files to use for test. Cutpoint files must also be present.
-    If a folder is entered instead, all audio files in the folder will be used"""
+    """Path to audio files to use for testing. Cutpoint files must also be present.
+    
+    If left blank, all audio files in 'Audio Folder' will be used."""
     
     
     
