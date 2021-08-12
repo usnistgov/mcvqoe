@@ -16,7 +16,6 @@ import loadandsave
 
 from mcvqoe.simulation.QoEsim import QoEsim
 from mcvqoe import simulation
-from mcvqoe.hardware.audio_player import AudioPlayer
 
 PADX = 10
 PADY = 10
@@ -583,42 +582,77 @@ class audio_files(LabeledControl):
     
     
     def on_button(self):
-        try:
-            comn = path.commonpath(self.btnvar.get())
-            if not comn:
-                raise Exception()
-            elif path.isfile(comn):
-                initpath = path.split(comn)
-            elif path.isdir(comn):
-                initpath = comn
         
-        except:
-            initpath = loadandsave.fdl_cache[f'{self.master.__class__.__name__}.audio_files']
+        initpath = self.master.btnvars['audio_path'].get()
+        if not initpath or not path.isdir(initpath):
+            
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.audio_path']
         
         
         fp = fdl.askopenfilenames(parent=self.master,
                 initialdir=initpath,
                 filetypes=[('WAV files', '*.wav')])
         if fp:
-            self.btnvar.set([path.normpath(f) for f in fp])
+            # normalize paths (prevents mixing of / and \ on windows)
+            fp = [path.normpath(f) for f in fp]
+            
+            path_, files = format_audio_files('', fp)
+            self.btnvar.set(files)
+            self.master.btnvars['audio_path'].set(path_)
+            
+            # cache folder
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.audio_path',
+                 path_,
+                 )
             
             
-class _BrowseForFolder(LabeledControl):
-    text = ''
-    MCtrl = None
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Browse for Folder...'}
     
-    def __init__(self, master, row, *args, **kwargs):
-        super().__init__(master, row, *args, **kwargs)
-        self.r_ctrl.grid_forget()
-        self.r_ctrl.grid(columnspan=2,
-                padx=self.padx, pady=self.pady, column=2, row=row, sticky='E')
-        
+            
+            
+class audio_path(LabeledControl):
+    """The source folder containing the audio files.
+    
+    
+    
+    """
+    
+    
+    text = 'Audio Folder:'
+    MCtrl = ttk.Entry
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Browse Entire Folder'}
+    
+    
     def on_button(self):
-        fp = fdl.askdirectory()
+        
+        initpath = self.btnvar.get()
+        if not initpath or not path.isdir(initpath):
+            
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.audio_path']
+        
+        
+        fp = fdl.askdirectory(initialdir = initpath)
         if fp:
-            self.master.btnvars['audio_files'].set([path.normpath(fp)])
+            
+            path_, files = format_audio_files(path_=fp)
+            
+            self.master.btnvars['audio_files'].set(files)
+            
+            self.btnvar.set(path_)
+            
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.audio_path',
+                path_,
+                )
+            
+            
+            
+            
             
 class trials(LabeledControl):
     """Number of trials to use for test."""
@@ -1192,3 +1226,52 @@ class Abort_by_User(BaseException):
     """
     def __init__(self, *args, **kwargs):
         super().__init__('Test was aborted by the user', *args, **kwargs)
+        
+        
+        
+        
+def format_audio_files(path_= '', files=[]):
+    """
+    
+
+    Parameters
+    ----------
+    path_ : str, optional
+        a path to append all files to. The default is ''.
+    files : list of str, optional
+        path to each file. The default is [].
+
+    Returns
+    -------
+    newpath : str
+        the absolute path containing all the files.
+    newfiles : list of str
+        the paths relative to newpath containing the files.
+
+    """
+    
+    if not files:
+        return path_, ['<entire audio folder>']
+    
+    if len(files) == 1:
+        f = path.join(path_, files[0])
+        
+        if path.isfile(f):
+        
+            newpath, newfile = path.split(f)
+            
+            return newpath, [newfile]
+        
+        elif path.isdir(f):
+            
+            return f, ['<entire audio folder>']
+        else:
+            
+            return '', []
+    
+    newpath = path.commonpath([path.join(path_, f) for f in files])
+    
+    newfiles = [path.relpath(f, newpath) for f in files]
+    
+    return newpath, newfiles
+

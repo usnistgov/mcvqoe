@@ -28,6 +28,7 @@ class AccssDFrame(TestCfgFrame):
     def get_controls(self):
         return (
             audio_files,
+            audio_path,
             outdir,
             ptt_step,
             ptt_gap,
@@ -95,7 +96,7 @@ class DetectFailure(SubCfgFrame):
     
     
 #------------------------------controls--------------------------------------
-from shared import dev_dly, RadioCheck
+from shared import dev_dly, RadioCheck, audio_path
 
 class audio_files(shared.audio_files):
     """Audio files to use for testing.

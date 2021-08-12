@@ -29,7 +29,7 @@ class M2eFrame(TestCfgFrame):
     def get_controls(self):
         return (
             audio_files,
-            _BrowseForFolder,
+            audio_path,
             outdir,
             trials,
             test,
@@ -46,7 +46,7 @@ class M2eFrame(TestCfgFrame):
 
         
         #------------------ Controls ----------------------
-from shared import audio_files, _BrowseForFolder
+from shared import audio_files, audio_path
 from shared import BgNoise
 from shared import trials, ptt_wait, ptt_gap, outdir
 

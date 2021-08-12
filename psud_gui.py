@@ -20,7 +20,7 @@ class PSuDFrame(shared.TestCfgFrame):
     def get_controls(self):
         return (
             audio_files,
-            _BrowseForFolder,
+            audio_path,
             outdir,
             trials,
             ptt_wait,
@@ -52,7 +52,7 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
 
 
 
-from shared import trials, _BrowseForFolder
+from shared import trials, audio_path
 from shared import outdir
 from shared import ptt_wait
 from shared import ptt_gap
