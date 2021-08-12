@@ -9,6 +9,7 @@ import os
 from appdirs import user_data_dir as udd
 import json
 import tkinter as tk
+import atexit
 
 
 class TkVarDict(dict):
@@ -206,6 +207,8 @@ class BaseCache(Config):
             self.load()
         except FileNotFoundError:
             pass
+        
+        atexit.register(self.dump)
 
     def __getitem__(self, k):
 
@@ -213,10 +216,6 @@ class BaseCache(Config):
             return super().__getitem__(k)
         except KeyError:
             return self.default
-
-def dump_cache():
-    for cache in (fdl_cache, dim_cache):
-        cache.dump()
 
 
 
