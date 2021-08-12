@@ -1225,7 +1225,7 @@ class Abort_by_User(BaseException):
     won't be treated as such
     """
     def __init__(self, *args, **kwargs):
-        super().__init__('Test was aborted by the user', *args, **kwargs)
+        super().__init__('Measurement aborted by user', *args, **kwargs)
         
         
         

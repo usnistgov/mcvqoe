@@ -823,6 +823,7 @@ class MCVQoEGui(tk.Tk):
             
         elif step == 5:
             #post_test
+            self.frames['PostTestGuiFrame'].set_error(extra)
             self.show_frame('PostTestGuiFrame')
             next_btn_txt = 'Submit'
             next_btn = self._post_test_submit
@@ -1211,14 +1212,31 @@ class PostTestGuiFrame(ttk.Labelframe):
         super().__init__(*args, text='Test Information', **kwargs)
         self.btnvars = btnvars
         
-        ttk.Label(self, text='Please enter post-test notes').grid(row=0,
-            padx=shared.PADX, pady=shared.PADY, sticky='E')
+        
+        self.error_text = tk.StringVar()
+        
+        ttk.Label(self, textvariable=self.error_text).grid(row=1,
+            padx=shared.PADX, pady=shared.PADY, sticky='W')
+        
+        ttk.Label(self, text='Please enter post-test notes.').grid(row=0,
+            padx=shared.PADX, pady=shared.PADY, sticky='W')
+        
         
         self.post_test = tk.Text(self)
         self.post_test.grid(padx=shared.PADX, pady=shared.PADY,
             sticky='NSEW', row=2)
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
+        
+    def set_error(self, error):
+        if error:
+            err_name, err_msg = format_error(error)
+            
+            self.error_text.set(f'{err_name}: {err_msg}')
+                
+        else:
+            self.error_text.set('')
+                
         
        
 
@@ -1281,7 +1299,7 @@ class TestProgressFrame(tk.LabelFrame):
     def check_for_abort(self):
         if main.win.step == 4:
             # indicate that the test should not continue
-            raise SystemExit()
+            raise Abort_by_User()
         
         
     @in_thread('GuiThread', wait=True, do_exceptions=True)
@@ -2015,8 +2033,6 @@ def run(root_cfg):
     except Exception as e:
         if main.last_error is not e:
             show_error(e)
-        else:
-            traceback.print_exc()
 
     
         
@@ -2245,7 +2261,7 @@ def gui_progress_update(prog_type,
 
     RAISES
     ------
-    SystemExit
+    Abort_by_User
         to abort the test
 
     """
@@ -2282,27 +2298,31 @@ def get_pre_notes():
 def get_post_notes(error_only=False):
     
     #get current error status, will be None if we are not handling an error
-    root_error=sys.exc_info()
-    error = root_error[0]
+    error_type, error =sys.exc_info()[:2]
     
-        
-    # ignore instances of BaseException that are not errors
-    if isinstance(error, Exception) and error != InvalidParameter:
-        show_error(root_error)
+    # ignore BaseExceptions, etc.
+    is_showable_error = isinstance(error, Exception)
     
-    elif error_only:
+    if error_only and not is_showable_error:
         #nothing to do, bye!
         return {}
     
+        
+    # show post_test_gui frame
     main.win.post_test_info = None
-    main.win.set_step(5)
+    main.win.set_step(5, extra=error)
+    
+    
+    if is_showable_error:
+        main.last_error = error
+        show_error()
     
     # wait for completion or program close
     
     while main.win.post_test_info is None and not main.win.is_destroyed:
         time.sleep(0.1)
     
-    
+    # retrieve notes
     nts = main.win.post_test_info
     if nts is None:
         nts = {}
@@ -2551,17 +2571,24 @@ def show_error(exc=None):
         exc = sys.exc_info()[1]
     if isinstance(exc, tuple):
         exc = exc[1]
-    
-    print(exc)
-    
-    msg = str(exc)
-    err_name = exc.__class__.__name__
-    
+        
     if not exc:
         #no error
         return
     
-    if not msg:
+    print(exc)
+    
+    err_name, msg = format_error(exc)
+    
+    _show_error(err_name, msg)
+    
+
+def format_error(exc):
+    msg = str(exc)
+    err_name = exc.__class__.__name__
+    
+    
+    if not msg and isinstance(exc, Exception):
         if 'error' in err_name.lower():
             descriptor = ''
         else:
@@ -2575,8 +2602,14 @@ def show_error(exc=None):
         
         
         err_name = 'Error'
+    elif isinstance(exc, Abort_by_User):
+        err_name = 'Measurement Stopped'
+        msg = 'Aborted by user.'
     
-    _show_error(err_name, msg)
+        
+    return err_name, msg
+    
+    
     
 @in_thread('GuiThread')
 def _show_error(err_name, msg):
