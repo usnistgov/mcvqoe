@@ -93,7 +93,7 @@ class Config(dict):
 
     appinf = {'appname': 'mcvqoe', 'appauthor': 'NIST'}
 
-    def __init__(self, /, filename, **kwargs):
+    def __init__(self, filename, /, **kwargs):
         super().__init__(**kwargs)
 
         self.filename = filename
