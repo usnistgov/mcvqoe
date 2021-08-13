@@ -23,6 +23,7 @@ class PSuDFrame(shared.TestCfgFrame):
             audio_path,
             outdir,
             trials,
+            SaveAudio,
             ptt_wait,
             ptt_gap,
             intell_est,
@@ -52,11 +53,9 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
 
 
 
-from shared import trials, audio_path
-from shared import outdir
-from shared import ptt_wait
-from shared import ptt_gap
-from shared import time_expand
+from shared import trials, audio_path, outdir
+from shared import ptt_wait, ptt_gap, time_expand
+from shared import SaveAudio
 
 class audio_files(shared.audio_files):
     """Path to audio files to use for testing. Cutpoint files must also be present.

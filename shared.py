@@ -701,6 +701,18 @@ class ptt_gap(LabeledControl):
     
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+    
+class SaveAudio(MultiChoice):
+    
+    text = 'Save Audio:'
+    
+    association = {'all_audio' : 'All audio',
+                   'rx_only'   : 'Rx audio only',
+                   'no_audio'  : 'No audio',
+                   }
+    
+
 
 
    
@@ -766,6 +778,27 @@ class pause_trials(LabeledControl):
        
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
+    
+    
+    
+    
+class dev_dly(LabeledControl):
+    """Delay in seconds of the audio path with no communication device
+    present."""
+    
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Calibrate'}
+    
+    def on_button(self):
+        self.master.btnvars['dev_dly'].set(68)
+        
+        
+        
+        
 
 
 class time_expand(SubCfgFrame):
@@ -960,19 +993,7 @@ class buffersize(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
-class dev_dly(LabeledControl):
-    """Delay in seconds of the audio path with no communication device
-    present."""
-    
-    text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
-    
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Calibrate'}
-    
-    def on_button(self):
-        self.master.btnvars['dev_dly'].set(68)
+
         
         
         

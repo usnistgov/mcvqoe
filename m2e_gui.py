@@ -32,9 +32,10 @@ class M2eFrame(TestCfgFrame):
             audio_path,
             outdir,
             trials,
-            test,
             ptt_wait,
             ptt_gap,
+            SaveAudio,
+            test,
             advanced
             )
     
@@ -47,7 +48,7 @@ class M2eFrame(TestCfgFrame):
         
         #------------------ Controls ----------------------
 from shared import audio_files, audio_path
-from shared import BgNoise
+from shared import BgNoise, SaveAudio
 from shared import trials, ptt_wait, ptt_gap, outdir
 
 

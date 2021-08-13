@@ -19,9 +19,9 @@ class IgtibyFrame(shared.TestCfgFrame):
             trials,
             ptt_wait,
             ptt_gap,
+            SaveAudio,
             RadioCheck,
             intell_est,
-            save_tx_audio,
             )
 
 
@@ -31,7 +31,7 @@ class IgtibyFrame(shared.TestCfgFrame):
 #--------------------------Controls-------------------------------------------
 
 from shared import trials, outdir, ptt_wait
-from shared import ptt_gap, RadioCheck
+from shared import ptt_gap, RadioCheck, SaveAudio
 
 
 class intell_est(shared.MultiChoice):
@@ -53,14 +53,7 @@ class intell_est(shared.MultiChoice):
                    'none': 'Never',
                    }
     
-class save_tx_audio(shared.LabeledControl):
-    
-    MCtrl = ttk.Checkbutton
-    MCtrlkwargs = {'text': 'Save Transmitted Audio'}
-    
-    variable_arg = 'variable'
-    
-    do_font_scaling = False
+
     
     
     

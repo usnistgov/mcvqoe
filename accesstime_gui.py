@@ -32,8 +32,9 @@ class AccssDFrame(TestCfgFrame):
             outdir,
             ptt_step,
             ptt_gap,
-            dev_dly,
+            SaveAudio,
             RadioCheck,
+            dev_dly,
             data_file,
             advanced
             )
@@ -96,7 +97,7 @@ class DetectFailure(SubCfgFrame):
     
     
 #------------------------------controls--------------------------------------
-from shared import dev_dly, RadioCheck, audio_path
+from shared import dev_dly, RadioCheck, audio_path, SaveAudio
 
 class audio_files(shared.audio_files):
     """Audio files to use for testing.

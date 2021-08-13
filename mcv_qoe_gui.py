@@ -2185,6 +2185,11 @@ def param_modify(root_cfg):
         raise InvalidParameter('outdir',
             message = error)
         
+        
+    if 'SaveAudio' in cfg:
+        cfg['save_audio']    = (cfg['SaveAudio'] != 'no_audio')
+        cfg['save_tx_audio'] = (cfg['SaveAudio'] == 'all_audio')
+        
     
     
     # make pause_trials an integer or np.inf
@@ -2680,6 +2685,8 @@ control_list = {
         'ptt_gap',
         'test',
         'trials',
+        'save_tx_audio',
+        'save_audio',
     ],
     
     'M2eFrame': [
@@ -2691,7 +2698,11 @@ control_list = {
         'ptt_wait',
         'ptt_gap',
         'test',
-        'trials'
+        'trials',
+        'save_tx_audio',
+        'save_audio',
+        'save_tx_audio',
+        'save_audio',
     ],
 
     'AccssDFrame': [
@@ -2711,6 +2722,8 @@ control_list = {
         'stop_rep',
         'pause_trials',
         'dev_dly',
+        'save_tx_audio',
+        'save_audio',
     ],
     
     'PSuDFrame' : [
@@ -2723,6 +2736,8 @@ control_list = {
         'ptt_gap',
         'm2e_min_corr',
         'intell_est',
+        'save_tx_audio',
+        'save_audio',
     ],
     
     'IgtibyFrame': [
@@ -2733,6 +2748,7 @@ control_list = {
         'pause_trials',
         'intell_est',
         'save_tx_audio',
+        'save_audio',
     ],
         
     'SimSettings': [
@@ -2811,7 +2827,16 @@ for name_, cfg in DEFAULTS.items():
         
         cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
             cfg['audio_path'], cfg['audio_files'])
-
+        
+        
+    if 'save_tx_audio' in cfg and 'save_audio' in cfg:
+        
+        if not cfg['save_audio']:
+            cfg['SaveAudio'] = 'no_audio'
+        elif cfg['save_tx_audio']:
+            cfg['SaveAudio'] = 'all_audio'
+        else:
+            cfg['SaveAudio'] = 'rx_only'
 
 
 
