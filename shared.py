@@ -1172,21 +1172,27 @@ class _enable_PBI(LabeledCheckbox):
     
 
 
-class P_a1(LabeledSlider):
-    
+class P_a1(LabeledNumber):
+    min_ = 0
+    max_ = 1
+    increment = 0.01
     text = 'P_a1:'
 
-class P_a2(LabeledSlider):
-    
+class P_a2(LabeledNumber):
+    min_ = 0
+    max_ = 1
+    increment = 0.01
     text = 'P_a2:'
 
-class P_r(LabeledSlider):
-    
+class P_r(LabeledNumber):
+    min_ = 0
+    max_ = 1
+    increment = 0.01
     text = 'P_r:'
 
 class interval(LabeledNumber):
     
-    text = 'P_Interval'
+    text = 'P_Interval:'
     
     
 
