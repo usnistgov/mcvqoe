@@ -1879,7 +1879,6 @@ def run(root_cfg):
     
     ppf = main.win.frames['PostProcessingFrame']
     tpf = main.win.frames['TestProgressFrame']
-    tif = main.win.frames['TestInfoGuiFrame']
     
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
@@ -2113,7 +2112,6 @@ def param_modify(root_cfg):
             message='Make sure to calibrate your device delay (recommended)\n\n'+
             'Or, enter your known device delay here.')
         
-        
     
         
     if 'audio_files' in cfg and 'audio_path' in cfg:
@@ -2138,9 +2136,18 @@ def param_modify(root_cfg):
         
         if cfg['full_audio_dir']:
             
+            cfg['audio_files'] = []
+            
+            
+            # folder must exist
+            if not p:
+                raise InvalidParameter('audio_path',
+                                message='Audio Folder is required')
             if not path.isdir(p):
                 raise InvalidParameter('audio_path',
                                    message = 'Folder does not exist.')
+                
+                
             # check for existence of at least one .wav file
             success = False
             for f in listdir(p):
@@ -2148,7 +2155,8 @@ def param_modify(root_cfg):
                 
                 if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
                     success = True
-                    break
+                    cfg['audio_files'].append(f)
+                    
                 
             if not success:
                 raise InvalidParameter('audio_path',
