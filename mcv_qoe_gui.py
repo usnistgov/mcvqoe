@@ -189,6 +189,7 @@ class MCVQoEGui(tk.Tk):
         
         # show the window
         self.deiconify()
+        
 
     def _rm_waits_in_sim(self):
         """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
@@ -197,14 +198,22 @@ class MCVQoEGui(tk.Tk):
         # !disabled means not disabled
         state = ('!disabled', 'disabled')[self.is_simulation.get()]
         
+        in_frames = (
+            'M2eFrame',
+            'AccssDFrame',
+            'PSuDFrame',
+            'IgtibyFrame',
+            )
+        
         for key in ('test', 'ptt_gap', 'ptt_wait', 'pause_trials', '_limited_trials'):
             
             # loop over every frame looking for 'ptt_wait' and 'ptt_gap' configs
             
             for framename, frame in self.frames.items():
-                if not hasattr(frame, 'controls'):
+                if not framename in in_frames:
                     continue
-                if key not in frame.controls:
+                
+                if not hasattr(frame, 'controls') or key not in frame.controls:
                     continue
                 
                 # set control's state
@@ -2670,7 +2679,7 @@ control_list = {
         'ptt_wait',
         'ptt_gap',
         'test',
-        'trials'
+        'trials',
     ],
     
     'M2eFrame': [

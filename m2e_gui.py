@@ -214,11 +214,24 @@ class DevChar_Defaults(m2e.measure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.test = 'm2e_1loc'
+        self.test     = 'm2e_1loc'
+        self.trials   = 400
+        self.ptt_wait = 0.001
+        self.ptt_gap  = 0.31
+        
 
 
 
 class DevChar_fromGui(M2E_fromGui):
-    pass
     
+    text = 'Device Delay Characterization'
+    enable_edits = ('outdir',)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # disable all controls
+        for name, c in self.controls.items():
+            if name not in self.enable_edits:
+                c.configure(state='disabled')
 
