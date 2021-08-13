@@ -12,6 +12,7 @@ from tkinter import ttk
 import tkinter.filedialog as fdl
 
 import loadandsave
+from tk_threading import show_error, Abort_by_User
 
 
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -1048,10 +1049,16 @@ class channel_tech(LabeledControl):
         
         self.m_ctrl.configure(menu=self.menu)
         
-        # get channel_techs to use as menu options
-        for tech_ in QoEsim().get_channel_techs():
-            self.menu.add_command(label=tech_,
-                    command=tk._setit(self.btnvar, tech_))
+        try:
+            rates = QoEsim().get_channel_techs()
+        except Exception as e:
+            show_error(e)
+        
+        else:
+            # get channel_techs to use as menu options
+            for tech_ in rates:
+                self.menu.add_command(label=tech_,
+                        command=tk._setit(self.btnvar, tech_))
         
         
         
@@ -1074,32 +1081,39 @@ class channel_rate(LabeledControl):
         self.m_ctrl.configure(menu=self.menu)
         
         #track selection of channel_tech
-        self.master.btnvars['channel_tech'].trace_add('write', self.update)
-        
+        id = self.master.btnvars['channel_tech'].trace_add('write', self.update)
+        self.master.traces_.append((self.master.btnvars['channel_tech'], id))
+    
         #fill menu with options
         self.update()
         
 
     
     def update(self, *args, **kwargs):
-    
+        failed = False
+        try:
+            chan_tech = self.master.btnvars['channel_tech'].get()
+            
+            self.menu.delete(0, 'end')
+            
+            default, rates = QoEsim().get_channel_rates(chan_tech)
+            
+            old = self.btnvar.get()
+            if old not in rates:
+                self.btnvar.set(default)
+            
+            for rate in rates:
+                #add a dropdown list option
+                self.menu.add_command(label=str(rate),
+                            command=tk._setit(self.btnvar, str(rate)))
+        except Exception as e:
+            show_error(e)
+            failed = True
         
-        chan_tech = self.master.btnvars['channel_tech'].get()
-        
-        self.menu.delete(0, 'end')
-        
-        default, rates = QoEsim().get_channel_rates(chan_tech)
-        
-        old = self.btnvar.get()
-        if old not in rates:
-            self.btnvar.set(default)
-        
-        for rate in rates:
-            #add a dropdown list option
-            self.menu.add_command(label=str(rate),
-                        command=tk._setit(self.btnvar, str(rate)))
-
-
+        if failed:
+            self.master.btnvars['channel_tech'].set('clean')
+            
+            
 
 
 class m2e_latency(LabeledControl):
@@ -1245,14 +1259,7 @@ class InvalidParameter(ValueError):
         self.parameter = parameter
         self.message = message
     
-class Abort_by_User(BaseException):
-    """Raised when user presses 'Abort test'
-    
-    Inherits from BaseException because it is not an error and therefore
-    won't be treated as such
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__('Measurement aborted by user', *args, **kwargs)
+
         
         
         

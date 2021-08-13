@@ -5,14 +5,13 @@ Created on Mon Aug  9 14:51:59 2021
 @author: MkZee
 """
 
+import sys
 import functools
 import threading
 from threading import Thread
 import time
 import traceback
 import tkinter as tk
-
-from shared import Abort_by_User
 
 
 
@@ -247,5 +246,79 @@ class Main():
     def stop(self):
         self._break = True
         
+        
+
+
+
+
+
+
+
+
+def show_error(exc=None):
+    
+    
+    traceback.print_exc()
+    
+    if exc is None:
+        exc = sys.exc_info()[1]
+    if isinstance(exc, tuple):
+        exc = exc[1]
+        
+    if not exc:
+        #no error
+        return
+    
+    print(exc)
+    
+    err_name, msg = format_error(exc)
+    
+    _show_error(err_name, msg)
+    
+
+def format_error(exc):
+    msg = str(exc)
+    err_name = exc.__class__.__name__
+    
+    
+    if not msg and isinstance(exc, Exception):
+        if 'error' in err_name.lower():
+            descriptor = ''
+        else:
+            descriptor = ' error'
+        if err_name[0].lower() in 'aeiou':
+            article = 'An'
+        else:
+            article = 'A'
+            
+        msg = f'{article} "{err_name}"{descriptor} occurred.'
+        
+        
+        err_name = 'Error'
+    elif isinstance(exc, Abort_by_User):
+        err_name = 'Measurement Stopped'
+        msg = 'Aborted by user.'
+    
+        
+    return err_name, msg
+    
+    
+    
+@in_thread('GuiThread')
+def _show_error(err_name, msg):
+    tk.messagebox.showerror(err_name, msg)
+    
+    
+    
+    
+    
+class Abort_by_User(BaseException):
+    """Raised when user presses 'Abort test'
+    
+    Inherits from BaseException because it is not an error and therefore
+    won't be treated as such
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__('Measurement aborted by user', *args, **kwargs)
         
         

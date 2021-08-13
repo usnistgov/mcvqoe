@@ -31,12 +31,11 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 import tkinter as tk
 
-from tk_threading import in_thread
-from tk_threading import Main
+from tk_threading import Main, in_thread
+from tk_threading import format_error, show_error, Abort_by_User
 
 
 
-import traceback
 import sys
 import time
 import _thread
@@ -55,7 +54,7 @@ from mcvqoe import hardware, simulation
 
 
 import shared
-from shared import Abort_by_User, InvalidParameter
+from shared import InvalidParameter
 import loadandsave
 import accesstime_gui
 from accesstime_gui import AccssDFrame
@@ -2589,59 +2588,6 @@ class GuiRecStop:
 
 
 
-def show_error(exc=None):
-    
-    
-    traceback.print_exc()
-    
-    if exc is None:
-        exc = sys.exc_info()[1]
-    if isinstance(exc, tuple):
-        exc = exc[1]
-        
-    if not exc:
-        #no error
-        return
-    
-    print(exc)
-    
-    err_name, msg = format_error(exc)
-    
-    _show_error(err_name, msg)
-    
-
-def format_error(exc):
-    msg = str(exc)
-    err_name = exc.__class__.__name__
-    
-    
-    if not msg and isinstance(exc, Exception):
-        if 'error' in err_name.lower():
-            descriptor = ''
-        else:
-            descriptor = ' error'
-        if err_name[0].lower() in 'aeiou':
-            article = 'An'
-        else:
-            article = 'A'
-            
-        msg = f'{article} "{err_name}"{descriptor} occurred.'
-        
-        
-        err_name = 'Error'
-    elif isinstance(exc, Abort_by_User):
-        err_name = 'Measurement Stopped'
-        msg = 'Aborted by user.'
-    
-        
-    return err_name, msg
-    
-    
-    
-@in_thread('GuiThread')
-def _show_error(err_name, msg):
-    tk.messagebox.showerror(err_name, msg)
-    
 
 
 
