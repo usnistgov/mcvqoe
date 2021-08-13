@@ -710,8 +710,23 @@ class MCVQoEGui(tk.Tk):
     
     
     @in_thread('GuiThread', wait=True)
-    def pretest(self):
-        
+    def pretest(self, root_cfg):
+        if root_cfg['is_simulation']:
+            tech = root_cfg['SimSettings']['channel_tech']
+            rate = root_cfg['SimSettings']['channel_rate']
+            # construct string for system name
+            system = tech
+            if rate is not None:
+                system += " at " + str(rate)
+            
+            # auto-fill pre-test-notes
+            self.frames['TestInfoGuiFrame'].btnvars.set({
+                'Test Type' : 'Simulation',
+                'Tx Device' : 'None',
+                'Rx Device' : 'None',
+                'System'    : system,
+                'Test Loc'  : 'N/A',
+                })
         self._pre_notes = None
         self._pre_notes_wait = True
         self.set_step(2)
@@ -1423,9 +1438,11 @@ class TestProgressFrame(tk.LabelFrame):
         
         
         if self._is_paused:
-            self.user_check('_pause_by_user')
             self._is_paused = False
-            
+            self.stopwatch.pause()
+            tk.messagebox.showinfo('Test Paused',
+                                   'Press OK to continue.')
+            self.stopwatch.start()
             
         
         return True
@@ -1461,10 +1478,6 @@ class TestProgressFrame(tk.LabelFrame):
                                     message+'\n\n'+
                                     'Press OK to continue.')
             
-        elif reason == '_pause_by_user':
-            tk.messagebox.showinfo('Test Paused',
-                                   'Press OK to continue.')
-        
         
         # resume timer
         self.stopwatch.start()
@@ -1858,6 +1871,7 @@ def run(root_cfg):
     
     ppf = main.win.frames['PostProcessingFrame']
     tpf = main.win.frames['TestProgressFrame']
+    tif = main.win.frames['TestInfoGuiFrame']
     
     constructors = {
         'M2eFrame': m2e_gui.M2E_fromGui,
@@ -1940,8 +1954,10 @@ def run(root_cfg):
         ppf.reset()
         
         
+
+        
         # Gather pretest notes and parameters
-        my_obj.info = get_pre_notes()
+        my_obj.info = get_pre_notes(root_cfg)
         if my_obj.info is None: 
             #user pressed 'back' in test info gui
             return
@@ -2268,7 +2284,7 @@ def gui_progress_update(prog_type,
     
     tpf = main.win.frames['TestProgressFrame']
     
-    ret = tpf.gui_progress_update(prog_type,
+    return tpf.gui_progress_update(prog_type,
                                   num_trials,
                                   current_trial,
                                   msg,
@@ -2278,16 +2294,13 @@ def gui_progress_update(prog_type,
                                   new_file,
                                   )
     
-    while tpf._is_paused:
-        time.sleep(0.1)
-        
-    return ret
+    
 
 
 
 
-def get_pre_notes():
-    main.win.pretest()
+def get_pre_notes(root_cfg):
+    main.win.pretest(root_cfg)
     
     #wait for user submit or program close
     while main.win._pre_notes_wait and not main.win.is_destroyed:
