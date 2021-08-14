@@ -2116,6 +2116,9 @@ def param_modify(root_cfg):
         
     if 'audio_files' in cfg and 'audio_path' in cfg:
         
+        if not cfg['audio_files'] and not cfg['audio_path']:
+            raise InvalidParameter('audio_files',
+                           message = 'Audio Files are required.')
         
         # full audio dir? looking for something like '<entire audio folder>' in audio_files parameter
         cfg['full_audio_dir'] = not (
@@ -2142,27 +2145,29 @@ def param_modify(root_cfg):
             # folder must exist
             if not p:
                 raise InvalidParameter('audio_path',
-                                message='Audio Folder is required')
+                                message='Audio Folder is required.')
             if not path.isdir(p):
                 raise InvalidParameter('audio_path',
                                    message = 'Folder does not exist.')
                 
                 
-            # check for existence of at least one .wav file
+            # find wav files in the folder
             success = False
             for f in listdir(p):
                 fp = path.join(p, f)
                 
                 if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
+                    
                     success = True
                     cfg['audio_files'].append(f)
                     
                 
             if not success:
+                # folder must have at least one wav file
                 raise InvalidParameter('audio_path',
                     message='Folder must contain .wav files') 
             
-        else:
+        else: # not full_audio_dir
             
             
             # check: audio files should all exist
@@ -2779,8 +2784,12 @@ for name_, cfg in DEFAULTS.items():
         
     if 'audio_files' in cfg and 'audio_path' in cfg:
         
-        cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
-            cfg['audio_path'], cfg['audio_files'])
+        if cfg['audio_files'] or cfg['audio_path']:
+        
+            cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
+                cfg['audio_path'], cfg['audio_files'])
+        
+        
         
         
     if 'save_tx_audio' in cfg and 'save_audio' in cfg:
