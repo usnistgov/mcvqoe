@@ -50,7 +50,7 @@ def in_thread(thread, wait=True, do_exceptions = False):
                 # we are already in that thread!!
                 return func(*args, **kwargs)
             
-            switch_obj = _dec_return(func, args, kwargs)
+            switch_obj = _dec_return(func, args, kwargs, do_exceptions)
             
             if thread == 'MainThread':
                 main.callback(switch_obj.callbacker)
@@ -68,11 +68,7 @@ def in_thread(thread, wait=True, do_exceptions = False):
                     time.sleep(0.1)
                     
                 if switch_obj.exc is not None:
-                    if do_exceptions:
-                        raise switch_obj.exc
-                    else:
-                        traceback.print_exc(switch_obj.exc)
-                
+                    raise switch_obj.exc
                     
                 return switch_obj.return_val
                 
@@ -81,20 +77,26 @@ def in_thread(thread, wait=True, do_exceptions = False):
     return decorator
 
 class _dec_return:
-    def __init__(self, func, args, kwargs):
+    def __init__(self, func, args, kwargs, do_exceptions):
         
         self.func = func
         self.finished = False
         self.args = args
         self.kwargs = kwargs
+        
         self.exc = None
         self.return_val = None
+        self.do_exceptions = do_exceptions
 
     def callbacker(self):
         try:
             self.return_val = self.func(*self.args, **self.kwargs)
         except BaseException as e:
-            self.exc = e
+            if self.do_exceptions:
+                self.exc = e
+            else:
+                traceback.print_exc()
+                show_error(e)
             
         self.finished = True
         
