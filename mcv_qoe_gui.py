@@ -22,7 +22,6 @@ if hasattr(ctypes, 'windll'):
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
     
 
-#--------------------------imports---------------------------------------------
 import pdb
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
@@ -33,8 +32,9 @@ import tkinter as tk
 
 from tk_threading import Main, in_thread
 from tk_threading import format_error, show_error, Abort_by_User
-
-
+import shared
+from shared import InvalidParameter
+import loadandsave
 
 import sys
 import time
@@ -45,41 +45,110 @@ import os
 from os import path, listdir
 import gc
 import subprocess as sp
-import matplotlib
 
-
-from mcvqoe.simulation.QoEsim import QoEsim
-from mcvqoe import hardware, simulation
-
-
-
-import shared
-from shared import InvalidParameter
-import loadandsave
-import accesstime_gui
-from accesstime_gui import AccssDFrame
-import m2e_gui
-from m2e_gui import M2eFrame, DevDlyCharFrame
-import psud_gui
-from psud_gui import PSuDFrame
-import intelligibility_gui
-from intelligibility_gui import IgtibyFrame
-
-
-#alternate rendering for pyplot to avoid conflicts with tkinter
-use_alternate_plot_rendering = True
-try:
-    import PyQt5
-except: use_alternate_plot_rendering = False
-else:
-    matplotlib.use('Qt5Agg')
-
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
+#                       -----------------------------
+# !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
+#                       -----------------------------
 
 
 
+
+# -------------------------------appearance-----------------------------------
+def set_font(**cfg):
+    """Globally changes the font on all tkinter windows.
+
+    Accepts parameters like size, weight, font, etc.
+
+    """
+    font.nametofont('TkDefaultFont').config(**cfg)
+
+
+def set_styles():
+    
+    f = ttk.Style().configure
+    g = ttk.Style().layout
+        
+    # set global font
+    f('.', font=('TkDefaultFont', shared.FONT_SIZE))
+    
+    
+    # help button and tooltip styles
+    f('McvHelpBtn.TLabel', font=('TkDefaultFont',
+                round(shared.FONT_SIZE * 0.75)), relief='groove')
+    f('McvToolTip.TLabel', 
+                background='white')
+    f('McvToolTip.TFrame',
+                background='white', relief='groove')
+    
+    
+    
+    
+    
+#red highlight for missing or invalid controls
+    
+    #for Entry
+    g("Error.TEntry",
+                   [('Entry.plain.field', {'children': [(
+                       'Entry.background', {'children': [(
+                           'Entry.padding', {'children': [(
+                               'Entry.textarea', {'sticky': 'nswe'})],
+                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
+                      'border':'2', 'sticky': 'nswe'})])
+    
+    f("Error.TEntry",
+      fieldbackground="pink"
+      )
+    
+    # for Spinbox
+    g("Error.TSpinbox",
+                   [('Entry.plain.field', {'children': [(
+                       'Entry.background', {'children': [(
+                           'Entry.padding', {'children': [(
+                               'Entry.textarea', {'sticky': 'nswe'})],
+                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
+                      'border':'2', 'sticky': 'nswe'}),
+                       ('Spinbox.uparrow', {'side': 'top', 'sticky': 'nse'}),
+                       ('Spinbox.downarrow', {'side': 'bottom', 'sticky': 'nse'})])
+    
+    f("Error.TSpinbox",
+      fieldbackground="pink"
+      )
+    
+    f('Error.McvToolTip.TLabel',
+      foreground='maroon',
+      )
+    
+    
+def dpi_scaling(root):
+    global dpi_scale
+    try:
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        if screen_height < screen_width:
+            dpi_scale = screen_height / 800
+        else:
+            dpi_scale = screen_width / 800
+        
+        dpi_scale = dpi_scale ** 0.5
+        
+        if dpi_scale < 1 or dpi_scale > 2.5:
+            raise Exception()
+    except:  # in case of invalid dpi scale
+        dpi_scale = 1
+
+    # font
+    shared.FONT_SIZE = round(shared.FONT_SIZE * dpi_scale)
+    shared.FNT = font.Font()
+    shared.FNT.configure(size=shared.FONT_SIZE)
+    set_styles()
+
+
+
+
+
+
+
+#---------------------------- The main window class---------------------------
 class MCVQoEGui(tk.Tk):
     """The main window
 
@@ -89,8 +158,26 @@ class MCVQoEGui(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # prevents random window flashing
-        self.withdraw()
+        
+        #---------------------- a loading window ------------------------------
+        
+        # remove title and taskbar icons
+        self.overrideredirect(True)
+        
+        
+        
+        # set dimensions and center
+        screenw = self.winfo_screenwidth()
+        screenh = self.winfo_screenheight()
+        
+        w = 300
+        h = 150
+        
+        x = (screenw - w) // 2
+        y = (screenh - h) // 2
+        
+        self.geometry(f'{w}x{h}+{x}+{y}')
+        
         
         #set the title- and taskbar icon
         self.iconbitmap(path.abspath(icon))
@@ -101,11 +188,55 @@ class MCVQoEGui(tk.Tk):
         
         # dpi scaling
         dpi_scaling(self)
+        
+        
+        self.text = tk.StringVar(value='Loading Libraries...')
+        
+        ttk.Label(self, textvariable = self.text).pack(
+            side=tk.BOTTOM,pady=30)
+        
+    def load_progress(self, text):
+        self.text.set(text)
+        
+        
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # ------------------------- The main window ------------------------------
+        
+    @in_thread('GuiThread')
+    def init_as_mainwindow(self):
+        
+        # prevents random window flashing
+        self.withdraw()
+        
+        
+        #show titlebar and taskbar items
+        self.overrideredirect(False)
+        
+        # clear old widgets
+        for name_, widget in self.children.copy().items():
+            widget.destroy()
+        
+        
         # indicates that the user does not need to save the configuration
         self.set_saved_state(True)
-
-
+        
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
@@ -890,6 +1021,84 @@ class MCVQoEGui(tk.Tk):
             # reset style
             ctrl.configure(style=ctrl.winfo_class())
         self._red_controls = []
+
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+# --------------------------- IMPORTS -----------------------------------------
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+main = Main(MCVQoEGui)
+
+prog = main.win.load_progress
+
+
+
+
+
+prog('Loading ABC_MRT (Intelligibility Estimator)')
+import abcmrt
+
+prog('Loading Hardware Interfaces')
+from mcvqoe.simulation.QoEsim import QoEsim
+from mcvqoe import hardware, simulation
+
+
+
+prog('Loading Package: Access Time')
+import accesstime_gui
+from accesstime_gui import AccssDFrame
+
+prog('Loading Package: Mouth to Ear')
+import m2e_gui
+from m2e_gui import M2eFrame, DevDlyCharFrame
+
+prog('Loading Package: PSuD')
+import psud_gui
+from psud_gui import PSuDFrame
+
+prog('Loading Package: Intelligibility')
+import intelligibility_gui
+from intelligibility_gui import IgtibyFrame
+
+prog('Finalizing...')
+import matplotlib
+#alternate rendering for pyplot to avoid conflicts with tkinter
+use_alternate_plot_rendering = True
+try:
+    import PyQt5
+except: use_alternate_plot_rendering = False
+else:
+    matplotlib.use('Qt5Agg')
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1681,98 +1890,6 @@ class PostProcessingFrame(ttk.Frame):
 
 
 
-
-
-
-#------------------------------  Appearance ----------------------------------
-
-def set_font(**cfg):
-    """Globally changes the font on all tkinter windows.
-
-    Accepts parameters like size, weight, font, etc.
-
-    """
-    font.nametofont('TkDefaultFont').config(**cfg)
-
-
-def set_styles():
-    
-    f = ttk.Style().configure
-    g = ttk.Style().layout
-        
-    # set global font
-    f('.', font=('TkDefaultFont', shared.FONT_SIZE))
-    
-    
-    # help button and tooltip styles
-    f('McvHelpBtn.TLabel', font=('TkDefaultFont',
-                round(shared.FONT_SIZE * 0.75)), relief='groove')
-    f('McvToolTip.TLabel', 
-                background='white')
-    f('McvToolTip.TFrame',
-                background='white', relief='groove')
-    
-    
-    
-    
-    
-#red highlight for missing or invalid controls
-    
-    #for Entry
-    g("Error.TEntry",
-                   [('Entry.plain.field', {'children': [(
-                       'Entry.background', {'children': [(
-                           'Entry.padding', {'children': [(
-                               'Entry.textarea', {'sticky': 'nswe'})],
-                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
-                      'border':'2', 'sticky': 'nswe'})])
-    
-    f("Error.TEntry",
-      fieldbackground="pink"
-      )
-    
-    # for Spinbox
-    g("Error.TSpinbox",
-                   [('Entry.plain.field', {'children': [(
-                       'Entry.background', {'children': [(
-                           'Entry.padding', {'children': [(
-                               'Entry.textarea', {'sticky': 'nswe'})],
-                      'sticky': 'nswe'})], 'sticky': 'nswe'})],
-                      'border':'2', 'sticky': 'nswe'}),
-                       ('Spinbox.uparrow', {'side': 'top', 'sticky': 'nse'}),
-                       ('Spinbox.downarrow', {'side': 'bottom', 'sticky': 'nse'})])
-    
-    f("Error.TSpinbox",
-      fieldbackground="pink"
-      )
-    
-    f('Error.McvToolTip.TLabel',
-      foreground='maroon',
-      )
-    
-    
-def dpi_scaling(root):
-    global dpi_scale
-    try:
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
-        if screen_height < screen_width:
-            dpi_scale = screen_height / 800
-        else:
-            dpi_scale = screen_width / 800
-        
-        dpi_scale = dpi_scale ** 0.5
-        
-        if dpi_scale < 1 or dpi_scale > 2.5:
-            raise Exception()
-    except:  # in case of invalid dpi scale
-        dpi_scale = 1
-
-    # font
-    shared.FONT_SIZE = round(shared.FONT_SIZE * dpi_scale)
-    shared.FNT = font.Font()
-    shared.FNT.configure(size=shared.FONT_SIZE)
-    set_styles()
 
 
 
@@ -2890,7 +3007,6 @@ if __name__ == '__main__':
     
 
 
-        
+    main.win.init_as_mainwindow()
     
-    main = Main(MCVQoEGui)
     main.main_loop()

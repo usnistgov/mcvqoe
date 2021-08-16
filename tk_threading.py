@@ -132,7 +132,7 @@ class GuiThread(Thread):
         # construct window
         self.win = self.win_class()
         
-        self.win.after(500, self._main_loop_ext)
+        self.win.after(100, self._main_loop_ext)
         self.win.mainloop()
 
     def _main_loop_ext(self):
@@ -150,7 +150,7 @@ class GuiThread(Thread):
                 
         
         #run this function again
-        self.win.after(200, self._main_loop_ext)
+        self.win.after(100, self._main_loop_ext)
 
   
         
