@@ -156,7 +156,7 @@ class SubCfgFrame(TestCfgFrame):
 
     
 
-class AdvancedConfigGUI(tk.Toplevel):
+class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
     """A Toplevel window containing advanced options for the test
     
 
