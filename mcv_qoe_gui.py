@@ -1826,25 +1826,45 @@ def test_audio(root_cfg, on_finish=None):
         
         
         # get selected audio file
-        if 'audio_files' in cfg and cfg['audio_files'] and cfg['audio_files'][0]:
+        if 'audio_files' in cfg:
             
-            fp = cfg['audio_files'][0]
+            fp = ''
             
             
             
-            if path.isdir(fp):
-                files = [f for f in listdir(fp) if path.isfile(path.join(fp, f))]
+            # get individual audio file
+            if cfg['audio_files'][0] and not (
+                    '<' in cfg['audio_files'][0] and
+                    '>' in cfg['audio_files'][0]
+                    ):
+            
+                
+                fp = path.join(cfg['audio_path'], cfg['audio_files'][0])
+            
+            # in case of full_audio_dir
+            elif cfg['audio_path']:
+                
+                
+                files = [f for f in listdir(cfg['audio_path']) if path.isfile(
+                    path.join(fp, f))]
+                
                 
                 for f in files:
-                    void, ext = path.splitext(f)
+                    ext = path.splitext(f)[1]
                     if ext.lower() == '.wav':
                         fp = path.join(fp, f)
                         break
                     
-            if not path.isfile(fp):
+                    
+            else:
+                # uses default file for single_play()
+                fp = None
+                    
+            if (not fp or not path.isfile(fp)) and fp is not None:
                 raise ValueError('Audio File not found')
             
         else:
+            # test.wav
             fp = None
     
     
