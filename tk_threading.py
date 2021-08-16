@@ -250,10 +250,18 @@ class Main():
         self._break = True
         
         
-
-
-
-
+class SingletonWindow(type):
+    # no idea how tf this works by the way
+    _instances = {}
+    
+    def __call__(cls, *args, **kwargs):
+        
+        if cls not in cls._instances or not cls._instances[cls].winfo_exists():
+            
+            cls._instances[cls] = super(SingletonWindow, cls).__call__(*args, **kwargs)
+            
+        return cls._instances[cls]
+            
 
 
 
