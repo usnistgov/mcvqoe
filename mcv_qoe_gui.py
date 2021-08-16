@@ -9,6 +9,7 @@ Created on Wed May 26 15:53:57 2021
 TITLE_ = 'MCV QoE'
 icon = 'MCV-sm.ico'
 appid = 'nist.mcvqoe.gui.1_0_0'
+left_frame_image = 'pscr_logo.png'
 
 
 import ctypes
@@ -164,14 +165,17 @@ class MCVQoEGui(tk.Tk):
         # remove title and taskbar icons
         self.overrideredirect(True)
         
-        
+        try:
+            # on windows, add alwaysontop
+            self.attributes('-topmost',True)
+        except: pass
         
         # set dimensions and center
         screenw = self.winfo_screenwidth()
         screenh = self.winfo_screenheight()
         
-        w = 300
-        h = 150
+        w = 400
+        h = 200
         
         x = (screenw - w) // 2
         y = (screenh - h) // 2
@@ -228,6 +232,10 @@ class MCVQoEGui(tk.Tk):
         
         #show titlebar and taskbar items
         self.overrideredirect(False)
+        try:
+            # on windows, revoke alwaysontop
+            self.attributes('-topmost',False)
+        except: pass
         
         # clear old widgets
         for name_, widget in self.children.copy().items():
@@ -580,7 +588,7 @@ class MCVQoEGui(tk.Tk):
             if self.ask_save():
                 # canceled by user
                 return
-            if main.is_running and self.abort():
+            if self.step == 3 and self.abort():
                 # abort was canceled by user
                 return
         else:
@@ -592,6 +600,9 @@ class MCVQoEGui(tk.Tk):
         # destroy plots to prevent errors
         self.frames['PostProcessingFrame'].reset()
         
+        # cache window dimensions
+        self._cache_dimensions()
+        
         # indicate that main thread should no longer perform operations
         main.stop()
         
@@ -601,9 +612,10 @@ class MCVQoEGui(tk.Tk):
             ct += 1
             
             # if get_post_notes() gets called, wait for user to enter notes
-            if self.step == 5:
+            if self.step in (4, 5):
                 self._wait_to_destroy()
                 return
+            
             
             
             time.sleep(0.1)
@@ -613,19 +625,21 @@ class MCVQoEGui(tk.Tk):
             if ct < 100:
                 self.update_idletasks()
         
-        # cache window dimensions
-        self._cache_dimensions()
         
-            
-        # close the gui
+        # destroy the window
         self.destroy()
         
         
         
-        
     def _wait_to_destroy(self):
+        if self.step == 3:
+            # user canceled abort
+            self._is_closing = False
+            return
+        
         if main.is_running:
             self.after(50, self._wait_to_destroy)
+            
         else:
             #destroy any open plots (they otherwise raise errors)
             self.frames['PostProcessingFrame'].reset()
@@ -905,7 +919,7 @@ class MCVQoEGui(tk.Tk):
         """
         if tk.messagebox.askyesno('Abort Test',
             'Are you sure you want to abort?'):
-            _thread.interrupt_main()
+            self.set_step(4)
             return False
         else:
             # indicates cancelled by user
@@ -1031,55 +1045,63 @@ class MCVQoEGui(tk.Tk):
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-main = Main(MCVQoEGui)
-
-prog = main.win.load_progress
-
-
-
-
-
-prog('Loading ABC_MRT (Intelligibility Estimator)')
-import abcmrt
-
-prog('Loading Hardware Interfaces')
-from mcvqoe.simulation.QoEsim import QoEsim
-from mcvqoe import hardware, simulation
-
-
-
-prog('Loading Package: Access Time')
-import accesstime_gui
-from accesstime_gui import AccssDFrame
-
-prog('Loading Package: Mouth to Ear')
-import m2e_gui
-from m2e_gui import M2eFrame, DevDlyCharFrame
-
-prog('Loading Package: PSuD')
-import psud_gui
-from psud_gui import PSuDFrame
-
-prog('Loading Package: Intelligibility')
-import intelligibility_gui
-from intelligibility_gui import IgtibyFrame
-
-prog('Finalizing...')
-import matplotlib
-#alternate rendering for pyplot to avoid conflicts with tkinter
-use_alternate_plot_rendering = True
+main = None
 try:
-    import PyQt5
-except: use_alternate_plot_rendering = False
-else:
-    matplotlib.use('Qt5Agg')
+    main = Main(MCVQoEGui)
+    prog = main.win.load_progress
+    
+    
+    
+    import mcvqoe.base
+    
+    prog('Loading ABC_MRT (Intelligibility Estimator)')
+    import abcmrt
+    
+    prog('Loading Hardware Interfaces')
+    from mcvqoe.simulation.QoEsim import QoEsim
+    from mcvqoe import hardware, simulation
+    
+    
+    
+    prog('Loading Package: Access Time')
+    import accesstime_gui
+    from accesstime_gui import AccssDFrame
+    
+    prog('Loading Package: Mouth to Ear')
+    import m2e_gui
+    from m2e_gui import M2eFrame, DevDlyCharFrame
+    
+    prog('Loading Package: PSuD')
+    import psud_gui
+    from psud_gui import PSuDFrame
+    
+    prog('Loading Package: Intelligibility')
+    import intelligibility_gui
+    from intelligibility_gui import IgtibyFrame
+    
+    prog('Finalizing...')
+    import matplotlib
+    #alternate rendering for pyplot to avoid conflicts with tkinter
+    use_alternate_plot_rendering = True
+    try:
+        import PyQt5
+    except: use_alternate_plot_rendering = False
+    else:
+        matplotlib.use('Qt5Agg')
+    
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    import numpy as np
+    
+    
 
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
-
-
+except Exception as e:
+    show_error(e)
+    if main is not None:
+        main.stop()
+        main.gui_thread.stop()
+        
+    raise SystemExit(1)
 
 
 
@@ -1333,7 +1355,6 @@ class TestTypeFrame(tk.Frame):
 
 class LogoFrame(tk.Canvas):
 
-    crestinf = {'img': 'pscr_logo.png'}
 
     def __init__(self, master, width=150, height=170, *args, **kwargs):
         super().__init__(*args,
@@ -1343,7 +1364,7 @@ class LogoFrame(tk.Canvas):
                          bg='white',
                          **kwargs)
 
-        crest = self.crestinf['img']
+        crest = left_frame_image
         if crest is not None:
 
             img = Image.open(crest)
@@ -2466,7 +2487,7 @@ def get_pre_notes(root_cfg):
     main.win.pretest(root_cfg)
     
     #wait for user submit or program close
-    while main.win._pre_notes_wait and not main.win.is_destroyed:
+    while main.win._pre_notes_wait and not main.win._is_closing and not main.win.is_destroyed:
         time.sleep(0.1)
      
     return main.win._pre_notes
@@ -3006,7 +3027,13 @@ del obj
 if __name__ == '__main__':
     
 
-
-    main.win.init_as_mainwindow()
+    try:
+        main.win.init_as_mainwindow()
+    except:
+        show_error()
+        raise SystemExit(1)
     
     main.main_loop()
+
+else:
+    main.win.withdraw()

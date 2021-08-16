@@ -151,9 +151,11 @@ class GuiThread(Thread):
         
         #run this function again
         self.win.after(100, self._main_loop_ext)
-
-  
-        
+    
+    @in_thread('GuiThread')
+    def stop(self):
+        if self.win is not None:
+            self.win.destroy()
         
         
         
@@ -223,22 +225,21 @@ class Main():
             except Abort_by_User:pass
                 
             except SystemExit:
-                if self._break:
-                    self.gui_thread.join()
-                    return
+                break
                 
             except KeyboardInterrupt:pass
                 
                     
-            except:
+            except Exception as e:
                 
                 # prints exception without exiting main thread
-                traceback.print_exc()
+                show_error(e)
         
         
         
         #thread is ending
         self.is_running = False
+        
         
         self.gui_thread.join()
         return
