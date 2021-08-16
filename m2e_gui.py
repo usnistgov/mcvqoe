@@ -187,6 +187,10 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
 #-----------------------------Dev dly characterization------------------------
 
 class DevDlyCharFrame(M2eFrame):
+    
+    text = 'Device Delay Characterization'
+    
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
@@ -223,16 +227,7 @@ class DevChar_Defaults(m2e.measure):
 
 
 
-class DevChar_fromGui(M2E_fromGui):
+class DevChar_fromGui(M2E_fromGui): pass
     
-    text = 'Device Delay Characterization'
-    enable_edits = ('outdir',)
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # disable all controls
-        for name, c in self.controls.items():
-            if name not in self.enable_edits:
-                c.configure(state='disabled')
 

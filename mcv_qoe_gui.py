@@ -2056,6 +2056,8 @@ def run(root_cfg):
     tpf = main.win.frames['TestProgressFrame']
     
     constructors = {
+        'DevDlyCharFrame' : m2e_gui.DevChar_fromGui,
+        
         'M2eFrame': m2e_gui.M2E_fromGui,
         'AccssDFrame': accesstime_gui.Access_fromGui,
         'PSuDFrame' : psud_gui.PSuD_fromGui,
@@ -2270,8 +2272,25 @@ def param_modify(root_cfg):
 
     
     """
+    
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
+    
+    
+    
+    
+    # ensure the user is only doing default settings for dev dly characterization
+        # except for outdir
+        
+    if sel_tst == 'DevDlyCharFrame':
+        
+        default_cfg = DEFAULTS[sel_tst].copy()
+        del default_cfg['outdir']
+        
+        cfg.update(default_cfg)
+        
+        
+    
     
     
     

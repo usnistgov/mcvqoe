@@ -795,7 +795,8 @@ class dev_dly(LabeledControl):
     RCtrlkwargs = {'text': 'Calibrate'}
     
     def on_button(self):
-        self.master.btnvars['dev_dly'].set(68)
+        
+        _get_master(self, tk.Tk).selected_test.set('DevDlyCharFrame')
         
         
         
