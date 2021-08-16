@@ -327,7 +327,14 @@ class MCVQoEGui(tk.Tk):
         
         # show the window
         self.deiconify()
+    
+    
+    def _disable_left_frame(self, disabled : bool):
+        state = ('!disabled', 'disabled')[disabled]
         
+        for n_, w in self.LeftFrame.MenuFrame.TestTypeFrame.children.items():
+            if isinstance(w, (ttk.Button, ttk.Radiobutton, ttk.Label)):
+                w.configure(state=state)
 
     def _rm_waits_in_sim(self):
         """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
@@ -906,8 +913,12 @@ class MCVQoEGui(tk.Tk):
         #retrieve configuration from controls
         root_cfg = self.get_cnf()
         
+        
+        
         #runs the test
         run(root_cfg)
+        
+        
 
     def abort(self):
         """Aborts the test by raising KeyboardInterrupt
@@ -1011,6 +1022,9 @@ class MCVQoEGui(tk.Tk):
         
         #changes back button
         self.set_back_btn(back_btn_txt, back_btn)
+        
+        # disable or enable leftmost buttons depending on if they are functional
+        self._disable_left_frame(step not in (0, 1))
     
     @in_thread('GuiThread', wait=False)
     def clear_old_entries(self):
@@ -1061,15 +1075,15 @@ try:
     from mcvqoe.simulation.QoEsim import QoEsim
     from mcvqoe import hardware, simulation
     
-    
+    prog('Loading Package: Mouth to Ear')
+    import m2e_gui
+    from m2e_gui import M2eFrame, DevDlyCharFrame
     
     prog('Loading Package: Access Time')
     import accesstime_gui
     from accesstime_gui import AccssDFrame
     
-    prog('Loading Package: Mouth to Ear')
-    import m2e_gui
-    from m2e_gui import M2eFrame, DevDlyCharFrame
+
     
     prog('Loading Package: PSuD')
     import psud_gui
@@ -1255,8 +1269,11 @@ class MenuFrame(tk.Frame):
 
         # pass main_ down the chain to the TestTypeFrame
 
-        TestTypeFrame(master=self, main_=main_, padx=10, pady=10).pack(
-            side=tk.LEFT, fill=tk.Y)
+        self.TestTypeFrame = TestTypeFrame(master=self,
+                                           main_=main_,
+                                           padx=10, pady=10)
+        
+        self.TestTypeFrame.pack(side=tk.LEFT, fill=tk.Y)
 
 
 class MenuButton(tk.Frame):
