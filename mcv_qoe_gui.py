@@ -2725,35 +2725,6 @@ def _set_values_from_cfg(my_obj, cfg):
 
 
         
-
-
-# TODO: implement the following frame?
-class char_dev_dly(tk.Toplevel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, title='Device Delay Characterization', **kwargs)
-        
-        ttk.Label(self, text='\
-It seems like you have not yet done a characterization test. \
-A characterization test is a Mouth-to-Ear test that is run with the audio output \
-directly fed into the input, as shown below.\
-').pack(fill=tk.X, wraplength=300, padx=10, pady=10)
-
-        ttk.Label(self, text='Once finished, enter the device delay below')
-        
-        self.dev_dly = tk.DoubleVar()
-        ttk.Entry(textvariable=self.dev_dly).pack(padx=10,pady=10)
-        
-        ttk.Button(text='Skip Characterization (not recommended)'
-                   ).pack()
-        
-        
-        
-        self.finished = False
-                   
-    
-    def skip(self):
-        pass
-        
         
     
 def _get_dev_dly(ignore_error = True):

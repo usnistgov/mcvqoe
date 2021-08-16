@@ -10,9 +10,11 @@ from os import path
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
+from PIL import Image, ImageTk
 
 import loadandsave
 from tk_threading import show_error, Abort_by_User
+import tk_threading
 
 
 from mcvqoe.simulation.QoEsim import QoEsim
@@ -783,21 +785,7 @@ class pause_trials(LabeledControl):
     
     
     
-class dev_dly(LabeledControl):
-    """Delay in seconds of the audio path with no communication device
-    present."""
-    
-    text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
-    
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Calibrate'}
-    
-    def on_button(self):
-        
-        _get_master(self, tk.Tk).selected_test.set('DevDlyCharFrame')
-        
+
         
         
         
@@ -922,16 +910,77 @@ class BgNoise(SubCfgFrame):
 
 
 
+# ----------------------- Device delay characterization -----------------------
+
+
+class dev_dly(LabeledControl):
+    """Delay in seconds of the audio path with no communication device
+    present."""
+    
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
+    
+    RCtrl = ttk.Button
+    RCtrlkwargs = {'text': 'Calibrate'}
+    
+
+    def on_button(self):
+        CharDevDly()
 
 
 
+class CharDevDly(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.title('Device Delay Characterization')
+        
+        ttk.Label(self, text=
+"""It seems like you have not yet done a characterization test. A
+characterization test is a Mouth-to-Ear test that is run with the audio
+output directly fed into the input, as shown below.
+""").pack(fill=tk.X, padx=10, pady=10)
 
 
 
-
-
-
-
+        canvas = tk.Canvas(self)
+        # open image
+        width = 600
+        height = 500
+        
+        img = Image.open('dev_dly_char_example.png')
+        img = img.resize(
+            (width, height),
+            Image.ANTIALIAS
+        )
+        canvas.crestimg = ImageTk.PhotoImage(img)
+        canvas.create_image(
+            width // 2, height // 2 + 10,
+            image=canvas.crestimg
+        )
+        
+        canvas.pack()
+        
+        
+        ttk.Label(self, text='Once finished, enter the device delay below')
+        
+        
+        ttk.Button(self, text='Continue', command = self.continue_btn
+                   ).pack()
+        
+        
+        
+        self.finished = False
+                   
+    
+    
+    
+    def continue_btn(self):
+        
+        _get_master(self, tk.Tk).selected_test.set('DevDlyCharFrame')
+        self.destroy()
 
 
 
