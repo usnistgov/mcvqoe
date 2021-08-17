@@ -344,10 +344,10 @@ class MCVQoEGui(tk.Tk):
         state = ('!disabled', 'disabled')[self.is_simulation.get()]
         
         in_frames = (
-            'M2eFrame',
-            'AccssDFrame',
-            'PSuDFrame',
-            'IgtibyFrame',
+            m2e,
+            accesstime,
+            psud,
+            intelligibility,
             )
         
         for key in ('test', 'ptt_gap', 'ptt_wait', 'pause_trials', '_limited_trials'):
@@ -372,7 +372,7 @@ class MCVQoEGui(tk.Tk):
         if state == 'disabled':
             
             # make it a 1-loc test
-            self.frames['M2eFrame'].btnvars['test'].set('m2e_1loc')
+            self.frames[m2e].btnvars['test'].set('m2e_1loc')
 
     def _init_frames(self):
         """consructs the test-specific frames"""
@@ -1050,7 +1050,11 @@ class MCVQoEGui(tk.Tk):
             ctrl.configure(style=ctrl.winfo_class())
         self._red_controls = []
 
-
+dev_dly_char = 'DevDlyCharFrame'
+m2e = 'M2eFrame'
+accesstime = 'AccssDFrame'
+psud = 'PSuDFrame'
+intelligibility = 'IgtibyFrame'
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -1331,16 +1335,16 @@ class TestTypeFrame(tk.Frame):
         ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='M2E Latency',
-                        variable=sel_txt, value='M2eFrame').pack(fill=tk.X)
+                        variable=sel_txt, value=m2e).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Access Delay',
-                        variable=sel_txt, value='AccssDFrame').pack(fill=tk.X)
+                        variable=sel_txt, value=accesstime).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='PSuD',
-                        variable=sel_txt, value='PSuDFrame').pack(fill=tk.X)
+                        variable=sel_txt, value=psud).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Intelligibility',
-                        variable=sel_txt, value='IgtibyFrame').pack(fill=tk.X)
+                        variable=sel_txt, value=intelligibility).pack(fill=tk.X)
         
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
@@ -2056,12 +2060,12 @@ def run(root_cfg):
     tpf = main.win.frames['TestProgressFrame']
     
     constructors = {
-        'DevDlyCharFrame' : m2e_gui.DevChar_fromGui,
+        dev_dly_char : m2e_gui.DevChar_fromGui,
         
-        'M2eFrame': m2e_gui.M2E_fromGui,
-        'AccssDFrame': accesstime_gui.Access_fromGui,
-        'PSuDFrame' : psud_gui.PSuD_fromGui,
-        'IgtibyFrame': intelligibility_gui.Igtiby_from_Gui,
+        m2e: m2e_gui.M2E_fromGui,
+        accesstime: accesstime_gui.Access_fromGui,
+        psud : psud_gui.PSuD_fromGui,
+        intelligibility: intelligibility_gui.Igtiby_from_Gui,
             }
     
     
@@ -2175,17 +2179,16 @@ def run(root_cfg):
         # Enter RadioInterface object
         with ri as my_obj.ri:
             
-            pdb.set_trace()
             # run the test
             result = my_obj.run()
             
                  
-        if sel_tst == 'IgtibyFrame':
+        if sel_tst == intelligibility:
             #show intelligibility estimate
             ppf.add_element(f'Intelligibility Estimate: {result}')
         
         
-        elif sel_tst in ('M2eFrame', 'DevDlyCharFrame') and cfg['test'] == 'm2e_1loc':
+        elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
             mean, std = my_obj.get_mean_and_std()
             
@@ -2209,14 +2212,14 @@ def run(root_cfg):
             else:
                 ppf.add_element('To show plots, please install PyQt5')
                 
-        elif sel_tst == 'M2eFrame' and my_obj.test == 'm2e_2loc_tx':
+        elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
                             'collection on the receiving end')
             
         
         
         
-        if sel_tst == 'DevDlyCharFrame':
+        if sel_tst == dev_dly_char:
             
             dev_dly = calculate_dev_dly(my_obj, is_simulation = is_sim)
             
@@ -2295,7 +2298,7 @@ def param_modify(root_cfg):
     # ensure the user is only doing default settings for dev dly characterization
         # except for outdir
         
-    if sel_tst == 'DevDlyCharFrame':
+    if sel_tst == dev_dly_char:
         
         default_cfg = DEFAULTS[sel_tst].copy()
         del default_cfg['outdir']
@@ -2606,7 +2609,7 @@ def get_interfaces(root_cfg):
         
     #------------------------- set channels -----------------------------------
     
-    if sel_tst in ('AccssDFrame',):
+    if sel_tst in (accesstime,):
         channels = {
             'playback_chans' : {'tx_voice':0, 'start_signal':1},
             'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
@@ -2752,7 +2755,7 @@ def _get_dev_dly(ignore_error = True):
         dev_dly = 0
     else:
         # put value into dev_dly entry
-        main.win.frames['AccssDFrame'].btnvars['dev_dly'].set(dev_dly)
+        main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
         return dev_dly
     
@@ -2769,7 +2772,7 @@ def calculate_dev_dly(test_obj, is_simulation = False):
         loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
         
         # put value into field
-        main.win.frames['AccssDFrame'].btnvars['dev_dly'].set(dev_dly)
+        main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
     
     return dev_dly
@@ -2834,7 +2837,7 @@ control_list = {
     'PostProcessingFrame': [],
     
     
-    'DevDlyCharFrame': [
+    dev_dly_char: [
         'audio_files',
         'audio_path',
         'bgnoise_file',
@@ -2848,7 +2851,7 @@ control_list = {
         'save_audio',
     ],
     
-    'M2eFrame': [
+    m2e: [
         'audio_files',
         'audio_path',
         'bgnoise_file',
@@ -2864,7 +2867,7 @@ control_list = {
         'save_audio',
     ],
 
-    'AccssDFrame': [
+    accesstime: [
         'audio_files',
         'audio_path',
         'audio_path',
@@ -2885,7 +2888,7 @@ control_list = {
         'save_audio',
     ],
     
-    'PSuDFrame' : [
+    psud : [
         'audio_files',
         'audio_path',
         'audio_path',
@@ -2899,7 +2902,7 @@ control_list = {
         'save_audio',
     ],
     
-    'IgtibyFrame': [
+    intelligibility: [
         'trials',
         'outdir',
         'ptt_wait',
@@ -2939,11 +2942,11 @@ control_list = {
 }
 
 initial_measure_objects = {
-    'DevDlyCharFrame': m2e_gui.DevChar_Defaults(),
-    'M2eFrame': m2e_gui.m2e.measure(),
-    'AccssDFrame': accesstime_gui.adly.measure(),
-    'PSuDFrame' : psud_gui.psud.measure(),
-    'IgtibyFrame': intelligibility_gui.igtiby.measure(),
+    dev_dly_char: m2e_gui.DevChar_Defaults(),
+    m2e: m2e_gui.m2e.measure(),
+    accesstime: accesstime_gui.adly.measure(),
+    psud : psud_gui.psud.measure(),
+    intelligibility: intelligibility_gui.igtiby.measure(),
     'SimSettings': shared._SimPrototype(),
     'HdwSettings': shared._HdwPrototype()
     }
@@ -2968,11 +2971,11 @@ for name_, key_group in control_list.items():
                 
 # ----------- Special default values different from measurement obj -----------
 dir_names = {
-    'DevDlyCharFrame': 'Device_Delay_Characterization',
-    'M2eFrame': 'Mouth_2_Ear',
-    'AccssDFrame': 'Access_Time',
-    'PSuDFrame': 'PSuD',
-    'IgtibyFrame': 'Intelligibility'
+    dev_dly_char: 'Device_Delay_Characterization',
+    m2e: 'Mouth_2_Ear',
+    accesstime: 'Access_Time',
+    psud: 'PSuD',
+    intelligibility: 'Intelligibility'
     }
 for name_, cfg in DEFAULTS.items():
     if 'outdir' in cfg:
@@ -3005,15 +3008,15 @@ for name_, cfg in DEFAULTS.items():
 
 
 #values that require more than one control
-DEFAULTS['AccssDFrame']['_ptt_delay_min'] = initial_measure_objects[
-    'AccssDFrame'].ptt_delay[0]
+DEFAULTS[accesstime]['_ptt_delay_min'] = initial_measure_objects[
+    accesstime].ptt_delay[0]
 try:
-    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = str(initial_measure_objects[
-        'AccssDFrame'].ptt_delay[1])
+    DEFAULTS[accesstime]['_ptt_delay_max'] = str(initial_measure_objects[
+        accesstime].ptt_delay[1])
 except IndexError:
-    DEFAULTS['AccssDFrame']['_ptt_delay_max'] = '<default>'
+    DEFAULTS[accesstime]['_ptt_delay_max'] = '<default>'
     
-for k in ('AccssDFrame','PSuDFrame'):
+for k in (accesstime,psud):
     DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
     try:
         DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
@@ -3022,10 +3025,10 @@ for k in ('AccssDFrame','PSuDFrame'):
         DEFAULTS[k]['_time_expand_f'] = '<default>'
 
 #the following should be a string, not any other type
-DEFAULTS['AccssDFrame']['pause_trials'] = str(int(DEFAULTS['AccssDFrame']['pause_trials']))
-DEFAULTS['IgtibyFrame']['pause_trials'] = str(int(DEFAULTS['IgtibyFrame']['pause_trials']))
+DEFAULTS[accesstime]['pause_trials'] = str(int(DEFAULTS[accesstime]['pause_trials']))
+DEFAULTS[intelligibility]['pause_trials'] = str(int(DEFAULTS[intelligibility]['pause_trials']))
 
-DEFAULTS['AccssDFrame']['dev_dly'] = ''
+DEFAULTS[accesstime]['dev_dly'] = ''
 
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
