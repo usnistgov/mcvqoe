@@ -2175,7 +2175,7 @@ def run(root_cfg):
         # Enter RadioInterface object
         with ri as my_obj.ri:
             
-            
+            pdb.set_trace()
             # run the test
             result = my_obj.run()
             
@@ -2185,7 +2185,7 @@ def run(root_cfg):
             ppf.add_element(f'Intelligibility Estimate: {result}')
         
         
-        elif sel_tst == 'M2eFrame' and cfg['test'] == 'm2e_1loc':
+        elif sel_tst in ('M2eFrame', 'DevDlyCharFrame') and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
             mean_msg, std_msg = my_obj.get_mean_and_std()
             
@@ -2212,6 +2212,19 @@ def run(root_cfg):
         elif sel_tst == 'M2eFrame' and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
                             'collection on the receiving end')
+            
+        
+        
+        
+        if sel_tst == 'DevDlyCharFrame':
+            
+            dev_dly = calculate_dev_dly(my_obj, is_simulation = is_sim)
+            
+            ppf.add_element(f'Device Delay: {dev_dly}')
+            
+            if is_sim:
+                show_error(Warning('Device Delay will not be saved, '+
+                                   'because this is a simulation.'))
 
     
     except InvalidParameter as e:
@@ -2736,9 +2749,26 @@ def _get_dev_dly(ignore_error = True):
             raise
         dev_dly = 0
     else:
-        main.win.frames['AccssDelay'].btnvars['dev_dly'].set(dev_dly)
+        main.win.frames['AccssDFrame'].btnvars['dev_dly'].set(dev_dly)
     
         return dev_dly
+    
+    
+def calculate_dev_dly(test_obj, is_simulation = False):
+    # TODO: actually do the calculation based on test_obj
+    dev_dly = 68
+    
+    
+    if not is_simulation:
+        # save the device delay to file
+        loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
+        
+        # put value into field
+        main.win.frames['AccssDFrame'].btnvars['dev_dly'].set(dev_dly)
+    
+    
+    return dev_dly
+    
     
 
 
@@ -2990,10 +3020,7 @@ for k in ('AccssDFrame','PSuDFrame'):
 DEFAULTS['AccssDFrame']['pause_trials'] = str(int(DEFAULTS['AccssDFrame']['pause_trials']))
 DEFAULTS['IgtibyFrame']['pause_trials'] = str(int(DEFAULTS['IgtibyFrame']['pause_trials']))
 
-try:
-    DEFAULTS['AccssDFrame']['dev_dly'] = str(_get_dev_dly(ignore_error=False))
-except FileNotFoundError:
-    DEFAULTS['AccssDFrame']['dev_dly'] = ''
+DEFAULTS['AccssDFrame']['dev_dly'] = ''
 
 
 DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
