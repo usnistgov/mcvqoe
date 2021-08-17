@@ -161,7 +161,6 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         # Overall mean delay
         ovrl_dly = np.mean(m2e_dat)
         
-        mean_msg = "Mean: %.5fs" % ovrl_dly
         
         # Get standard deviation
         std_delay = np.std(m2e_dat, dtype=np.float64)
@@ -169,9 +168,8 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         
         # Print StD to terminal
         
-        std_msg = "StD: %.2fus" % std_delay
         
-        return mean_msg, std_msg
+        return ovrl_dly, std_delay
         
 
 

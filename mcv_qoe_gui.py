@@ -2187,10 +2187,10 @@ def run(root_cfg):
         
         elif sel_tst in ('M2eFrame', 'DevDlyCharFrame') and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
-            mean_msg, std_msg = my_obj.get_mean_and_std()
+            mean, std = my_obj.get_mean_and_std()
             
-            ppf.add_element(mean_msg)
-            ppf.add_element(std_msg)
+            ppf.add_element("Mean: %.5fs" % mean)
+            ppf.add_element("StD: %.2fus" % std)
             
             # plots will leak memory without this
             if use_alternate_plot_rendering:
@@ -2741,23 +2741,28 @@ def _set_values_from_cfg(my_obj, cfg):
         
     
 def _get_dev_dly(ignore_error = True):
+    # attempts to get saved dev_dly from disk.
     
     try:
+        # load from disk
         dev_dly = loadandsave.Config('dev_dly.json').load()['dev_dly']
     except FileNotFoundError:
         if not ignore_error:
             raise
         dev_dly = 0
     else:
+        # put value into dev_dly entry
         main.win.frames['AccssDFrame'].btnvars['dev_dly'].set(dev_dly)
     
         return dev_dly
     
     
 def calculate_dev_dly(test_obj, is_simulation = False):
-    # TODO: actually do the calculation based on test_obj
-    dev_dly = 68
     
+    # TODO: improve the calculation. currently just gets the mean.
+    
+    dev_dly = test_obj.get_mean_and_std()[0]
+        
     
     if not is_simulation:
         # save the device delay to file
