@@ -162,8 +162,7 @@ class MCVQoEGui(tk.Tk):
             widget.destroy()
         
         
-        # indicates that the user does not need to save the configuration
-        self.set_saved_state(True)
+        
         
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
@@ -243,7 +242,8 @@ class MCVQoEGui(tk.Tk):
         self._pre_notes = None
         self.set_step(0)
         
-        
+        # indicates that the user does not need to save the configuration
+        self.set_saved_state(True)
         
         # show the window
         self.deiconify()
