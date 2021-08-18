@@ -132,6 +132,9 @@ class GuiThread(Thread):
         # construct window
         self.win = self.win_class()
         
+        # register callback for error handling in gui-thread
+        self.win.report_callback_exception = lambda typ, exc, trace: show_error(exc)
+        
         self.win.after(100, self._main_loop_ext)
         self.win.mainloop()
 
@@ -144,9 +147,9 @@ class GuiThread(Thread):
         else:
             try:
                 f()
-            except:
+            except Exception as e:
                 #don't crash in case of error
-                traceback.print_exc()
+                show_error(e)
                 
         
         #run this function again
