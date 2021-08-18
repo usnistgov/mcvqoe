@@ -2533,7 +2533,7 @@ def run(root_cfg):
         """
         use ppf.add_element() to add something to the post-processing-frame.
         
-        see PostProcessingFrame.add_element() for details
+        see PostProcessingFrame.add_element.__doc__ for details
         
         """
         
@@ -2634,231 +2634,18 @@ def run(root_cfg):
 # ------------------------- END OF RUN FUNCTION -------------------------------
 
 
-
-
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-        
-#--------------------------- Parameter Modification ---------------------------
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-def param_modify(root_cfg):
-    """parses user-entered data into acceptable formats for the measure obj vars
-    and checks for errors
-    
-    Parameters are only changed and checked as needed. All entries in root_cfg
-    begin as instances of (bool, int, float, str, list). Any instance variable
-    that requires any other type must be modified in this function.
-    
 
-    Parameters
-    ----------
-    root_cfg : dict
-        see MCVQoEGui.get_cnf()
 
-    Raises
-    ------
-    Abort_by_User
-        if the user presses 'cancel' when asked to calibrate dev_dly.
-    InvalidParameter
-        if a parameter cannot be parsed, or if it is missing
 
-    
-    """
-    
-    
-    sel_tst = root_cfg['selected_test']
-    cfg = root_cfg[sel_tst]
-    
-    
-    
-    
-    # ensure the user is only doing default settings for dev dly characterization
-        # except for outdir
+
+
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@ Call-back functions @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
-    if sel_tst == dev_dly_char:
-        
-        default_cfg = DEFAULTS[sel_tst].copy()
-        del default_cfg['outdir']
-        
-        cfg.update(default_cfg)
-        
-        
-    
-    
-    
-    
-    
-    if 'dev_dly' in cfg:
-        
-        bad = False
-        
-        try: cfg['dev_dly'] = float(cfg['dev_dly'])
-        except ValueError: bad = True
-        
-        if bad: raise InvalidParameter('dev_dly',
-            message='Make sure to calibrate your device delay (recommended)\n\n'+
-            'Or, enter your known device delay here.')
-        
-    
-        
-    if 'audio_files' in cfg and 'audio_path' in cfg:
-        
-        if not cfg['audio_files'] and not cfg['audio_path']:
-            raise InvalidParameter('audio_files',
-                           message = 'Audio Files are required.')
-        
-        # full audio dir? looking for something like '<entire audio folder>' in audio_files parameter
-        cfg['full_audio_dir'] = not (
-            cfg['audio_files'] and
-            cfg['audio_files'][0]
-        
-            ) or (
-                
-            len(cfg['audio_files']) == 1 and
-            '<' in cfg['audio_files'][0] and
-            '>' in cfg['audio_files'][0]
-            )
-        
-        p = cfg['audio_path']
-        
-        
-        
-        
-        if cfg['full_audio_dir']:
-            
-            cfg['audio_files'] = []
-            
-            
-            # folder must exist
-            if not p:
-                raise InvalidParameter('audio_path',
-                                message='Audio Folder is required.')
-            if not path.isdir(p):
-                raise InvalidParameter('audio_path',
-                                   message = 'Folder does not exist.')
-                
-                
-            # find wav files in the folder
-            success = False
-            for f in listdir(p):
-                fp = path.join(p, f)
-                
-                if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
-                    
-                    success = True
-                    cfg['audio_files'].append(f)
-                    
-                
-            if not success:
-                # folder must have at least one wav file
-                raise InvalidParameter('audio_path',
-                    message='Folder must contain .wav files') 
-            
-        else: # not full_audio_dir
-            
-            
-            # check: audio files should all exist
-            for f in cfg['audio_files']:
-                af = path.join(p, f)
-                
-                if not path.isfile(af):
-                    raise InvalidParameter('audio_files',
-                        message=f'"{af}" does not exist')
-                    
-                if not path.splitext(af)[1].lower() == '.wav':
-                    raise InvalidParameter('audio_files',
-                        message='All audio files must be .wav files')
-                
-    
-    
-    bad = False
-    # relative outdirs will go into the default outdir
-    cfg['outdir'] = path.join(DEFAULTS[sel_tst]['outdir'], cfg['outdir'])
-    try: os.makedirs(cfg['outdir'], exist_ok=True)
-    except OSError as e: 
-        error = str(e)
-        bad = True
-        
-    
-    if bad:
-        raise InvalidParameter('outdir',
-            message = error)
-        
-        
-    if 'SaveAudio' in cfg:
-        cfg['save_audio']    = (cfg['SaveAudio'] != 'no_audio')
-        cfg['save_tx_audio'] = (cfg['SaveAudio'] == 'all_audio')
-        
-    
-    
-    # make pause_trials an integer or np.inf
-    bad_param = False
-    if 'pause_trials' in cfg:
-        try:
-            cfg['pause_trials'] = int(cfg['pause_trials'])
-        except ValueError:
-            if 'inf' in cfg['pause_trials'].lower():
-                cfg['pause_trials'] = np.inf
-            else:
-                bad_param = True
-                
-        if root_cfg['is_simulation']:
-            
-            # don't do pauses in a simulation in access time
-            cfg['pause_trials'] = np.inf
-            bad_param = False
-            
-        if bad_param:
-            raise InvalidParameter('pause_trials',
-                        message='Number of trials must be a whole number')
-    
-    
-    
-    
-    # combine the 2 ptt_delays into a vector
-    if '_ptt_delay_min' in cfg:
-        cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
-        try:
-            cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
-        except ValueError:pass
-        
-    
-    # combine time_expand into a 2 vector
-    if '_time_expand_i' in cfg:
-        cfg['time_expand'] = [cfg['_time_expand_i']]
-        try:
-            cfg['time_expand'].append(float(cfg['_time_expand_f']))
-        except ValueError:pass
-        
-        
-        
-        
-        
-        
-    """# InvalidParameter() does not work in advanced window
-    
-    # check auto_stop with ptt_rep
-    if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
-            cfg['ptt_rep'] < 16):
-        raise InvalidParameter('ptt_rep',
-                    message='Must be greater than 15 if auto-stop is enabled')
-    """
-    
-    
-    
-    if root_cfg['is_simulation']:
-        
-        # ptt_gap and ptt_wait should be set to 0 in simulations
-        
-        for key in ('ptt_wait', 'ptt_gap'):
-            if key in cfg:
-                cfg[key] = 0
-        
-        
-        
+# ------------------------- Gui Progress Update -------------------------------
         
 def gui_progress_update(prog_type,
              num_trials=0,
@@ -2913,7 +2700,7 @@ def gui_progress_update(prog_type,
     
 
 
-
+# ------------------- Pretest Notes and Posttest Notes ------------------------
 
 def get_pre_notes(root_cfg):
     main.win.pretest(root_cfg)
@@ -2961,7 +2748,242 @@ def get_post_notes(error_only=False):
     
 
 
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+#--------------------------- Parameter Modification ---------------------------
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def param_modify(root_cfg):
+    """parses user-entered data into acceptable formats for the measure obj vars
+    and checks for errors
+    
+    Parameters are only changed and checked as needed. All entries in root_cfg
+    begin as instances of (bool, int, float, str, list). Any instance variable
+    that requires any other type must be modified in this function.
+    
+
+    Parameters
+    ----------
+    root_cfg : dict
+        see MCVQoEGui.get_cnf()
+
+    Raises
+    ------
+    Abort_by_User
+        if the user presses 'cancel' when asked to calibrate dev_dly.
+    InvalidParameter
+        if a parameter cannot be parsed, or if it is missing
+
+    
+    """
+    
+    
+    sel_tst = root_cfg['selected_test']
+    is_sim = root_cfg['is_simulation']
+    cfg = root_cfg[sel_tst]
+    
+    
+    # ensure the user is only doing default settings for dev dly characterization
+        # except for outdir
+        
+    if sel_tst == dev_dly_char:
+        
+        default_cfg = DEFAULTS[sel_tst].copy()
+        del default_cfg['outdir']
+        
+        cfg.update(default_cfg)
+        
+        
+    
+    
+    
+    
+    # device delay should be either entered manually or characterized.
+    if 'dev_dly' in cfg:
+        
+        bad = False
+        
+        try: cfg['dev_dly'] = float(cfg['dev_dly'])
+        except ValueError: bad = True
+        
+        if bad: raise InvalidParameter('dev_dly',
+            message='Make sure to calibrate your device delay (recommended)\n\n'+
+            'Or, enter your known device delay here.')
+        
+    
+    # audio files should exist and should be .wav files
+    if 'audio_files' in cfg and 'audio_path' in cfg:
+        
+        if not cfg['audio_files'][0] and not cfg['audio_path']:
+            raise InvalidParameter('audio_files',
+                           message = 'Audio Files are required.')
+        
+        # check for full audio dir
+        cfg['full_audio_dir'] = not cfg['audio_files'][0] or (
+            
+            #looking for '<entire audio folder>' or emptiness
+            len(cfg['audio_files']) == 1 and
+            '<' in cfg['audio_files'][0] and
+            '>' in cfg['audio_files'][0]
+            )
+        
+        p = cfg['audio_path']
+        
+        
+        
+        
+        if cfg['full_audio_dir']:
+            # we are finding our own audio files now
+            cfg['audio_files'] = []
+            
+            
+            # folder must exist
+            if not p:
+                raise InvalidParameter('audio_path',
+                                message='Audio Folder is required.')
+            if not path.isdir(p):
+                raise InvalidParameter('audio_path',
+                                   message = 'Folder does not exist.')
+                
+                
+            # find wav files in the folder
+            success = False
+            for f in listdir(p):
+                fp = path.join(p, f)
+                
+                if path.isfile(fp) and path.splitext(fp)[1].lower() == '.wav':
+                    
+                    success = True
+                    cfg['audio_files'].append(f)
+                    
+                
+            if not success:
+                # folder must have at least one wav file
+                raise InvalidParameter('audio_path',
+                    message='Folder must contain .wav files') 
+            
+        else: #if not full_audio_dir
+            
+            
+            # check: audio files should all exist
+            for f in cfg['audio_files']:
+                af = path.join(p, f)
+                
+                if not path.isfile(af):
+                    raise InvalidParameter('audio_files',
+                        message=f'"{af}" does not exist')
+                    
+                if not path.splitext(af)[1].lower() == '.wav':
+                    raise InvalidParameter('audio_files',
+                        message='All audio files must be .wav files')
+                
+    
+    
+    # relative outdirs will go into the default outdir
+    cfg['outdir'] = path.join(DEFAULTS[sel_tst]['outdir'], cfg['outdir'])
+    try: os.makedirs(cfg['outdir'], exist_ok=True)
+    except OSError as e: 
+        error = str(e)
+        raise InvalidParameter('outdir', message = error) from None
+        
+    # turn multi-choice SaveAudio into 2 booleans
+    if 'SaveAudio' in cfg:
+        cfg['save_audio']    = (cfg['SaveAudio'] != 'no_audio')
+        cfg['save_tx_audio'] = (cfg['SaveAudio'] == 'all_audio')
+        
+    
+    
+    # make pause_trials an integer or np.inf
+    if 'pause_trials' in cfg:
+        
+        if is_sim:
+            cfg['pause_trials'] = np.inf
+        else:
+            
+            try:
+                cfg['pause_trials'] = int(cfg['pause_trials'])
+            except ValueError:
+                if 'inf' in cfg['pause_trials'].lower():
+                    cfg['pause_trials'] = np.inf
+                else:
+                    raise InvalidParameter('pause_trials',
+                        message='Number of trials must be a whole number') from None
+    
+    
+    
+    
+    # combine the 2 ptt_delays into a vector
+    if '_ptt_delay_min' in cfg:
+        cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
+        try:
+            cfg['ptt_delay'].append(float(cfg['_ptt_delay_max']))
+        except ValueError:pass
+        
+    
+    # combine time_expand into a 2 vector
+    if '_time_expand_i' in cfg:
+        cfg['time_expand'] = [cfg['_time_expand_i']]
+        try:
+            cfg['time_expand'].append(float(cfg['_time_expand_f']))
+        except ValueError:pass
+        
+        
+        
+        
+        
+        
+    """# InvalidParameter() does not work in advanced window
+    
+    # check auto_stop with ptt_rep
+    if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
+            cfg['ptt_rep'] < 16):
+        raise InvalidParameter('ptt_rep',
+                    message='Must be greater than 15 if auto-stop is enabled')
+    """
+    
+    
+    
+    if root_cfg['is_simulation']:
+        
+        # ptt_gap and ptt_wait should be set to 0 in simulations
+        
+        for key in ('ptt_wait', 'ptt_gap'):
+            if key in cfg:
+                cfg[key] = 0
+        
+        
+        
+        
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+#------------------------- Construct Interfaces -------------------------------
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_interfaces(root_cfg):
+    """Construct and configure the hardware interfaces or QoEsim object
+    
+
+    Parameters
+    ----------
+    root_cfg : dict
+        see MCVQoEGui.get_cnf.__doc__
+
+    Raises
+    ------
+    ValueError
+        if there is a problem with the configuration.
+
+    Returns
+    -------
+    ri : RadioInterface, QoEsim
+        
+    ap : AudioPlayer, QoEsim
+        
+
+    """
     
     sel_tst = root_cfg['selected_test']
     cfg = root_cfg[sel_tst]
@@ -3090,28 +3112,26 @@ def get_interfaces(root_cfg):
     return ri, ap
 
 
-class _SingletonRadioInterface(hardware.RadioInterface):
-    """ a radio_interface that will be left open based on its radioport
-    
-    NOT YET IMPLEMENTED
-    """
-    
-    _interface_objects = {}
-    
-    def __new__(cls, radioport):
-            
-        if radioport in cls._interface_objects:
-            self = cls._interface_objects[radioport]
-        else:
-            self = super().__new__(radioport)
-            
-        return self
+
     
 class _FakeRadioInterface:
     def __enter__(self, *args, **kwargs): return self
     def __exit__(self, *args, **kwargs): return False
-    
+
+
+
+
 def _set_values_from_cfg(my_obj, cfg):
+    """sets the attributes of an object using the keys of a dict
+    
+
+    Parameters
+    ----------
+    my_obj : any
+    cfg : dict
+
+
+    """
     for k, v in cfg.items():
         if hasattr(my_obj, k):
             setattr(my_obj, k, v)
@@ -3124,6 +3144,19 @@ def _set_values_from_cfg(my_obj, cfg):
         
     
 def _get_dev_dly(ignore_error = True):
+    """
+    
+
+    Parameters
+    ----------
+    ignore_error : bool, optional
+        whether to ignore file-not-found errors. The default is True.
+
+    Returns
+    -------
+    dev_dly : float
+
+    """
     # attempts to get saved dev_dly from disk.
     
     try:
@@ -3141,13 +3174,28 @@ def _get_dev_dly(ignore_error = True):
     
     
 def calculate_dev_dly(test_obj, is_simulation = False):
-    
+    """
+    Calculates the device delay using the data found in test_obj
+
+    Parameters
+    ----------
+    test_obj : measure
+        
+    is_simulation : bool, optional
+        whether the measurement was a simulation (the result should be ignored)
+
+    Returns
+    -------
+    dev_dly : float
+        
+
+    """
     # TODO: improve the calculation. currently just gets the mean.
     
     dev_dly = test_obj.get_mean_and_std()[0]
         
     
-    if not is_simulation:
+    if not is_simulation: # simulations don't show real dev_dly!!!
         # save the device delay to file
         loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
         
@@ -3162,6 +3210,9 @@ def calculate_dev_dly(test_obj, is_simulation = False):
 
 
 class GuiRecStop:
+    """uses an event generated in the GuiThread to stop the recording in the main-thread
+    
+    """
     
     def __init__(self):
         self._stopped = False
@@ -3171,6 +3222,7 @@ class GuiRecStop:
     
         
     def __enter__(self, *args, **kwargs):
+        self._stopped = False
         return self
     
     def __exit__(self, *args, **kwargs):
@@ -3193,9 +3245,11 @@ class GuiRecStop:
 
 
 
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+#---------------------- Get default values for parameters ---------------------
 
-#---------------------- Get default values for parameters --------------------
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 # declare values here to pull default values from measure (or interface) class
@@ -3321,6 +3375,8 @@ control_list = {
         ],
 }
 
+
+# the objects to pull the default values from
 initial_measure_objects = {
     dev_dly_char: m2e_gui.DevChar_Defaults(),
     m2e: m2e_gui.m2e.measure(),
@@ -3332,7 +3388,10 @@ initial_measure_objects = {
     }
 
 
-# load default values from objects
+
+
+
+# ----------------------load default values from objects-----------------------
 DEFAULTS = {}
 for name_, key_group in control_list.items():
     
@@ -3350,6 +3409,8 @@ for name_, key_group in control_list.items():
                 
                 
 # ----------- Special default values different from measurement obj -----------
+
+# set the default outdir directories
 dir_names = {
     dev_dly_char: 'Device_Delay_Characterization',
     m2e: 'Mouth_2_Ear',
@@ -3364,7 +3425,7 @@ for name_, cfg in DEFAULTS.items():
                                   dir_names[name_])
         
         
-        
+    # formats audio_files and audio_path to make them more readable
     if 'audio_files' in cfg and 'audio_path' in cfg:
         
         if cfg['audio_files'] or cfg['audio_path']:
@@ -3374,7 +3435,7 @@ for name_, cfg in DEFAULTS.items():
         
         
         
-        
+    # create a multi-choice option based on bool-options for save-audio
     if 'save_tx_audio' in cfg and 'save_audio' in cfg:
         
         if not cfg['save_audio']:
