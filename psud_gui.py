@@ -22,7 +22,6 @@ class PSuDFrame(shared.TestCfgFrame):
             audio_files,
             audio_path,
             outdir,
-            ptt_great,
             trials,
             SaveAudio,
             ptt_wait,
@@ -64,13 +63,6 @@ class audio_files(shared.audio_files):
     If left blank, all audio files in 'Audio Folder' will be used."""
     
 
-class ptt_great(shared.LabeledControl):
-    """wow!."""
-    
-    text = 'ptt great, it worked:'
-       
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
     
 class m2e_min_corr(shared.LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
