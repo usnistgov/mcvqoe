@@ -47,6 +47,8 @@ from os import path, listdir
 import gc
 import subprocess as sp
 
+
+
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
 #                       -----------------------------
@@ -1055,6 +1057,7 @@ class MCVQoEGui(tk.Tk):
             next_btn_txt = 'Next'
             next_btn = self.run
             back_btn = lambda : self.set_step(0)
+        
         
         elif step == 2:
             # test info gui
@@ -2946,7 +2949,7 @@ def param_modify(root_cfg):
     
     
     
-    if root_cfg['is_simulation']:
+    if is_sim:
         
         # ptt_gap and ptt_wait should be set to 0 in simulations
         
@@ -3317,7 +3320,6 @@ control_list = {
         's_tries',
         'stop_rep',
         'pause_trials',
-        'dev_dly',
         'save_tx_audio',
         'save_audio',
     ],
@@ -3444,7 +3446,6 @@ for name_, cfg in DEFAULTS.items():
             cfg['SaveAudio'] = 'all_audio'
         else:
             cfg['SaveAudio'] = 'rx_only'
-
 
 
 
