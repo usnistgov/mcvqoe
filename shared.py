@@ -13,7 +13,7 @@ import tkinter.filedialog as fdl
 from PIL import Image, ImageTk
 
 import loadandsave
-from tk_threading import show_error, Abort_by_User
+from tk_threading import show_error, Abort_by_User, InvalidParameter
 import tk_threading
 
 
@@ -1297,17 +1297,7 @@ class SignalOverride():
         raise Abort_by_User()
         
         
-class InvalidParameter(ValueError):
-    """Raised when a user fails to input a required parameter.
-    """
-    
-    def __init__(self, parameter, param_loc=None, message=None, *args, **kwargs):
-        
-        super().__init__(*args, **kwargs)
-        
-        self.param_loc = param_loc
-        self.parameter = parameter
-        self.message = message
+
     
 
         

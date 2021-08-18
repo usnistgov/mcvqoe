@@ -323,7 +323,16 @@ def _show_error(err_name, msg):
     tk.messagebox.showerror(err_name, msg)
     
     
+class InvalidParameter(ValueError):
+    """Raised when a user fails to input a required parameter.
+    """
     
+    def __init__(self, parameter, message=None, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        
+        self.parameter = parameter
+        self.message = message
     
     
 class Abort_by_User(BaseException):

@@ -9,7 +9,9 @@ import os
 from appdirs import user_data_dir as udd
 import json
 import tkinter as tk
+import _tkinter
 import atexit
+from tk_threading import InvalidParameter
 
 
 class TkVarDict(dict):
@@ -75,7 +77,10 @@ class TkVarDict(dict):
         """
         dict_ = {}
         for k, v in self.items():
-            dict_[k] = v.get()
+            try:
+                dict_[k] = v.get()
+            except _tkinter.TclError:
+                raise InvalidParameter(k, f'"{v}" is not an allowed value') from None
         return dict_
 
     def on_change(self):

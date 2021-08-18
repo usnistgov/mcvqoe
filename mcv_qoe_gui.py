@@ -32,9 +32,9 @@ from tkinter import ttk
 import tkinter as tk
 
 from tk_threading import Main, in_thread
-from tk_threading import format_error, show_error, Abort_by_User
+from tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
+import tk_threading
 import shared
-from shared import InvalidParameter
 import loadandsave
 
 import sys
@@ -728,8 +728,10 @@ class MCVQoEGui(tk.Tk):
             return self.save_as()
 
         with open(self.cnf_filepath, mode='w') as fp:
-
+            
             obj = self.get_cnf()
+                
+            
 
             json.dump(obj, fp)
             self.set_saved_state(True)
@@ -832,22 +834,26 @@ class MCVQoEGui(tk.Tk):
         
         
         
-        if e.param_loc == 'SimSettings':
-            shared.SimSettings(self, self.simulation_settings)
-            loc = self
-        elif e.param_loc == 'HdwSettings':
-            shared.HdwSettings(self, self.hardware_settings)
-            loc = self
-        else:
-            loc = self.frames[self.selected_test.get()]
+        loc = self.frames[self.selected_test.get()]
             
         try:
             ctrl = loc.controls[e.parameter].m_ctrl
         except AttributeError:
-            ctrl = None
+            
+            show_error(e)
+            return
         
-        if ctrl is not None:
-            # try to make the control red
+        else:
+            master = shared._get_master(ctrl)
+            # if the control was in an advanced window
+            if isinstance(master, shared.AdvancedConfigGUI):
+                #recreate that window
+                type(master)(self, btnvars=ctrl.master.btnvars)
+                # get the new instance of ctrl
+                ctrl = loc.controls[e.parameter].m_ctrl
+                
+            
+            # try to make the control red, if applicable
             try:
                 ctrl.configure(style='Error.' + ctrl.winfo_class())
             except:pass
@@ -880,9 +886,10 @@ class MCVQoEGui(tk.Tk):
         
             # save reference to be made not red again later
             self._red_controls.append(ctrl)
-        
-        # back to config
-        self.set_step(1)
+            
+        finally:
+            # back to config
+            self.set_step(1)
     
     
     
@@ -952,11 +959,15 @@ class MCVQoEGui(tk.Tk):
         
         # update the progress screen to say 'Loading...'
         gui_progress_update('pre', 0, 0)
+        
+        try:
+            #retrieve parameters from entries
+            root_cfg = self.get_cnf()
+            
+        except InvalidParameter as e:
                 
-        #retrieve parameters from entries
-        root_cfg = self.get_cnf()
-        
-        
+                self.show_invalid_parameter(e)
+                return
         
         #runs the test
         run(root_cfg)
