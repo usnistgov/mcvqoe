@@ -9,14 +9,12 @@ import mcvqoe.mouth2ear.m2e as m2e
 
 import tkinter.ttk as ttk
 import tkinter.filedialog as fdl
-import tkinter as tk
 
 from shared import TestCfgFrame, LabeledControl
 import shared
 
 
 import csv
-from matplotlib.figure import Figure
 import numpy as np
 
 
