@@ -285,11 +285,12 @@ def show_error(exc=None):
         #no error
         return
     
-    print(exc)
+    if isinstance(exc, InvalidParameter):
+        main.win.show_invalid_parameter(exc)
+    else:
+        err_name, msg = format_error(exc)
     
-    err_name, msg = format_error(exc)
-    
-    _show_error(err_name, msg)
+        _show_error(err_name, msg)
     
 
 def format_error(exc):

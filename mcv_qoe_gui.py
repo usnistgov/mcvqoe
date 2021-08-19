@@ -842,7 +842,7 @@ class MCVQoEGui(tk.Tk):
                 loc = self
             else:
                 # could not find offending control... show as error instead
-                show_error(e)
+                show_error(ValueError(str(e)))
                 return
             
         try:
@@ -2958,14 +2958,14 @@ def param_modify(root_cfg):
         
         
         
-    """# InvalidParameter() does not work in advanced window
+    
     
     # check auto_stop with ptt_rep
     if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
             cfg['ptt_rep'] < 16):
         raise InvalidParameter('ptt_rep',
                     message='Must be greater than 15 if auto-stop is enabled')
-    """
+    
     
     
     
