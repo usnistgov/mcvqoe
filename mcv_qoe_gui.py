@@ -1085,34 +1085,44 @@ class MCVQoEGui(tk.Tk):
         STEPS
         -----
         
-        0. Empty. (the user has not selected a measurement yet)
+        empty
+            the user has not selected a measurement yet
         
-        1. Configuration.
+        config
+            setting parameters
         
-        2. Pre-test notes.
+        pre-notes
+            pre-test notes
         
-        3. In progress (the measurement is running and the progress bar is showing)
+        in-progress
+            the measurement is running and the progress bar is showing
         
-        4. Aborting (the gui is waiting for the current recording to complete)
+        aborting 
+            the gui is waiting for the current recording to complete
+            and will then abort the measurement.
+            
+            in this step, the gui won't close.
         
-        5. Post-test notes
+        post-notes
+            post-test notes. while these are showing
+            
+            in this step, the gui won't close
         
-        6. Post-processing (showing results, plots, outdir, etc)
+        post-process
+            showing results, plots, outdir, etc
         
-        WARNING
-        -------
         
-        Changing which step does what may have adverse affects. Make sure to
-        change the numbers EVERYWHERE
 
         Parameters
         ----------
-        step : int
+        step : str
+            one of the above options
         
         extra : ANY, optional
             extra info about the step.
             
             Example: rec_stop object for m2e_2loc_rx, which overrides the abort button
+            to become a stop recording button
 
         
 
