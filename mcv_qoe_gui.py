@@ -46,6 +46,7 @@ import os
 from os import path, listdir
 import gc
 import subprocess as sp
+import traceback
 
 
 
@@ -242,6 +243,7 @@ class MCVQoEGui(tk.Tk):
         self.is_destroyed = False
         self._is_closing = False
         self._pre_notes = None
+        self._old_selected_test = 'EmptyFrame'
         self.set_step(0)
         
         # indicates that the user does not need to save the configuration
@@ -501,8 +503,29 @@ class MCVQoEGui(tk.Tk):
     def _select_test(self):
         """called when the user changes the 'Choose test:' radiobutton
         """
-        if self.step in (0, 1):
-            self.set_step(1)
+        
+        # close the current config if the user is changing measurements
+        new = self.selected_test.get()
+        old = self._old_selected_test
+        
+        if old != new:
+            #temporarily select old frame becore performing save
+            self.selected_test.set(self._old_selected_test)
+            
+            if old != 'EmptyFrame' and self.restore_defaults():
+                # True if cancelled: return to old.
+                new = self._old_selected_test
+                
+                
+            self.selected_test.set(new)
+            
+            if self.step in (0, 1):
+                self.set_step(1)
+        
+                
+        self._old_selected_test = new
+            
+        
     
     @in_thread('GuiThread')
     def show_frame(self, framename):
@@ -629,24 +652,35 @@ class MCVQoEGui(tk.Tk):
             
     def restore_defaults(self, *args, **kwargs):
         """Button to restore the default parameters
+        
+        RETURNS
+        -------
+        cancelled : bool
+        
+            if the operation was cancelled by the user
 
         """
         if self.ask_save():
             # cancelled
-            return
+            return True
         
         for fname, f in self.frames.items():
             f.btnvars.set(DEFAULTS[fname])
             
         _get_dev_dly()
-        self.is_simulation.set(False)
         
         # user shouldn't be prompted to save the default config
         self.set_saved_state(True)
+        
+        return False
 
     def open_(self, *args, **kwargs):
         """Button to load the parameters from a .json file
         """
+        
+        if self.step not in (0, 1):
+            raise RuntimeError("Can't load while measurement is running.")
+        
         if self.ask_save():
             # cancelled
             return
@@ -665,22 +699,28 @@ class MCVQoEGui(tk.Tk):
         loadandsave.fdl_cache.put('main', fpath)
 
         with open(fpath, 'r') as fp:
-
+            
             dct = json.load(fp)
-            for frame_name, frame in self.frames.items():
-                if frame_name in dct:
-                    frame.btnvars.set(dct[frame_name])
+            
+        # change selected test frame
+        self.selected_test.set(dct['selected_test'])
+        
+        
+        
+        for frame_name, frame in self.frames.items():
+            if frame_name in dct:
+                frame.btnvars.set(dct[frame_name])
+                
+        self.is_simulation.set(dct['is_simulation'])
 
-            self.is_simulation.set(dct['is_simulation'])
-            self.selected_test.set(dct['selected_test'])
-            self.set_step(1)
-            _get_dev_dly()
+        self.set_step(1)
+        _get_dev_dly()
 
-            # the user has not modified the new config, so it is saved
-            self.set_saved_state(True)
+        # the user has not modified the new config, so it is saved
+        self.set_saved_state(True)
 
-            # 'save' will now save to this file
-            self.cnf_filepath = fpath
+        # 'save' will now save to this file
+        self.cnf_filepath = fpath
 
     def save_as(self, *args, **kwargs) -> bool:
         """Prompts the user to save the parameters as a .json file
@@ -726,15 +766,14 @@ class MCVQoEGui(tk.Tk):
         # if user hasnt saved or loaded a configuration, fall back to save_as
         if not self.cnf_filepath:
             return self.save_as()
+        
+        obj = self.get_cnf()
 
         with open(self.cnf_filepath, mode='w') as fp:
             
-            obj = self.get_cnf()
-                
-            
-
             json.dump(obj, fp)
-            self.set_saved_state(True)
+            
+        self.set_saved_state(True)
         return False
 
     def ask_save(self) -> bool:
@@ -842,7 +881,8 @@ class MCVQoEGui(tk.Tk):
                 loc = self
             else:
                 # could not find offending control... show as error instead
-                show_error(ValueError(str(e)))
+                traceback.print_exc()
+                tk.messagebox.showerror('Invalid Parameter', str(e))
                 return
             
         try:
@@ -1066,7 +1106,6 @@ class MCVQoEGui(tk.Tk):
         if step == 0:
             # blank window
             self.selected_test.set('EmptyFrame')
-            self.show_frame('EmptyFrame')
             next_btn_txt = 'Next'
             next_btn = None #disabled
             back_btn = None
