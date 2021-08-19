@@ -251,6 +251,14 @@ class MCVQoEGui(tk.Tk):
         
         # show the window
         self.deiconify()
+        
+        
+        # if the session closed unexpectedly last time, show a recovery prompt.
+        if loadandsave.misc_cache['accesstime.need_recovery']:
+            tk.messagebox.showwarning('Recovered Measurement',
+                    'An Access Time measurement was recovered. '+
+                    'You may recover it using the "Recovery File" entry '+
+                    'in Access Time.')
     
     
     def _disable_left_frame(self, disabled : bool):
@@ -2523,6 +2531,12 @@ def run(root_cfg):
         
         
         #--------------------------- Recovery ---------------------------------
+        if sel_tst == accesstime:
+            #if the program closes between now and end of function, 
+            # prompt for recovery on next session.
+            loadandsave.misc_cache['accesstime.need_recovery'] = True
+            loadandsave.misc_cache.dump()
+        
         
         if 'data_file' in cfg and cfg['data_file'] != "":
             my_obj.data_file = cfg['data_file']
@@ -2715,24 +2729,38 @@ def run(root_cfg):
     
         
     #if the measurement was in some way aborted
-    except (Abort_by_User, KeyboardInterrupt, SystemExit): pass
-    
+    except (Abort_by_User, KeyboardInterrupt, SystemExit):
+        if sel_tst == accesstime:
+            ppf.add_element('You may view recover your test using the \n'+
+                            '"recovery file" entry in the configuration.')
         
     except Exception as e:
         if main.last_error is not e:
             show_error(e)
+        
+        if sel_tst == accesstime:
+            ppf.add_element('You may view recover your test using the \n'+
+                            '"recovery file" entry in the configuration.')
 
     
         
     
     # ---------------------- Last things to do --------------------------------
     
+    if sel_tst == accesstime:
+        #don't prompt for recovery on next session.
+        loadandsave.misc_cache['accesstime.need_recovery'] = False
+        
+        
     #delete radio interface (not sure if this is still needed or not)
     my_obj.ri = None
     ri = None
     
     #show post-processing frame
     main.win.set_step('post-process')
+    
+    
+        
     
     
 # ------------------------- END OF RUN FUNCTION -------------------------------

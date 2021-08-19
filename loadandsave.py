@@ -252,8 +252,8 @@ class FdlCache(BaseCache):
             self[key] = filepath
         elif os.path.isfile(filepath):
             self[key] = os.path.split(filepath)[0]
-        
-        
+
+misc_cache = BaseCache()
 fdl_cache = FdlCache()
 dim_cache = WindowDimensionCache()
 hardware_settings = HdwSettingsCache()
