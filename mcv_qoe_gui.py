@@ -357,6 +357,7 @@ class MCVQoEGui(tk.Tk):
         self.simulation_settings = loadandsave.TkVarDict(
             **DEFAULTS['SimSettings'])
         
+        
         self.hardware_settings = loadandsave.TkVarDict(
             **DEFAULTS['HdwSettings'])
         
@@ -596,6 +597,14 @@ class MCVQoEGui(tk.Tk):
         # cache window dimensions and placement for later recovery
         self._cache_dimensions()
         
+        
+        # save hardware settings for later session
+        try:
+            loadandsave.hardware_settings.update(self.hardware_settings.get())
+        except Exception as e:
+            show_error(e)
+            show_error(RuntimeError('Hardware Settings were not saved.'))
+        
         # end the main-thread's event loop
         main.stop()
         
@@ -706,15 +715,28 @@ class MCVQoEGui(tk.Tk):
         self.selected_test.set(dct['selected_test'])
         
         
-        
+        # fill in parameters
         for frame_name, frame in self.frames.items():
             if frame_name in dct:
                 frame.btnvars.set(dct[frame_name])
-                
+        
+        # whether it was a simulation
         self.is_simulation.set(dct['is_simulation'])
-
-        self.set_step(1)
+        
+        # set simulation settings from test-specific settings
+        self.simulation_settings.set(dct['SimSettings'])
+        
+        try:
+            # attempt to load hardware settings from appdirs
+            self.hardware_settings.set(
+                loadandsave.Config('HdwSettings.json').load())
+        except FileNotFoundError:
+            pass
+        
+        # attempt to load device delay
         _get_dev_dly()
+        
+        self.set_step(1)
 
         # the user has not modified the new config, so it is saved
         self.set_saved_state(True)
@@ -772,6 +794,7 @@ class MCVQoEGui(tk.Tk):
         with open(self.cnf_filepath, mode='w') as fp:
             
             json.dump(obj, fp)
+            
             
         self.set_saved_state(True)
         return False
@@ -875,7 +898,7 @@ class MCVQoEGui(tk.Tk):
         
         loc = self.frames[self.selected_test.get()]
         
-        if e.parameter not in loc.controls:
+        if not hasattr(loc, 'controls') or e.parameter not in loc.controls:
             
             if e.parameter in self.controls:
                 loc = self
@@ -3464,8 +3487,10 @@ for name_, key_group in control_list.items():
         for key in key_group:
             if hasattr(obj, key):
                 DEFAULTS[name_][key] = getattr(obj, key)
-                
-                
+
+
+# loads previous session's hardware settings from disk, if applicable
+DEFAULTS['HdwSettings'].update(loadandsave.hardware_settings)
                 
                 
                 

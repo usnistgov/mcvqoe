@@ -234,7 +234,9 @@ class BaseCache(Config):
             return self.default
 
 
-
+class HdwSettingsCache(BaseCache):
+    
+    file_ = 'hardware_settings.json'
 
 class WindowDimensionCache(BaseCache):
     
@@ -254,3 +256,4 @@ class FdlCache(BaseCache):
         
 fdl_cache = FdlCache()
 dim_cache = WindowDimensionCache()
+hardware_settings = HdwSettingsCache()

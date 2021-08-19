@@ -1007,12 +1007,15 @@ class _HdwPrototype:
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
     
+    # used for _restore_defaults control
+    prototype = _HdwPrototype
     
     def get_controls(self):
         return (
             AudioSettings,
             overplay,
             radioport,
+            _restore_defaults,
             )
     
     
@@ -1048,7 +1051,26 @@ class buffersize(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
+class _restore_defaults(LabeledControl):
+    
+    
+    MCtrl = None
+    RCtrl = ttk.Button
+    
+    RCtrlkwargs = {'text' : 'Restore Defaults'}
+    
+    def on_button(self):
+        """restores the default hardware/simulation settings.
 
+        """
+        
+        from_obj = self.master.prototype()
+        
+        for k, tk_var in self.master.btnvars.items():
+            
+            if hasattr(from_obj, k):
+                tk_var.set(getattr(from_obj, k))
+    
         
         
         
@@ -1071,6 +1093,9 @@ class SimSettings(AdvancedConfigGUI):
     
     text = 'Simulation Settings'
     
+    # used for _restore_defaults button
+    prototype = _SimPrototype
+    
     def get_controls(self):
         return (
             channel_tech,
@@ -1084,7 +1109,8 @@ class SimSettings(AdvancedConfigGUI):
             PTT_sig_freq,
             PTT_sig_aplitude,
             
-            Probabilityizer,            
+            Probabilityizer,
+            _restore_defaults,
             )
 
 class channel_tech(LabeledControl):
