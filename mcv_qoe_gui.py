@@ -2299,7 +2299,7 @@ class PostProcessingFrame(ttk.Frame):
         else:
             widget = element(self)
 
-        widget.pack(fill=tk.X, expand=True, padx=10, pady=10)
+        widget.pack(fill=tk.X, padx=10, pady=10)
         
         self.elements.append(widget)
     
@@ -2711,9 +2711,7 @@ def run(root_cfg):
                 
                 
                 
-        # put outdir folder into frame
-        try: ppf.outdir = my_obj.outdir
-        except AttributeError: ppf.outdir = ''
+
         
         
         
@@ -2739,7 +2737,7 @@ def run(root_cfg):
             show_error(e)
         
         if sel_tst == accesstime:
-            ppf.add_element('You may view recover your test using the \n'+
+            ppf.add_element('You may recover your test using the \n'+
                             '"recovery file" entry in the configuration.')
 
     
@@ -2755,6 +2753,12 @@ def run(root_cfg):
     #delete radio interface (not sure if this is still needed or not)
     my_obj.ri = None
     ri = None
+    
+    
+    # put outdir folder into frame
+    try: ppf.outdir = my_obj.outdir
+    except AttributeError: ppf.outdir = ''
+    
     
     #show post-processing frame
     main.win.set_step('post-process')
