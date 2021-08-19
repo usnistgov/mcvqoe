@@ -2535,8 +2535,13 @@ def run(root_cfg):
             for k, v in my_obj.rec_file.items():
                 if hasattr(my_obj, k) and (k not in skippy):
                     setattr(my_obj, k, v)
+            
+            # pass keyword argument to my_obj.run()
+            recovery_kw = {'recovery': True}
         
         else:
+            # don't pass recovery kw argument to my_obj.run()
+            recovery_kw = {}
             
             # prepare config and check for invalid parameters
             param_modify(root_cfg)
@@ -2621,7 +2626,7 @@ def run(root_cfg):
         with ri as my_obj.ri:
             
             # run the test
-            result = my_obj.run()
+            result = my_obj.run(recovery_kw)
             
             
             
