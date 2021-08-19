@@ -14,89 +14,13 @@ import tkinter.ttk as ttk
 
 import shared
 from shared import LabeledControl, TestCfgFrame, SubCfgFrame
-from shared import outdir, ptt_gap, time_expand
-from shared import BgNoise
-
-from shared import Abort_by_User, InvalidParameter
 import loadandsave
 
 
-class AccssDFrame(TestCfgFrame):
-    text = 'Access Delay Test'
-    
-    
-    def get_controls(self):
-        return (
-            audio_files,
-            audio_path,
-            outdir,
-            ptt_step,
-            ptt_gap,
-            SaveAudio,
-            RadioCheck,
-            dev_dly,
-            data_file,
-            advanced
-            )
-    
-class AccDlyAdvanced(shared.AdvancedConfigGUI):
-    text = 'Access Delay - Advanced'
-    
-    def get_controls(self):
-        return (
-            
-            ptt_rep,
-            ptt_delay,
-            
-            AutoStop,
-            BgNoise,
-            DetectFailure,
-            time_expand,
-            )
-        
-    
-    
-    
-    
-    
-    
-    
- 
-    
-class AutoStop(SubCfgFrame):
-    text = 'Auto-Stop'
-    
-    def get_controls(self):
-        return (
-            auto_stop,
-            stop_rep,
-            )
-    
-
-    
-
-        
-class DetectFailure(SubCfgFrame):
-    text = 'Detecting Failed Transmission'   
-    
-    def get_controls(self):
-        return (
-            s_thresh,
-            s_tries,
-            )
-        
-    
-    
- 
-    
-    
-    
-    
-    
-    
-    
-    
 #------------------------------controls--------------------------------------
+
+from shared import outdir, ptt_gap, time_expand
+from shared import BgNoise
 from shared import dev_dly, RadioCheck, audio_path, SaveAudio
 
 class audio_files(shared.audio_files):
@@ -211,13 +135,80 @@ class data_file(LabeledControl):
             self.btnvar.set(fp)
 
 
+
+class AutoStop(SubCfgFrame):
+    text = 'Auto-Stop'
+    
+    def get_controls(self):
+        return (
+            auto_stop,
+            stop_rep,
+            )
+    
+
+    
+
+        
+class DetectFailure(SubCfgFrame):
+    text = 'Detecting Failed Transmission'   
+    
+    def get_controls(self):
+        return (
+            s_thresh,
+            s_tries,
+            )
+
+
+
+
+
+
+
+
+
+
+# ------------------------ The main configuration frame -----------------------
+
+class AccssDFrame(TestCfgFrame):
+    text = 'Access Delay Test'
+    
+    
+    def get_controls(self):
+        return (
+            audio_files,
+            audio_path,
+            outdir,
+            ptt_step,
+            ptt_gap,
+            SaveAudio,
+            RadioCheck,
+            dev_dly,
+            data_file,
+            advanced,
+            )
+
+# -------------------------- The advanced window ------------------------------
+
+class AccDlyAdvanced(shared.AdvancedConfigGUI):
+    text = 'Access Delay - Advanced'
+    
+    def get_controls(self):
+        return (
+            
+            ptt_rep,
+            ptt_delay,
+            
+            AutoStop,
+            BgNoise,
+            DetectFailure,
+            time_expand,
+            )
+        
+    
 class advanced(shared.advanced):
     toplevel = AccDlyAdvanced
-
-
-
-
-
+    
+    
 
 
 

@@ -11,23 +11,6 @@ import shared
 import tkinter.ttk as ttk
 
 
-class IgtibyFrame(shared.TestCfgFrame):
-    text = 'Intelligibility Test'
-    def get_controls(self):
-        return (
-            outdir,
-            trials,
-            ptt_wait,
-            ptt_gap,
-            SaveAudio,
-            RadioCheck,
-            intell_est,
-            )
-
-
-
-
-
 #--------------------------Controls-------------------------------------------
 
 from shared import trials, outdir, ptt_wait
@@ -54,17 +37,32 @@ class intell_est(shared.MultiChoice):
                    }
     
 
+# ---------------------- The main configuration frame -------------------------
+
+class IgtibyFrame(shared.TestCfgFrame):
+    text = 'Intelligibility Test'
+    def get_controls(self):
+        return (
+            outdir,
+            trials,
+            ptt_wait,
+            ptt_gap,
+            SaveAudio,
+            RadioCheck,
+            intell_est,
+            )
+
     
     
-    
-    
 
 
 
 
 
-
+# ---------------------- Extending the measure class --------------------------
 
 class Igtiby_from_Gui(shared.SignalOverride, igtiby.measure):
     def param_check(self):
-        pass
+        # future proof
+        if hasattr(super(), 'param_check'):
+            super().param_check()

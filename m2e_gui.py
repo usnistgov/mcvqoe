@@ -18,34 +18,9 @@ import csv
 import numpy as np
 
 
-
-
-
-class M2eFrame(TestCfgFrame):
-    
-    text = 'Mouth-to-Ear Latency Test'
         
-    def get_controls(self):
-        return (
-            audio_files,
-            audio_path,
-            outdir,
-            trials,
-            ptt_wait,
-            ptt_gap,
-            SaveAudio,
-            test,
-            advanced
-            )
-    
-    
-    
-    
-    
-    
+#------------------------------- Controls -------------------------------------
 
-        
-        #------------------ Controls ----------------------
 from shared import audio_files, audio_path
 from shared import BgNoise, SaveAudio
 from shared import trials, ptt_wait, ptt_gap, outdir
@@ -110,6 +85,27 @@ class advanced(shared.advanced):
 
 
 
+# -------------------------- The mouth-to-ear frame ---------------------------
+
+class M2eFrame(TestCfgFrame):
+    
+    text = 'Mouth-to-Ear Latency Test'
+        
+    def get_controls(self):
+        return (
+            audio_files,
+            audio_path,
+            outdir,
+            trials,
+            ptt_wait,
+            ptt_gap,
+            SaveAudio,
+            test,
+            advanced
+            )
+    
+    
+    
 
 
 
@@ -118,9 +114,7 @@ class advanced(shared.advanced):
 
 
 
-
-
-
+# --------------------- using the m2e measure class ---------------------------
 
 class M2E_fromGui(shared.SignalOverride, m2e.measure):
     
@@ -163,8 +157,6 @@ class M2E_fromGui(shared.SignalOverride, m2e.measure):
         # Get standard deviation
         std_delay = np.std(m2e_dat, dtype=np.float64)
         std_delay = std_delay*(1e6)
-        
-        # Print StD to terminal
         
         
         return ovrl_dly, std_delay
@@ -221,7 +213,7 @@ class DevDlyCharFrame(M2eFrame):
 
 
 
-
+# contains the default values for the measurement
 class DevChar_Defaults(m2e.measure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
