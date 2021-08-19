@@ -244,7 +244,7 @@ class MCVQoEGui(tk.Tk):
         self._is_closing = False
         self._pre_notes = None
         self._old_selected_test = 'EmptyFrame'
-        self.set_step(0)
+        self.set_step('empty')
         
         # indicates that the user does not need to save the configuration
         self.set_saved_state(True)
@@ -520,8 +520,8 @@ class MCVQoEGui(tk.Tk):
                 
             self.selected_test.set(new)
             
-            if self.step in (0, 1):
-                self.set_step(1)
+            if self.step in ('empty', 'config'):
+                self.set_step('config')
         
                 
         self._old_selected_test = new
@@ -579,7 +579,7 @@ class MCVQoEGui(tk.Tk):
             if self.ask_save():
                 # canceled by user
                 return
-            if self.step == 3 and self.abort():
+            if self.step == 'in-progress' and self.abort():
                 # abort was canceled by user
                 return
         else:
@@ -614,7 +614,7 @@ class MCVQoEGui(tk.Tk):
             
             # if get_post_notes() gets called, or if the measurement is aborting,
                 # wait for user to enter notes post notes
-            if self.step in (4, 5):
+            if self.step in ('aborting', 'post-notes'):
                 self._wait_to_destroy()
                 return
             
@@ -637,7 +637,7 @@ class MCVQoEGui(tk.Tk):
         
 
         """
-        if self.step == 3:
+        if self.step == 'in-progress':
             # user canceled abort
             self._is_closing = False
             return
@@ -687,7 +687,7 @@ class MCVQoEGui(tk.Tk):
         """Button to load the parameters from a .json file
         """
         
-        if self.step not in (0, 1):
+        if self.step not in ('empty', 'config'):
             raise RuntimeError("Can't load while measurement is running.")
         
         if self.ask_save():
@@ -736,7 +736,7 @@ class MCVQoEGui(tk.Tk):
         # attempt to load device delay
         _get_dev_dly()
         
-        self.set_step(1)
+        self.set_step('config')
 
         # the user has not modified the new config, so it is saved
         self.set_saved_state(True)
@@ -961,7 +961,7 @@ class MCVQoEGui(tk.Tk):
             
         finally:
             # back to config
-            self.set_step(1)
+            self.set_step('config')
     
     
     
@@ -995,7 +995,7 @@ class MCVQoEGui(tk.Tk):
                 })
         self._pre_notes = None
         self._pre_notes_wait = True
-        self.set_step(2)
+        self.set_step('pre-notes')
         
     def _pretest_submit(self):
         """Button to submit the pre-test notes
@@ -1019,7 +1019,7 @@ class MCVQoEGui(tk.Tk):
         
         self._pre_notes_wait = False
         
-        self.set_step(1)
+        self.set_step('config')
             
     def run(self):
         """ Button to submit the configuration and start the measurement
@@ -1058,7 +1058,7 @@ class MCVQoEGui(tk.Tk):
         
         if tk.messagebox.askyesno('Abort Test',
             'Are you sure you want to abort?'):
-            self.set_step(4)
+            self.set_step('aborting')
             return False
         else:
             # indicates cancelled by user
@@ -1126,29 +1126,29 @@ class MCVQoEGui(tk.Tk):
         
         back_btn_txt = 'Back'
         
-        if step == 0:
+        if step == 'empty':
             # blank window
             self.selected_test.set('EmptyFrame')
             next_btn_txt = 'Next'
             next_btn = None #disabled
             back_btn = None
         
-        elif step == 1:
+        elif step == 'config':
             # test configuration
             self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
             next_btn = self.run
-            back_btn = lambda : self.set_step(0)
+            back_btn = lambda : self.set_step('empty')
         
         
-        elif step == 2:
+        elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
             next_btn_txt = 'Submit'
             next_btn = self._pretest_submit
             back_btn = self._pretest_cancel
             
-        elif step == 3:
+        elif step == 'in-progress':
             # progress bar
             self.show_frame('TestProgressFrame')
             
@@ -1160,17 +1160,17 @@ class MCVQoEGui(tk.Tk):
                 next_btn = self.abort
             back_btn = None
             
-        elif step == 4:
+        elif step == 'aborting':
             # in process of aborting
             self.show_frame('TestProgressFrame')
             self.frames['TestProgressFrame'].primary_text.set('Aborting...')
             
             next_btn_txt = 'Force Stop'
             next_btn = _thread.interrupt_main
-            back_btn = lambda : self.set_step(3)
+            back_btn = lambda : self.set_step('in-progress')
             back_btn_txt = 'Cancel Abort'
             
-        elif step == 5:
+        elif step == 'post-notes':
             #post_test
             self.frames['PostTestGuiFrame'].set_error(extra)
             self.show_frame('PostTestGuiFrame')
@@ -1179,12 +1179,16 @@ class MCVQoEGui(tk.Tk):
             back_btn = None
             
         
-        elif step == 6:
+        elif step == 'post-process':
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
-            next_btn = lambda : self.set_step(0)
-            back_btn = lambda : self.set_step(1)
+            next_btn = lambda : self.set_step('empty')
+            back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
+            
+        else:
+            # invalid step
+            raise ValueError(f'"{step}" is not a known step')
             
         
         #changes function and text of the next button
@@ -1194,7 +1198,7 @@ class MCVQoEGui(tk.Tk):
         self.set_back_btn(back_btn_txt, back_btn)
         
         # disable or enable leftmost buttons depending on if they are functional
-        self._disable_left_frame(step not in (0, 1))
+        self._disable_left_frame(step not in ('empty', 'config'))
     
     @in_thread('GuiThread', wait=False)
     def clear_old_entries(self):
@@ -1902,7 +1906,7 @@ class TestProgressFrame(tk.LabelFrame):
 
 
         """
-        if main.win.step == 4:
+        if main.win.step == 'aborting':
             # indicate that the test should not continue
             raise Abort_by_User()
         
@@ -2585,7 +2589,7 @@ def run(root_cfg):
         #------------- Set up progress and post-process frames ----------------
         
         #show progress bar in gui
-        main.win.set_step(3, extra=ap.rec_stop)
+        main.win.set_step('in-progress', extra=ap.rec_stop)
         
         # clear pretest notes from window
         main.win.clear_old_entries()
@@ -2713,7 +2717,7 @@ def run(root_cfg):
     ri = None
     
     #show post-processing frame
-    main.win.set_step(6)
+    main.win.set_step('post-process')
     
     
 # ------------------------- END OF RUN FUNCTION -------------------------------
@@ -2811,7 +2815,7 @@ def get_post_notes(error_only=False):
         
     # show post_test_gui frame
     main.win.post_test_info = None
-    main.win.set_step(5, extra=error)
+    main.win.set_step('post-notes', extra=error)
     
     
     if is_showable_error:
