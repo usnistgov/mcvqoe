@@ -177,10 +177,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
         
         self.btnvars = btnvars
         
-        #Sets window on top of other windows
         self.focus_force()
-        self.grab_set()
-        #self.attributes('-topmost', True)
         
         self.controls = master.controls
         #initializes controls
@@ -399,6 +396,13 @@ class ToolTip(tk.Toplevel):
     
     def __init__(self, master, text, style='McvToolTip.TLabel'):
         super().__init__(master)
+        
+        try:
+            # on windows, add alwaysontop
+            self.attributes('-topmost',True)
+        except: pass
+        
+        
         lf = ttk.Frame(self, style='McvToolTip.TFrame')
         lf.pack()
         

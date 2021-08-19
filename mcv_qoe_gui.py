@@ -835,6 +835,15 @@ class MCVQoEGui(tk.Tk):
         
         
         loc = self.frames[self.selected_test.get()]
+        
+        if e.parameter not in loc.controls:
+            
+            if e.parameter in self.controls:
+                loc = self
+            else:
+                # could not find offending control... show as error instead
+                show_error(e)
+                return
             
         try:
             ctrl = loc.controls[e.parameter].m_ctrl
@@ -848,7 +857,7 @@ class MCVQoEGui(tk.Tk):
             # if the control was in an advanced window
             if isinstance(master, shared.AdvancedConfigGUI):
                 #recreate that window
-                type(master)(self, btnvars=ctrl.master.btnvars)
+                type(master)(master.master, btnvars=ctrl.master.btnvars)
                 # get the new instance of ctrl
                 ctrl = loc.controls[e.parameter].m_ctrl
                 

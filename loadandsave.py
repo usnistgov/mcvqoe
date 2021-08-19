@@ -80,7 +80,18 @@ class TkVarDict(dict):
             try:
                 dict_[k] = v.get()
             except _tkinter.TclError:
-                raise InvalidParameter(k, f'"{v}" is not an allowed value') from None
+                
+                message = {
+                    tk.BooleanVar: 'Must be either True or False',
+                    tk.StringVar : 'Must be a string',
+                    tk.DoubleVar : 'Must be a number',
+                    tk.IntVar    : 'Must be a whole number',
+                    CommaSepList : 'Must be a comma-separated list of strings',
+                    
+                    }[type(v)]
+                
+                raise InvalidParameter(k, message) from None
+                
         return dict_
 
     def on_change(self):

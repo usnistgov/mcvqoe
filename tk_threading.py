@@ -262,7 +262,9 @@ class SingletonWindow(type):
         if cls not in cls._instances or not cls._instances[cls].winfo_exists():
             
             cls._instances[cls] = super(SingletonWindow, cls).__call__(*args, **kwargs)
-            
+        else:
+            cls._instances[cls].focus_force()
+            cls._instances[cls].bell()
         return cls._instances[cls]
             
 
@@ -329,7 +331,7 @@ class InvalidParameter(ValueError):
     
     def __init__(self, parameter, message=None, *args, **kwargs):
         
-        super().__init__(*args, **kwargs)
+        super().__init__(f'{parameter}: {message}', *args, **kwargs)
         
         self.parameter = parameter
         self.message = message
