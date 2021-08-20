@@ -30,6 +30,7 @@ import tkinter.font as font
 from PIL import Image, ImageTk
 from tkinter import ttk
 import tkinter as tk
+import _tkinter
 
 from tk_threading import Main, in_thread
 from tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
@@ -1239,7 +1240,9 @@ class MCVQoEGui(tk.Tk):
             ctrl.unbind_all('<FocusOut>')
             
             # reset style
-            ctrl.configure(style=ctrl.winfo_class())
+            try:
+                ctrl.configure(style=ctrl.winfo_class())
+            except _tkinter.TclError: pass
         self._red_controls = []
         
 # --------------------- END OF CLASS MCVQOEGUI -------------------------------
@@ -2671,7 +2674,7 @@ def run(root_cfg):
         with ri as my_obj.ri:
             
             # run the test
-            result = my_obj.run(recovery_kw)
+            result = my_obj.run(**recovery_kw)
             
             
             
