@@ -15,18 +15,23 @@ import tkinter as tk
 
 
 
-def in_thread(thread, wait=True, do_exceptions = False):
+def in_thread(thread, wait=True, except_ = None):
     """A function decorator to ensure that a function runs in the given thread.
     
-    thread: can be {'GuiThread', 'MainThread'}
+    Has no effect whenever the function is called from the same thread it is set
+    to be in.
+    
+    thread: one of 'GuiThread', 'MainThread'
         the thread to run the function in
-    wait:
-        whether to wait for the function to return in the other thread
-        if this is false, it may or may not return None.
         
-    exceptions:
-        whether to pass exceptions to the caller.
-        wait must be set to True
+    wait : bool
+        whether to wait for the function to return in the other thread.
+        if this is False, it may return None if called from a different thread.
+        
+    except_:
+        an exception or tuple of exceptions which will be passed to the caller
+        if raised by the function. (as if used in an except clause).
+        Has no effect if wait is False
     
     Example:
         
@@ -35,6 +40,15 @@ def in_thread(thread, wait=True, do_exceptions = False):
             print('Hello from the main thread!')
         
     """
+    
+    exceptions = except_
+    
+    # convert exceptions to catch nothing if they are not applicable
+    if not wait or exceptions is None:
+        exceptions = tuple()
+        
+    
+    
     if thread not in ('MainThread', 'GuiThread'):
         raise ValueError(f'Thread {thread} does not exist')
         
@@ -48,9 +62,10 @@ def in_thread(thread, wait=True, do_exceptions = False):
             
             if thread == threading.current_thread().getName():
                 # we are already in that thread!!
+                # run the function as normal
                 return func(*args, **kwargs)
             
-            switch_obj = _dec_return(func, args, kwargs, do_exceptions)
+            switch_obj = _dec_return(func, args, kwargs, exceptions)
             
             if thread == 'MainThread':
                 main.callback(switch_obj.callbacker)
@@ -77,7 +92,7 @@ def in_thread(thread, wait=True, do_exceptions = False):
     return decorator
 
 class _dec_return:
-    def __init__(self, func, args, kwargs, do_exceptions):
+    def __init__(self, func, args, kwargs, exceptions):
         
         self.func = func
         self.finished = False
@@ -86,17 +101,17 @@ class _dec_return:
         
         self.exc = None
         self.return_val = None
-        self.do_exceptions = do_exceptions
+        self.exceptions = exceptions
 
     def callbacker(self):
         try:
             self.return_val = self.func(*self.args, **self.kwargs)
+            
+        except self.exceptions as e:
+            self.exc = e
+            
         except BaseException as e:
-            if self.do_exceptions:
-                self.exc = e
-            else:
-                traceback.print_exc()
-                show_error(e)
+            show_error(e)
             
         self.finished = True
         
