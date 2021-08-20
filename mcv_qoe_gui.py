@@ -2589,6 +2589,9 @@ def run(root_cfg):
                 if hasattr(my_obj, k) and (k not in skippy):
                     setattr(my_obj, k, v)
             
+            # load pause-trials from recovery file for use in time-estimation
+            cfg['pause_trials'] = my_obj.rec_file['self.pause_trials']
+            
             # pass keyword argument to my_obj.run()
             recovery_kw = {'recovery': True}
         
@@ -2623,7 +2626,7 @@ def run(root_cfg):
         if 'pause_trials' in cfg:
             #set user check callback
             my_obj.user_check = tpf.user_check
-            tpf.pause_after = my_obj.pause_trials
+            tpf.pause_after = cfg['pause_trials']
         else:
             tpf.pause_after = None
         
