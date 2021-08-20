@@ -3236,15 +3236,21 @@ def get_interfaces(root_cfg):
         
         plname = sim_cfg['_impairment_plugin']
         if plname:
+            
             try:
                 plugin = __import__(plname)
             except ImportError:
                 raise InvalidParameter('_impairment_plugin',
                         f'could not import "{plname}"')
             else:
+                success = False
                 for attr in ('pre_impairment', 'post_impairment', 'channel_impairment'):
                     if hasattr(plugin, attr):
                         setattr(sim, attr, getattr(plugin, attr))
+                        success = True
+                if not success:
+                    raise InvalidParameter('_impairment_plugin',
+                            'Module must contain at least one appropriate function')
                 
         if sim_cfg['_enable_PBI']:
             

@@ -94,8 +94,8 @@ class TestCfgFrame(ttk.LabelFrame):
     Base class for frames to configure and run a measurement.
     
     
-    ATTRIBUTES
-    ----------
+    CLASS VARIABLES
+    ---------------
     
     text : str
         The title of the frame
@@ -162,6 +162,12 @@ class SubCfgFrame(TestCfgFrame):
     
     It is designed to behave like a control in and of itself, and should be
     included in the get_controls() of its master.
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        the title of the frame
     
     """
     
@@ -1604,9 +1610,7 @@ class _impairment_plugin(LabeledControl):
         
         pre_impairment(audio, samplerate)
         post_impairment(audio, samplerate)
-        channel_impairment(audio, samplerate)
-    
-    
+        channel_impairment(...)
     """
     text = 'Other Impairing Plugin:'
     
