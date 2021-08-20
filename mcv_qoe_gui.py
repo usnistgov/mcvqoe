@@ -3226,6 +3226,18 @@ def get_interfaces(root_cfg):
         
         _set_values_from_cfg(sim, sim_cfg)
         
+        plname = sim_cfg['_impairment_plugin']
+        if plname:
+            try:
+                plugin = __import__(plname)
+            except ImportError:
+                raise InvalidParameter('_impairment_plugin',
+                        f'could not import "{plname}"')
+            else:
+                for attr in ('pre_impairment', 'post_impairment', 'channel_impairment'):
+                    if hasattr(plugin, attr):
+                        setattr(sim, attr, getattr(plugin, attr))
+                
         if sim_cfg['_enable_PBI']:
             
             prob=simulation.PBI()
@@ -3528,6 +3540,8 @@ control_list = {
         'P_a2',
         'P_r',
         'interval',
+        
+        '_impairment_plugin',
         
     ],
     

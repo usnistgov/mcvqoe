@@ -1085,6 +1085,8 @@ class _SimPrototype(QoEsim, simulation.PBI):
     def __init__(self):
         QoEsim.__init__(self)
         simulation.PBI.__init__(self)
+        
+        self._impairment_plugin = ''
 
 
 #SIMULATION SETTINGS WINDOW
@@ -1110,6 +1112,7 @@ class SimSettings(AdvancedConfigGUI):
             PTT_sig_aplitude,
             
             Probabilityizer,
+            _impairment_plugin,
             _restore_defaults,
             )
 
@@ -1193,7 +1196,7 @@ class channel_rate(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
             
-            
+
 
 
 class m2e_latency(LabeledControl):
@@ -1311,7 +1314,17 @@ class interval(LabeledNumber):
     
     
 
-
+class _impairment_plugin(LabeledControl):
+    """Should be the name of a python module containing any of three functions:
+        
+        pre_impairment(audio, samplerate)
+        post_impairment(audio, samplerate)
+        channel_impairment(audio, samplerate)
+    
+    
+    """
+    text = 'Other Impairing Plugin:'
+    
 
 
 
