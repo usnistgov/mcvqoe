@@ -269,6 +269,18 @@ class LabeledControl:
         
         MyParameter:   (?)     [value          ]     BUTTON
     
+    NOTE: if you can, use one of the following base-classes instead of
+    over-customizing this one:
+        
+        LabeledEntry
+        LabeledNumber
+        LabeledCheckbox
+        LabeledSlider
+        MultiChoice
+        EntryWithButton
+        advanced
+    
+    
     Subclasses should redefine any of the class variables, as well as the
         setup() method
         
@@ -587,7 +599,17 @@ class ToolTip(tk.Toplevel):
 
 
 
-
+class LabeledEntry(LabeledControl):
+    """
+    A convenient text-entry control
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        a user-friendly name for the parameter
+    
+    """
 
 
 
