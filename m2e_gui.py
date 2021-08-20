@@ -7,10 +7,8 @@ Created on Wed Jun  2 08:52:09 2021
 import pdb
 import mcvqoe.mouth2ear.m2e as m2e
 
-import tkinter.ttk as ttk
-import tkinter.filedialog as fdl
 
-from shared import TestCfgFrame, LabeledControl
+from shared import TestCfgFrame
 import shared
 
 
@@ -39,25 +37,7 @@ class test(shared.MultiChoice):
             'm2e_2loc_rx': '2 Location (receive)'
             }
     
-
-
-            
-class audio_file(LabeledControl):
-    """NOT USED - use audio_files instead"""
-    def on_button(self):
-        fp = fdl.askopenfilename(parent=self.master,
-                initialfile=self.btnvar.get(),
-                filetypes=[('WAV files', '*.wav')])
-        if fp:
-            self.btnvar.set(fp)
-    
-    
-    text='Audio File:'
-    RCtrl = ttk.Button
-    RCtrlkwargs = {
-        'text'   : 'Browse...'
-        }
-    
+   
 
 
 

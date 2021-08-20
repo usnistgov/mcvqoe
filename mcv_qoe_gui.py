@@ -192,7 +192,7 @@ class MCVQoEGui(tk.Tk):
         self.RightFrame = shared.ScrollableFrame(self)
         
         # create test-specific frames
-        self._init_frames()
+        self.init_frames()
         
         # set window size
         self._set_dimensions()
@@ -311,8 +311,11 @@ class MCVQoEGui(tk.Tk):
             # make it a 1-loc test
             self.frames[m2e].btnvars['test'].set('m2e_1loc')
 
-    def _init_frames(self):
+    def init_frames(self):
         """Consructs the test-specific frames.
+        
+        To add a scrollbar to a frame, put its class in the 
+        frame_types_with_scrollbar list too.
         
         The instances are stored in dictionary self.frames, with their keys
         being their self.__class__.__name__
@@ -342,7 +345,8 @@ class MCVQoEGui(tk.Tk):
             IgtibyFrame,
         ]
         
-   
+        # frames from the above can be copied in here to give them scrollbar
+        frame_types_with_scrollbar = []
         
         
         self.frames = {}
@@ -351,12 +355,13 @@ class MCVQoEGui(tk.Tk):
             # construct tcl variables for parameters and populate with default values
             btnvars = loadandsave.TkVarDict(**DEFAULTS[F.__name__])
             
-            
+            # determine master based on whether it should have a scrollbar
+            master = (self, self.RightFrame)[F in frame_types_with_scrollbar]
             
             # initializes the frame, with its key being its own classname
-            f = F(master=self, btnvars=btnvars)
+            f = F(master=master, btnvars=btnvars)
             
-            self.frames[F.__name__] = f
+            self.frames[f.__class__.__name__] = f
 
             # when user changes a parameter, run this callback
             btnvars.on_change = self.on_change

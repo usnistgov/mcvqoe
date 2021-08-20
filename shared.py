@@ -27,6 +27,10 @@ FONT_SIZE = 10
 
 
 class ScrollableFrame(ttk.Frame):
+    """Used to add a scrollbar to frames. see MCVQoEGui.init_frames() for
+    details on how to add a scrollbar to a frame.
+    
+    """
     
     def __init__(self, master, **kwargs):
         self.container = ttk.Frame(master)
@@ -87,7 +91,15 @@ class ScrollableFrame(ttk.Frame):
 
 class TestCfgFrame(ttk.LabelFrame):
     """
-    Base class for frames to configure and run a test
+    Base class for frames to configure and run a measurement.
+    
+    
+    ATTRIBUTES
+    ----------
+    
+    text : str
+        The title of the frame
+    
     
     PARAMETERS
     ----------
@@ -95,13 +107,6 @@ class TestCfgFrame(ttk.LabelFrame):
     btnvars : TkVarDict
         loads and stores the values in the controls
     
-    
-    
-    ATTRIBUTES
-    ----------
-    
-    text : str
-        The caption of the frame
     
     """
     
@@ -112,6 +117,8 @@ class TestCfgFrame(ttk.LabelFrame):
     def __init__(self, btnvars, *args, **kwargs):
         kwargs['text'] = self.text
         super().__init__(*args, **kwargs)
+        
+        
         #option functions will get and store their values in here
         self.btnvars = btnvars
         
@@ -131,15 +138,33 @@ class TestCfgFrame(ttk.LabelFrame):
         
         
     def get_controls(self) -> iter:
-        """subclasses should override this
         """
+        Called to acquire an ordered list of control classes to construct.
+        
+        Classes should be subclasses of LabeledControl
+        
+        Subclasses should override this.
+        
+        
+        RETURNS
+        -------
+        control-list : iter
+            a list of control classes that go into the frame, in the order they should
+            appear
+            
+        """
+        return tuple()
 
 
 
 class SubCfgFrame(TestCfgFrame):
-    """Makes a subframe for controls grouped together
+    """Base class to make a subframe for controls grouped together.
+    
+    It is designed to behave like a control in and of itself, and should be
+    included in the get_controls() of its master.
     
     """
+    
     text = ''
     
     def __init__(self, master, row, *args, **kwargs):
@@ -153,12 +178,25 @@ class SubCfgFrame(TestCfgFrame):
                   padx=PADX, pady=PADY)
         
         master.controls.update(self.controls)
-
+        
+        
+        
+    def get_controls(self) -> iter:
+        """see TestCfgFrame.get_controls"""
+        return tuple()
     
 
 class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
-    """A Toplevel window containing advanced options for the test
+    """A Toplevel window containing advanced/other parameters.
     
+    Used as a base class for all advanced windows, as well as
+    hardware- and simulation-settings windows.
+    
+    ATTRIBUTES
+    ----------
+    
+    text : str
+        the title of the window
 
     """
     text = ''
@@ -168,22 +206,31 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
         
         super().__init__(master, *args, **kwargs)
         
+        # keeps track of tcl variable traces for later destruction
+        # this prevents some errors in the simulation settings window.
         self.traces_ = []
         
+        # sets its title based on class variable 'text'
         self.title(self.text)
+        
         #sets the controls in this window
-        controls = list(self.get_controls())
-        controls.append(_advanced_submit)
+        control_classes = list(self.get_controls())
+        
+        # include the OK button to close the window
+        control_classes.append(_advanced_submit)
         
         self.btnvars = btnvars
         
+        # take keyboard focus
         self.focus_force()
+        
         
         self.controls = master.controls
         #initializes controls
-        for row in range(len(controls)):
-            c = controls[row](master=self, row=row)
+        for row in range(len(control_classes)):
+            c = control_classes[row](master=self, row=row)
             
+            # stores controls with their keys being their parameter names
             self.controls[c.__class__.__name__] = c
             
         
@@ -203,6 +250,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
     def destroy(self):
         super().destroy()
         
+        # remove tcl variable traces (prevents errors in simulation settings)
         for var, trace_id in self.traces_:
             var.trace_remove('write', trace_id)
                 
@@ -210,14 +258,66 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
         
     
 
-class LabeledControl():
-    """A one-row grid consisting of a label, control, and optional 2nd control
+class LabeledControl:
+    """A row consisting of the following general template:
+        
+        MyParameter:   (?)     [value          ]     BUTTON
     
-    Sub-classes should redefine any of the class variables, as well as the
+    Subclasses should redefine any of the class variables, as well as the
         setup() method
+        
+    Subclasses should have their names be equal to the internal parameter name
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        a user-friendly name for the parameter
+        
+        
+    do_font_scaling : bool
+        whether the middle control has user-modifiable text that can be font-scaled
+        
+        set this to false for things like radiobuttons and checkboxes
+        
+        
+    MCtrl : tkinter.ttk widget class
+        the class of tkinter widget to use for the middle control
+        
+        recommended to use classes from the tkinter.ttk module for aesthetic reasons.
+        
+    MCtrlargs : list
+        positional arguments to be passed to the MCtrl constructor
+    
+    MCtrlkwargs : dict
+        kw arguments to be passed to the MCtrl constructor
+        
+    variable_arg : 'textvariable', 'variable'
+        whether the control's value should be pulled from its text.
+        
+        change this to 'variable' for controls like sliders, checkboxes, radiobuttons, etc
+        that don't have user-modifiable text
+        
+    
+    RCtrl : tkinter.ttk widget class
+        the right-most control (usually a button)
+        
+    RCtrlkwargs : dict
+        the kwargs to be passed to the RCtrl constructor
+    
+    padx, pady : int
+        the control's padding, in pixels
+        
+    no_value : bool
+        set this to true for controls, such as the advanced button,
+        that do not have a value to put into the measure class
     
     
-    
+    PARAMETERS  (handled internally)
+    ----------
+    master : 
+        the window that this will be in
+        
     row : int
         the row that the controls should be gridded in
         
@@ -244,6 +344,9 @@ class LabeledControl():
     
     
     def setup(self):
+        """additional code that can be run during initiation
+        
+        """
         pass
     
     
@@ -335,12 +438,21 @@ class LabeledControl():
         
         
     def on_button(self):
+        """The function to run when the user presses the button on the right
+        of the control.
+        
+        Subclasses should override this.
+
+        """
         pass
             
 
 
 class HelpIcon(ttk.Button):
-    """Shows the control's doc when you hover over or select the icon"""
+    """
+    Shows the control's __doc__ when you hover over or select this icon
+    
+    """
     def __init__(self, master, *args, tooltext, **kwargs):
         kwargs['text'] = '?'
         kwargs['style'] = 'McvHelpBtn.TLabel'
@@ -356,6 +468,19 @@ class HelpIcon(ttk.Button):
         self.tooltext = tooltext
         
     def enter(self, event):
+        """
+        shows the HELP tooltip
+
+        Parameters
+        ----------
+        event : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         if self.tw:
             return
         self.tw = ToolTip(self, self.tooltext)
@@ -379,21 +504,55 @@ class HelpIcon(ttk.Button):
         
         
     def leave(self, event):
+        """
+        Hides the tooltip
+
+        Parameters
+        ----------
+        event : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.tw:
             return
         self.tw.destroy()
         self.tw = None
         
 def _get_master(m, targets = (tk.Tk, tk.Toplevel)):
+    """
+    given a tkinter widget, goes up the chain of hierarchy until it finds
+    a widget in targets, and returns that widget.
+    
+    Used to get a widget's parent window, or to get the tkinter main window
+    
+
+    Parameters
+    ----------
+    m : widget
         
-        while hasattr(m, 'master'):
+    targets : tk classes
+        The default is (tk.Tk, tk.Toplevel).
+
+    Returns
+    -------
+    m : instance of targets
+        
+
+    """
+    while hasattr(m, 'master'):
             if isinstance(m, targets):
                 return m
             m = m.master
         
 
 class ToolTip(tk.Toplevel):
-    
+    """
+    A simple tool-tip window for showing help info about a parameter
+    """
     def __init__(self, master, text, style='McvToolTip.TLabel'):
         super().__init__(master)
         
@@ -430,7 +589,27 @@ class ToolTip(tk.Toplevel):
 
 
 class LabeledNumber(LabeledControl):
+    """A convenient base class for parameters that should be a number.
     
+    Sub-classes should set any of the following class variables for customization
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        the user-friendly name for the parameter
+    
+    min_ : number
+        the minimum value (defaults to 0)
+    max_ : number
+        the maximum value (defaults to very large)
+        
+    increment : number
+        how much the up- and down- buttons should change the value.
+        this does NOT limit the resolution of the value
+    
+    
+    """
     RCtrl = None
     
     MCtrl = ttk.Spinbox
@@ -448,6 +627,18 @@ class LabeledNumber(LabeledControl):
 
 
 class LabeledSlider(LabeledControl):
+    """A convenient base class for parameters that should be a percentage
+    
+    Base classes should not modify any of the class variables (except 'text');
+    Use LabeledNumber for better resolution and range.
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        the user-friendly name for the parameter
+    
+    """
     
     RCtrl = None
     MCtrl = None
@@ -515,7 +706,34 @@ class _MultiChoice_Frame(tk.Frame):
         for ctrl in self.controls:
             ctrl.configure(*args, **kwargs)
 
+
+
+
+
 class MultiChoice(LabeledControl):
+    """ A base class for multiple-choice controls
+    
+    sub-classes should change any of the following class variables
+    for customization
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        user-friendly name for the parameter
+    
+    association : dict
+        associates the internal option with its user-friendly name. i.e.:
+            
+            {
+            'm2e_1loc'   : '1 Location',
+            'm2e_2loc_tx': '2 Location (transmit)',
+            'm2e_2loc_rx': '2 Location (receive)'
+            }
+        
+    
+    
+    """
     association = {}
     do_font_scaling = False
     MCtrl = _MultiChoice_Frame
@@ -529,6 +747,22 @@ class MultiChoice(LabeledControl):
 
 
 class LabeledCheckbox(LabeledControl):
+    """
+    Base class for parameters that are boolean
+    
+    sub-classes should not change any of the class variables (except 'text')
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        USE MIDDLE_TEXT INSTEAD
+    
+    middle_text : str
+        user-friendly name for parameter
+    
+    """
+    middle_text = ''
     
     MCtrl = ttk.Checkbutton
     do_font_scaling = False
@@ -537,18 +771,87 @@ class LabeledCheckbox(LabeledControl):
     def __init__(self, *args, **kwargs):
         
         
-        self.MCtrlkwargs = {'text': self.text}
+        self.MCtrlkwargs = {'text': self.middle_text}
         
-        self.text = ''
         
         super().__init__(*args, **kwargs)
 
 
 
+class EntryWithButton(LabeledControl):
+    """A base-class for controls that have an entry alongside a button.
+    
+    Subclasses should override the on_button() method to determine the button's action.
+    Within the method, the parameter's value can be interacted with using:
+    
+        current_value = self.btnvar.get()
+        
+        self.btnvar.set(new_value)
+        
+    the following class variables should be overridden for customization
+    
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        user-friendly name for the parameter
+        
+    button_text : str
+        text to go into the button
+    
+    
+    """
+    
+    button_text = ''
+    
+    
+    RCtrl = ttk.Button
+    
+    def on_button(self): pass
+    
+    def __init__(self, *args, **kwargs):
+        
+        self.RCtrlkwargs = self.RCtrlkwargs.copy()
+        self.RCtrlkwargs['text'] = self.button_text
+        super().__init__(*args, **kwargs)
+        
+        
 
 
 
-
+class advanced(EntryWithButton):
+    """Base class for singular-button 'advanced' controls.
+    
+    This could theoretically be sub-classed further for other single-button uses.
+    
+    Subclasses should modify the following class variables:
+        
+    CLASS VARIABLES
+    ---------------
+    
+    text : str
+        USE BUTTON_TEXT INSTEAD
+    
+    toplevel : type
+        a subclass of tk.Toplevel that will be constructed when the button is pressed
+        
+    button_text : str
+        the text inside the button
+    
+    
+    """
+    text = ''
+    
+    MCtrl = None
+    
+    button_text = 'Advanced...'
+    
+    toplevel = None
+    
+    no_value = True
+    
+    def on_button(self):
+        self.toplevel(master=self.master, btnvars=self.master.btnvars)
 
 
 
@@ -578,16 +881,15 @@ class LabeledCheckbox(LabeledControl):
 
 
 
-class audio_files(LabeledControl):
+class audio_files(EntryWithButton):
     """Audio files to use for testing.
     
     If left blank, all the files in "Audio Folder" are used. """
     
     text = 'Audio File(s):'
-    RCtrl = ttk.Button
-    RCtrlkwargs = {
-        'text' : 'Browse...'
-        }
+    
+    button_text = 'Browse...'
+        
     
     
     def on_button(self):
@@ -621,14 +923,13 @@ class audio_files(LabeledControl):
     
             
             
-class audio_path(LabeledControl):
+class audio_path(EntryWithButton):
     """The source folder containing the audio files."""
     
     
     text = 'Audio Folder:'
-    MCtrl = ttk.Entry
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Browse Entire Folder'}
+    
+    button_text = 'Browse Folder'
     
     
     def on_button(self):
@@ -661,21 +962,20 @@ class audio_path(LabeledControl):
             
             
             
-class trials(LabeledControl):
+class trials(LabeledNumber):
     """Number of trials to use for test."""
+    
     text = 'Number of Trials:'
        
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
+    min_ = 1
     
     
-class outdir(LabeledControl):
+class outdir(EntryWithButton):
     """Location to store all output files"""
     
     text='Output Folder:'
     
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'Browse...'}
+    button_text = 'Browse...'
     
     def on_button(self):
         dirp = fdl.askdirectory(parent=self.master)
@@ -690,28 +990,32 @@ class outdir(LabeledControl):
         
 
 
-class overplay(LabeledControl):
+class overplay(LabeledNumber):
     """The number of seconds to play silence after the audio is complete.
     This allows for all of the audio to be recorded when there is delay
     in the system"""
     
     
     text='Overplay Time (sec):'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'increment':0.01, 'from_':0, 'to':2**15 -1}
+    
+    increment = 0.01
+    
     
 
-class ptt_gap(LabeledControl):
+class ptt_gap(LabeledNumber):
     """Time to pause after completing one trial and starting the next."""
 
     text = 'Gap Between Trials:'
     
     MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+    increment = 0.01
     
     
 class SaveAudio(MultiChoice):
+    """Sets what recorded audio should be saved into the output folder.
     
+    Set to 'Rx audio only' to only save received audio."""
     text = 'Save Audio:'
     
     association = {'all_audio' : 'All audio',
@@ -722,8 +1026,9 @@ class SaveAudio(MultiChoice):
 
 
 
-   
+# --------------------------- the following 3 are all for pause_trials--------
 class RadioCheck(SubCfgFrame):
+    
     text = 'Regular Radio Checks'
     
     def get_controls(self):
@@ -732,21 +1037,20 @@ class RadioCheck(SubCfgFrame):
             pause_trials,
             )
 
-class _limited_trials(LabeledControl):
+class _limited_trials(LabeledCheckbox):
     """When disabled, sets the number of pause_trials to infinite"""
     
+    middle_text = 'Enable Radio Checks'
     
-    MCtrl = ttk.Checkbutton
-    do_font_scaling = False
-    variable_arg = 'variable'
     
     def __init__(self, master, row, *args, **kwargs):
-        self.MCtrlkwargs = {'text': 'Enable Radio Checks',}
-                
+        
+        # give itself an actual stored value
         self.btnvar = tk.BooleanVar()
         
         super().__init__(master, row, *args, **kwargs)
         
+        # set a trace to change the value depending on 'pause_trials' parameter
         self.btnvar.trace_add('write', self.on_button)
         self.master.btnvars['pause_trials'].trace_add('write', self.update)
         self.update()
@@ -777,23 +1081,17 @@ class _limited_trials(LabeledControl):
         
     
         
-class pause_trials(LabeledControl):
+class pause_trials(LabeledNumber):
     """Number of trials to run before pausing to perform a radio check."""
     
     text = 'Trials between check:'
     
        
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 1, 'to' : 2**15 - 1}
+    min_ = 1
     
     
     
-    
-
         
-        
-        
-
 
 class time_expand(SubCfgFrame):
     text = 'Time Expand'
@@ -811,35 +1109,34 @@ class time_expand(SubCfgFrame):
             _time_expand_f,
             )
 
-class _time_expand_i(LabeledControl):
+class _time_expand_i(LabeledNumber):
     """Length of time, in seconds, of extra
     audio to send BEFORE the keyword to ABC_MRT16. Adding time protects
     against inaccurate M2E latency calculations and misaligned audio."""
     
     text = 'Expand Before:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+    increment = 0.01
     
     
-class _time_expand_f(LabeledControl):
+class _time_expand_f(LabeledNumber):
     """Length of time, in seconds, of extra
     audio to send AFTER the keyword to ABC_MRT16. Adding time protects
     against inaccurate M2E latency calculations and misaligned audio."""
     
     text = 'Expand After:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.01}
+    
+    increment = 0.01
 
     
     
-class bgnoise_file(LabeledControl):
+class bgnoise_file(EntryWithButton):
     """This is used to read in a noise file to be mixed with the
     test audio. Default is no background noise."""
 
     text = 'Noise File:'
     
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text' : 'Browse...'}
+    button_text = 'Browse...'
     
     def on_button(self):
         fp = fdl.askopenfilename(parent=self.master,
@@ -856,15 +1153,14 @@ class bgnoise_volume(LabeledSlider):
 
     text = 'Volume:'
 
-class ptt_wait(LabeledControl):
-    """The amount of time to wait in seconds between pushing the
+class ptt_wait(LabeledNumber):
+    """The amount of time to wait, in seconds, between pushing the
     push to talk button and starting playback. This allows time
     for access to be granted on the system."""
 
-    text = 'PTT Wait Time (sec):'
+    text = 'PTT Wait Time:'
     
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'increment' : 0.01, 'from_' : 0, 'to' : 2**15 - 1}
+    increment = 0.01
 
               
                                   
@@ -874,27 +1170,15 @@ class ptt_wait(LabeledControl):
 
 
 
-class advanced(LabeledControl):
-    text = ''
-    
-    MCtrl = None
-    RCtrl = ttk.Button       
-    RCtrlkwargs = {'text': 'Advanced...'}
-    toplevel = None
-    
-    no_value = True
-    
-    def on_button(self):
-        self.toplevel(master=self.master, btnvars=self.master.btnvars)
+
 
     
 
-class _advanced_submit(LabeledControl):
+class _advanced_submit(advanced):
     
     #closes the advanced window
-    MCtrl = None
-    RCtrl = ttk.Button
-    RCtrlkwargs = {'text': 'OK'}
+    
+    button_text = 'OK'
     
     def on_button(self):
         self.master.destroy()
@@ -917,14 +1201,15 @@ class BgNoise(SubCfgFrame):
 # ----------------------- Device delay characterization -----------------------
 
 
-class dev_dly(LabeledControl):
+class dev_dly(LabeledNumber):
     """Delay in seconds of the audio path with no communication device
     present."""
     
     text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_' : 0, 'to': 2**15-1, 'increment': 0.001}
     
+    increment = 0.001
+    
+    # add button functionality too.
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'Calibrate'}
     
