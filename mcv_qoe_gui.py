@@ -852,7 +852,7 @@ class MCVQoEGui(tk.Tk):
             self.title(f'{TITLE_}*')
     
     
-    @in_thread('GuiThread', wait=True, do_exceptions=True)
+    @in_thread('GuiThread', wait=True, except_=Exception)
     def get_cnf(self) -> dict:
         """
         
@@ -1464,7 +1464,31 @@ except Exception as e:
 
 
 
-
+class McvQoeAbout(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.title('Version Information')
+        
+        text = {
+            'Mouth to ear:'  : m2e_gui.m2e.version,
+            'Access time:'   : accesstime_gui.adly.version,
+            'PSuD:'          : psud_gui.psud.version,
+            'Intelligibility': intelligibility_gui.igtiby.version,
+            
+            'MCV QoE Base Library:': mcvqoe.base.version,
+            'ABC MRT:'             : abcmrt.version,
+            #'Hardware Interface:'  : hardware.version,
+            #'Simulation Interface:': simulation.version,
+            }
+        
+        index = 0
+        for a, b in text.items():
+            for i, txt in {1: a, 2:b}.items():
+                ttk.Label(self, text=txt).grid(column=i, row=index, padx=10, pady=10, sticky='W')
+            index += 1
+        
 
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
@@ -1608,7 +1632,8 @@ class MenuFrame(tk.Frame):
                                            padx=10, pady=10)
         
         self.TestTypeFrame.pack(side=tk.LEFT, fill=tk.Y)
-
+        
+        
 
 class MenuButton(tk.Frame):
     def __init__(self, master, *args, command=None, **kwargs):
@@ -1675,6 +1700,11 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value=intelligibility).pack(fill=tk.X)
+        
+        
+        # version information
+        
+        ttk.Button(self, text='About', command=McvQoeAbout).pack(side=tk.BOTTOM)
         
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
@@ -1929,7 +1959,7 @@ class TestProgressFrame(tk.LabelFrame):
             raise Abort_by_User()
         
         
-    @in_thread('GuiThread', wait=True, do_exceptions=True)
+    @in_thread('GuiThread', wait=True, except_=Abort_by_User)
     def gui_progress_update(self,
                 prog_type,
                 num_trials=0,
@@ -2072,7 +2102,7 @@ class TestProgressFrame(tk.LabelFrame):
         return True
     
     
-    @in_thread('GuiThread', do_exceptions=True)
+    @in_thread('GuiThread', except_=Abort_by_User)
     def user_check(self,
                    reason,
                    message='',
