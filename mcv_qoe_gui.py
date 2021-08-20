@@ -243,6 +243,7 @@ class MCVQoEGui(tk.Tk):
         self.cnf_filepath = None
         self.is_destroyed = False
         self._is_closing = False
+        self._is_force_closing = False
         self._pre_notes = None
         self._old_selected_test = 'EmptyFrame'
         self.set_step('empty')
@@ -589,7 +590,8 @@ class MCVQoEGui(tk.Tk):
         """
         
         # if this is the first time the user pressed close
-        if not self._is_closing:    
+        
+        if not self._is_closing:
             if self.ask_save():
                 # canceled by user
                 return
@@ -598,9 +600,7 @@ class MCVQoEGui(tk.Tk):
                 return
         else:
             # if the user already pressed close
-            
-            # force quit the main thread
-            _thread.interrupt_main()
+            self._is_force_closing = True
             
             
         self._is_closing = True
@@ -656,6 +656,10 @@ class MCVQoEGui(tk.Tk):
             self._is_closing = False
             return
         
+        if self.step == 'post-notes' and self._is_force_closing:
+            
+            # submit post notes to prevent freeze.
+            self._post_test_submit()
         
         if main.is_running:
             # keep calling this function until the main-thread event loop stops
@@ -2684,7 +2688,9 @@ def run(root_cfg):
             # run the test
             result = my_obj.run(**recovery_kw)
             
-            
+            # prevent freezing if user is trying desperately to close window
+            if main.win._is_force_closing:
+                return
             
             
             
@@ -2913,7 +2919,7 @@ def get_post_notes(error_only=False):
     
     # wait for completion or program close
     
-    while main.win.post_test_info is None and not main.win.is_destroyed:
+    while main.win.post_test_info is None and not main.win._is_force_closing:
         time.sleep(0.1)
     
     # retrieve notes
