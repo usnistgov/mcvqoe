@@ -1704,7 +1704,8 @@ class TestTypeFrame(tk.Frame):
         
         # version information
         
-        ttk.Button(self, text='About', command=McvQoeAbout).pack(side=tk.BOTTOM)
+        ttk.Button(self, text='About', command=McvQoeAbout).pack(
+            side=tk.BOTTOM, fill=tk.X)
         
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
