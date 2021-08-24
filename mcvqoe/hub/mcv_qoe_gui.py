@@ -3238,118 +3238,116 @@ control_list = {
         ],
 }
 
-
-# the objects to pull the default values from
-initial_measure_objects = {
-    dev_dly_char: m2e_gui.DevChar_Defaults(),
-    m2e: m2e_gui.m2e.measure(),
-    accesstime: accesstime_gui.adly.measure(),
-    psud : psud_gui.psud.measure(),
-    intelligibility: intelligibility_gui.igtiby.measure(),
-    'SimSettings': shared._SimPrototype(),
-    'HdwSettings': shared._HdwPrototype()
-    }
-
-# ----------------------load default values from objects-----------------------
+#empty dictionary for defaults, filled with load_defaults
 DEFAULTS = {}
-for name_, key_group in control_list.items():
+
+def load_defaults():
     
-    DEFAULTS[name_] = {}
-    
-    if name_ in initial_measure_objects:
-        obj = initial_measure_objects[name_]
-        
-        for key in key_group:
-            if hasattr(obj, key):
-                DEFAULTS[name_][key] = getattr(obj, key)
+    #check if defaults have already been loaded
+    if DEFAULTS:
+        print('Defaults have alread been loaded!')
+        return
 
+    # the objects to pull the default values from
+    initial_measure_objects = {
+        dev_dly_char: m2e_gui.DevChar_Defaults(),
+        m2e: m2e_gui.m2e.measure(),
+        accesstime: accesstime_gui.adly.measure(),
+        psud : psud_gui.psud.measure(),
+        intelligibility: intelligibility_gui.igtiby.measure(),
+        'SimSettings': shared._SimPrototype(),
+        'HdwSettings': shared._HdwPrototype()
+        }
 
-# loads previous session's hardware settings from disk, if applicable
-DEFAULTS['HdwSettings'].update(loadandsave.hardware_settings)
-                
-                
-                
-# ----------- Special default values different from measurement obj -----------
+    # ----------------------load default values from objects-----------------------
+    for name_, key_group in control_list.items():
+        
+        DEFAULTS[name_] = {}
 
-# set the default outdir directories
-dir_names = {
-    dev_dly_char: 'Device_Delay_Characterization',
-    m2e: 'Mouth_2_Ear',
-    accesstime: 'Access_Time',
-    psud: 'PSuD',
-    intelligibility: 'Intelligibility'
-    }
-for name_, cfg in DEFAULTS.items():
-    if 'outdir' in cfg:
-        cfg['outdir'] = path.join(path.expanduser("~"),
-                                  'MCV-QoE',
-                                  dir_names[name_])
-        
-        
-    # formats audio_files and audio_path to make them more readable
-    if 'audio_files' in cfg and 'audio_path' in cfg:
-        
-        if cfg['audio_files'] or cfg['audio_path']:
-        
-            cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
-                cfg['audio_path'], cfg['audio_files'])
-        
-        
-        
-    # create a multi-choice option based on bool-options for save-audio
-    if 'save_tx_audio' in cfg and 'save_audio' in cfg:
-        
-        if not cfg['save_audio']:
-            cfg['SaveAudio'] = 'no_audio'
-        elif cfg['save_tx_audio']:
-            cfg['SaveAudio'] = 'all_audio'
-        else:
-            cfg['SaveAudio'] = 'rx_only'
+        if name_ in initial_measure_objects:
+            obj = initial_measure_objects[name_]
 
+            for key in key_group:
+                if hasattr(obj, key):
+                    DEFAULTS[name_][key] = getattr(obj, key)
 
-#values that require more than one control
-DEFAULTS[accesstime]['_ptt_delay_min'] = initial_measure_objects[
-    accesstime].ptt_delay[0]
-try:
-    DEFAULTS[accesstime]['_ptt_delay_max'] = str(initial_measure_objects[
-        accesstime].ptt_delay[1])
-except IndexError:
-    DEFAULTS[accesstime]['_ptt_delay_max'] = '<default>'
-    
-for k in (accesstime,psud):
-    DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
+    # loads previous session's hardware settings from disk, if applicable
+    DEFAULTS['HdwSettings'].update(loadandsave.hardware_settings)
+
+    # ----------- Special default values different from measurement obj -----------
+
+    # set the default outdir directories
+    dir_names = {
+        dev_dly_char: 'Device_Delay_Characterization',
+        m2e: 'Mouth_2_Ear',
+        accesstime: 'Access_Time',
+        psud: 'PSuD',
+        intelligibility: 'Intelligibility'
+        }
+    for name_, cfg in DEFAULTS.items():
+        if 'outdir' in cfg:
+            cfg['outdir'] = path.join(path.expanduser("~"),
+                                      'MCV-QoE',
+                                      dir_names[name_])
+
+        # formats audio_files and audio_path to make them more readable
+        if 'audio_files' in cfg and 'audio_path' in cfg:
+
+            if cfg['audio_files'] or cfg['audio_path']:
+
+                cfg['audio_path'], cfg['audio_files'] = shared.format_audio_files(
+                    cfg['audio_path'], cfg['audio_files'])
+
+        # create a multi-choice option based on bool-options for save-audio
+        if 'save_tx_audio' in cfg and 'save_audio' in cfg:
+
+            if not cfg['save_audio']:
+                cfg['SaveAudio'] = 'no_audio'
+            elif cfg['save_tx_audio']:
+                cfg['SaveAudio'] = 'all_audio'
+            else:
+                cfg['SaveAudio'] = 'rx_only'
+
+    #values that require more than one control
+    DEFAULTS[accesstime]['_ptt_delay_min'] = initial_measure_objects[
+        accesstime].ptt_delay[0]
     try:
-        DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
-            k].time_expand[1])
+        DEFAULTS[accesstime]['_ptt_delay_max'] = str(initial_measure_objects[
+            accesstime].ptt_delay[1])
     except IndexError:
-        DEFAULTS[k]['_time_expand_f'] = '<default>'
+        DEFAULTS[accesstime]['_ptt_delay_max'] = '<default>'
 
-#the following should be a string, not any other type
-DEFAULTS[accesstime]['pause_trials'] = str(int(DEFAULTS[accesstime]['pause_trials']))
-DEFAULTS[intelligibility]['pause_trials'] = str(int(DEFAULTS[intelligibility]['pause_trials']))
+    for k in (accesstime,psud):
+        DEFAULTS[k]['_time_expand_i'] = initial_measure_objects[k].time_expand[0]
+        try:
+            DEFAULTS[k]['_time_expand_f'] = str(initial_measure_objects[
+                k].time_expand[1])
+        except IndexError:
+            DEFAULTS[k]['_time_expand_f'] = '<default>'
 
-DEFAULTS[accesstime]['dev_dly'] = ''
+    #the following should be a string, not any other type
+    DEFAULTS[accesstime]['pause_trials'] = str(int(DEFAULTS[accesstime]['pause_trials']))
+    DEFAULTS[intelligibility]['pause_trials'] = str(int(DEFAULTS[intelligibility]['pause_trials']))
 
+    DEFAULTS[accesstime]['dev_dly'] = ''
 
-DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
-DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
+    DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
+    DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
 
-# the following should be a float
-DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+    # the following should be a float
+    DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
 
-for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
-    DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
+    for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
+        DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
 
+    # the following do not have a default value
+    DEFAULTS['SimSettings']['_enable_PBI'] = False
 
-# the following do not have a default value
-DEFAULTS['SimSettings']['_enable_PBI'] = False
-
-
-#free initial objects
-del initial_measure_objects
-del obj
 
 def main():
+    #load default values from measurements
+    load_defaults()
+
     try:
         tk_main.win.init_as_mainwindow()
     except:
