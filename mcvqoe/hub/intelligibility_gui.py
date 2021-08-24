@@ -7,17 +7,18 @@ Created on Thu Jul  8 16:22:33 2021
 
 import mcvqoe.intelligibility as igtiby
 
-import shared
 import tkinter.ttk as ttk
 
+from .shared import LabeledSlider, TestCfgFrame, SignalOverride, MultiChoice
+from .shared import advanced as shared_advanced
 
 #--------------------------Controls-------------------------------------------
 
-from shared import trials, outdir, ptt_wait
-from shared import ptt_gap, RadioCheck, SaveAudio
+from .shared import trials, outdir, ptt_wait
+from .shared import ptt_gap, RadioCheck, SaveAudio
 
 
-class intell_est(shared.MultiChoice):
+class intell_est(MultiChoice):
     """Control when, and how, intelligibility and mouth to ear estimations are
         done.
         
@@ -36,10 +37,9 @@ class intell_est(shared.MultiChoice):
                    'none': 'Never',
                    }
     
-
 # ---------------------- The main configuration frame -------------------------
 
-class IgtibyFrame(shared.TestCfgFrame):
+class IgtibyFrame(TestCfgFrame):
     text = 'Intelligibility Test'
     def get_controls(self):
         return (
@@ -52,16 +52,9 @@ class IgtibyFrame(shared.TestCfgFrame):
             intell_est,
             )
 
-    
-    
-
-
-
-
-
 # ---------------------- Extending the measure class --------------------------
 
-class Igtiby_from_Gui(shared.SignalOverride, igtiby.measure):
+class Igtiby_from_Gui(SignalOverride, igtiby.measure):
     def param_check(self):
         # future proof
         if hasattr(super(), 'param_check'):

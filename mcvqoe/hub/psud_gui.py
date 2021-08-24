@@ -5,27 +5,23 @@ Created on Thu Jun 17 14:06:49 2021
 @author: MkZee
 """
 
-import shared
 import mcvqoe.psud as psud
 
-
-
+from .shared import LabeledSlider, TestCfgFrame, AdvancedConfigGUI, SignalOverride
+from .shared import advanced as shared_advanced
 
 #----------------------------controls-----------------------------------------
 
+from .shared import trials, audio_files, audio_path, outdir
+from .shared import ptt_wait, ptt_gap, time_expand
+from .shared import SaveAudio, MultiChoice
 
-from shared import trials, audio_files, audio_path, outdir
-from shared import ptt_wait, ptt_gap, time_expand
-from shared import SaveAudio
-
-    
-    
-class m2e_min_corr(shared.LabeledSlider):
+class m2e_min_corr(LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
     text = 'Min Corr. for Success:'
     
     
-class intell_est(shared.MultiChoice):
+class intell_est(MultiChoice):
     """Compute Intelligibility estimation on audio:
     At the end of each trial,
     After test is complete,
@@ -40,13 +36,9 @@ class intell_est(shared.MultiChoice):
         'none'  : 'Never',
         }
 
-
-
-
-
 # ---------------------- The main config frame --------------------------------
 
-class PSuDFrame(shared.TestCfgFrame):
+class PSuDFrame(TestCfgFrame):
     
     text = 'Probability of Successful Delivery Test'
     
@@ -64,7 +56,7 @@ class PSuDFrame(shared.TestCfgFrame):
             advanced,
             )
     
-class PSuDAdvanced(shared.AdvancedConfigGUI):
+class PSuDAdvanced(AdvancedConfigGUI):
     
     text = 'PSuD - Advanced'
     
@@ -73,11 +65,8 @@ class PSuDAdvanced(shared.AdvancedConfigGUI):
             time_expand,
             m2e_min_corr,
             )
-    
-    
 
-    
-class advanced(shared.advanced):
+class advanced(shared_advanced):
     toplevel = PSuDAdvanced
     
     
@@ -99,7 +88,7 @@ class advanced(shared.advanced):
     
 #-------------------------Running the test------------------------------------
 
-class PSuD_fromGui(shared.SignalOverride, psud.measure):
+class PSuD_fromGui(SignalOverride, psud.measure):
     
     def param_check(self):
         # future-proofing this param-check override

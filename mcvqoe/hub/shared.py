@@ -4,21 +4,21 @@ Created on Wed Jun  9 11:03:39 2021
 
 @author: MkZee
 """
-import pdb
+
 from os import path
 
+import importlib.resources
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 from PIL import Image, ImageTk
 
-import loadandsave
-from tk_threading import show_error, Abort_by_User, InvalidParameter
-import tk_threading
+import mcvqoe.hub.loadandsave as loadandsave
+from .tk_threading import show_error, Abort_by_User, InvalidParameter
+from .tk_threading import SingletonWindow
 
 
-from mcvqoe.simulation.QoEsim import QoEsim
-from mcvqoe import simulation
+from mcvqoe.simulation import QoEsim,PBI
 
 PADX = 10
 PADY = 10
@@ -192,7 +192,7 @@ class SubCfgFrame(TestCfgFrame):
         return tuple()
     
 
-class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
+class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     """A Toplevel window containing advanced/other parameters.
     
     Used as a base class for all advanced windows, as well as
@@ -265,7 +265,8 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
     
 
 class LabeledControl:
-    """A row consisting of the following general template:
+    """
+    A row consisting of the following general template:
         
         MyParameter:   (?)     [value          ]     BUTTON
     
@@ -1247,7 +1248,7 @@ class dev_dly(LabeledNumber):
 
 
 
-class CharDevDly(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
+class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1267,7 +1268,8 @@ output directly fed into the input, as shown below.
         width = 600
         height = 500
         
-        img = Image.open('dev_dly_char_example.png')
+        with importlib.resources.path('mcvqoe.hub','dev_dly_char_example.png') as name:
+            img = Image.open(name)
         img = img.resize(
             (width, height),
             Image.ANTIALIAS
@@ -1330,10 +1332,7 @@ class HdwSettings(AdvancedConfigGUI):
             radioport,
             _restore_defaults,
             )
-    
-    
-
-
+            
 class radioport(LabeledControl):
     """Port to use for radio interface. Defaults to the first
     port where a radio interface is detected"""
@@ -1346,9 +1345,7 @@ class AudioSettings(SubCfgFrame):
     
     def get_controls(self):
         return (blocksize, buffersize)
-    
-        
-        
+      
 class blocksize(LabeledControl):
     """Block size for transmitting audio, must be a power of 2"""
     
@@ -1383,24 +1380,13 @@ class _restore_defaults(LabeledControl):
             
             if hasattr(from_obj, k):
                 tk_var.set(getattr(from_obj, k))
-    
-        
-        
-        
 
-
-
-
-
-
-
-class _SimPrototype(QoEsim, simulation.PBI):
+class _SimPrototype(QoEsim, PBI):
     def __init__(self):
         QoEsim.__init__(self)
-        simulation.PBI.__init__(self)
+        PBI.__init__(self)
         
         self._impairment_plugin = ''
-
 
 #SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
@@ -1455,10 +1441,7 @@ class channel_tech(LabeledControl):
             for tech_ in rates:
                 self.menu.add_command(label=tech_,
                         command=tk._setit(self.btnvar, tech_))
-        
-        
-        
-    
+
 class channel_rate(LabeledControl):
     """Rate to simulate channel at. Each channel tech handles this differently.
     When set to None the default rate is used."""
@@ -1508,9 +1491,6 @@ class channel_rate(LabeledControl):
         
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
-            
-
-
 
 class m2e_latency(LabeledControl):
     """Simulated mouth to ear latency for the channel in seconds.
@@ -1554,11 +1534,6 @@ class PTT_sig_aplitude(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
 
-
-
-
-
-
 class Probabilityizer(SubCfgFrame):
     
     text = 'Probabilityizer'
@@ -1593,15 +1568,10 @@ class Probabilityizer(SubCfgFrame):
                 continue
             
             ctrl.m_ctrl.configure(state=state)
-        
-
 
 class _enable_PBI(LabeledCheckbox):
     
     text = 'Enable P.B.I Impairments'
-    
-    
-
 
 class P_a1(LabeledNumber):
     min_ = 0
@@ -1624,8 +1594,6 @@ class P_r(LabeledNumber):
 class interval(LabeledNumber):
     
     text = 'P_Interval:'
-    
-    
 
 class _impairment_plugin(LabeledControl):
     """Should be the name of a python module containing any of three functions:
@@ -1635,13 +1603,8 @@ class _impairment_plugin(LabeledControl):
         channel_impairment(...)
     """
     text = 'Other Impairing Plugin:'
-    
-
-
 
 # ---------------------------------- Misc ------------------------------------
-
-
 
 class SignalOverride():
     
@@ -1649,14 +1612,6 @@ class SignalOverride():
         #override signal's ability to close the application
         
         raise Abort_by_User()
-        
-        
-
-    
-
-        
-        
-        
         
 def format_audio_files(path_= '', files=[]):
     """
@@ -1702,4 +1657,3 @@ def format_audio_files(path_= '', files=[]):
     newfiles = [path.relpath(f, newpath) for f in files]
     
     return newpath, newfiles
-

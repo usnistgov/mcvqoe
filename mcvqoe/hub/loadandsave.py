@@ -11,7 +11,7 @@ import json
 import tkinter as tk
 import _tkinter
 import atexit
-from tk_threading import InvalidParameter
+from .tk_threading import InvalidParameter
 
 
 class TkVarDict(dict):

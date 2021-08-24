@@ -4,28 +4,26 @@ Created on Wed Jun  2 08:52:09 2021
 
 @author: MkZee
 """
-import pdb
+
 import mcvqoe.mouth2ear.m2e as m2e
 
-
-from shared import TestCfgFrame
-import shared
+from .shared import TestCfgFrame
+from .shared import advanced as shared_advanced
+from .shared import AdvancedConfigGUI,MultiChoice,SignalOverride
 
 
 import csv
 import numpy as np
-
-
-        
+  
 #------------------------------- Controls -------------------------------------
 
-from shared import audio_files, audio_path
-from shared import BgNoise, SaveAudio
-from shared import trials, ptt_wait, ptt_gap, outdir
+from .shared import audio_files, audio_path
+from .shared import BgNoise, SaveAudio
+from .shared import trials, ptt_wait, ptt_gap, outdir
 
 
 
-class test(shared.MultiChoice):
+class test(MultiChoice):
     """M2E test to perform. Options are: 1 Location (m2e_1loc), 
     2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
 
@@ -42,7 +40,7 @@ class test(shared.MultiChoice):
 
 
 
-class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
+class M2EAdvancedConfigGUI(AdvancedConfigGUI):
     text = 'M2E Latency - Advanced'
     
     def get_controls(self):
@@ -51,7 +49,7 @@ class M2EAdvancedConfigGUI(shared.AdvancedConfigGUI):
             )
 
 
-class advanced(shared.advanced):
+class advanced(shared_advanced):
     toplevel = M2EAdvancedConfigGUI
 
 
@@ -96,7 +94,7 @@ class M2eFrame(TestCfgFrame):
 
 # --------------------- using the m2e measure class ---------------------------
 
-class M2E_fromGui(shared.SignalOverride, m2e.measure):
+class M2E_fromGui(SignalOverride, m2e.measure):
     
     def run(self):
               

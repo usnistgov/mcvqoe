@@ -135,6 +135,7 @@ class GuiThread(Thread):
         super().__init__()
         
         self.setName('GuiThread')
+        
         self.setDaemon(True)
         self._callbacks = []
         self.win_class = win_class
@@ -143,7 +144,6 @@ class GuiThread(Thread):
     
     
     def run(self):
-        
         # construct window
         self.win = self.win_class()
         
@@ -174,10 +174,7 @@ class GuiThread(Thread):
     def stop(self):
         if self.win is not None:
             self.win.destroy()
-        
-        
-        
-        
+
 
 class Main():
     def __init__(self, win_class=tk.Tk):
@@ -196,11 +193,6 @@ class Main():
             time.sleep(0.01)
         
         self.win = self.gui_thread.win
-        
-        
-        
-
-
     
     def callback(self, function):
         """Calls a function in the main thread.

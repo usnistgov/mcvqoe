@@ -1,0 +1,2 @@
+recursive-include mcvqoe/hub *.png
+recursive-include mcvqoe/hub *.ico

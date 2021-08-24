@@ -1,4 +1,17 @@
+#python cache files
 *.pyc
-others/*
-untitled*.py
-access_time.py
+__pycache__/
+
+# Ignore version file
+mcvqoe/hub/version.py
+
+#ignore egg info
+*.egg-info/
+
+#build and dist directories
+build/
+dist/
+
+# Ignore eggs
+.eggs/
+.eggs

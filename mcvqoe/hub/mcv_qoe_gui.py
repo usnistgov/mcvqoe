@@ -7,9 +7,7 @@ Created on Wed May 26 15:53:57 2021
 """
 # -----------------------------basic config------------------------------------
 TITLE_ = 'MCV QoE'
-icon = 'MCV-sm.ico'
 appid = 'nist.mcvqoe.gui.1_0_0'
-left_frame_image = 'pscr_logo.png'
 
 
 import ctypes
@@ -22,8 +20,7 @@ if hasattr(ctypes, 'windll'):
     # allows icon setting on taskbar
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
     
-
-import pdb
+import importlib.resources
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
@@ -32,11 +29,11 @@ from tkinter import ttk
 import tkinter as tk
 import _tkinter
 
-from tk_threading import Main, in_thread
-from tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
-import tk_threading
-import shared
-import loadandsave
+from .tk_threading import Main, in_thread
+from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
+from .tk_threading import SingletonWindow
+import mcvqoe.hub.shared as shared
+import mcvqoe.hub.loadandsave as loadandsave
 
 import sys
 import time
@@ -49,15 +46,9 @@ import gc
 import subprocess as sp
 import traceback
 
-
-
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
 #                       -----------------------------
-
-
-
-
 
 #---------------------------- The main window class---------------------------
 class MCVQoEGui(tk.Tk):
@@ -77,8 +68,8 @@ class MCVQoEGui(tk.Tk):
         
 
         """
-        super().__init__(*args, **kwargs)
         
+        super().__init__(*args, **kwargs)
         
         #---------------------- a loading window ------------------------------
         
@@ -88,7 +79,8 @@ class MCVQoEGui(tk.Tk):
         try:
             # on windows, add alwaysontop
             self.attributes('-topmost',True)
-        except: pass
+        except:
+            pass
         
         # set dimensions and center
         screenw = self.winfo_screenwidth()
@@ -101,11 +93,17 @@ class MCVQoEGui(tk.Tk):
         y = (screenh - h) // 2
         
         self.geometry(f'{w}x{h}+{x}+{y}')
-        
-        
-        #set the title- and taskbar icon
-        self.iconbitmap(path.abspath(icon))
-        
+
+        #TODO : make this actually work! right now this code runs on import which 
+        #basically happens when importlib.resource.path is called
+        #if importlib.resources.is_resource('mcvqoe.hub','MCV-sm.ico'):
+        if False:
+            with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+                if icon:
+                    #set the title- and taskbar icon
+                    self.iconbitmap(icon)
+                else:
+                    print('Could not find icon file')
         
         # when the user closes the window
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -113,33 +111,12 @@ class MCVQoEGui(tk.Tk):
         # set the dpi scaling based on the window size
         dpi_scaling()
         
-        
         self.text = tk.StringVar(value='Loading Libraries...')
-        
         ttk.Label(self, textvariable = self.text).pack(
             side=tk.BOTTOM,pady=30)
         
     def load_progress(self, text):
         self.text.set(text)
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # ------------------------- The main window ------------------------------
         
@@ -152,8 +129,7 @@ class MCVQoEGui(tk.Tk):
         
         # prevents random window flashing
         self.withdraw()
-        
-        
+
         #show titlebar and taskbar items
         self.overrideredirect(False)
         try:
@@ -164,10 +140,7 @@ class MCVQoEGui(tk.Tk):
         # clear old widgets
         for name_, widget in self.children.copy().items():
             widget.destroy()
-        
-        
-        
-        
+
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
@@ -197,11 +170,9 @@ class MCVQoEGui(tk.Tk):
         # set window size
         self._set_dimensions()
         
-
         # handling changing of window size
         self.bind('<Configure>', self.LeftFrame.on_change_size)
-        
-        
+
         # --------binding keyboard shortcuts-----------
         
         #save (as), open, close
@@ -228,11 +199,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<MouseWheel>', self.RightFrame.scroll)
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
-        
-        
-        
-        
-        
+
         # sets the current frame to be blank
         self.currentframe = self.frames['EmptyFrame']
         self.currentframe.pack()
@@ -253,16 +220,14 @@ class MCVQoEGui(tk.Tk):
         
         # show the window
         self.deiconify()
-        
-        
+
         # if the session closed unexpectedly last time, show a recovery prompt.
         if loadandsave.misc_cache['accesstime.need_recovery']:
             tk.messagebox.showwarning('Recovered Measurement',
                     'An Access Time measurement was recovered. '+
                     'You may recover it using the "Recovery File" entry '+
                     'in Access Time.')
-    
-    
+
     def _disable_left_frame(self, disabled : bool):
         """ updates the state of the buttons on the left frame based on
         whether or not a measurement is currenlty running.
@@ -301,10 +266,7 @@ class MCVQoEGui(tk.Tk):
                 
                 # set control's state
                 frame.controls[key].m_ctrl.configure(state=state)
-        
-        
-        
-        
+
         # disables m2e location in simulation
         
         if state == 'disabled':
@@ -329,8 +291,7 @@ class MCVQoEGui(tk.Tk):
             
         would set the mouth-to-ear audio_path parameter. similarly .get()
         """
-        
-        
+
         frame_types = [
             EmptyFrame,
             TestInfoGuiFrame,
@@ -378,10 +339,7 @@ class MCVQoEGui(tk.Tk):
         
         # attempt to load device delay from disk
         _get_dev_dly()
-        
-        
-        
-    
+
     def _set_dimensions(self):
         """Algorithm to place and size the window on the screen.
         
@@ -394,9 +352,7 @@ class MCVQoEGui(tk.Tk):
             PSuDFrame,
             IgtibyFrame,
         )
-        
-        
-        
+
         # get screen dimensions
         screenh = self.winfo_screenheight()
         screenw = self.winfo_screenwidth()
@@ -405,8 +361,6 @@ class MCVQoEGui(tk.Tk):
         
         # get cached dimensions
         try:
-            
-            
             cache = loadandsave.dim_cache
             assert cache.keys() == {'x':0,'y':0,'w':0,'h':0}.keys()
             
@@ -425,8 +379,7 @@ class MCVQoEGui(tk.Tk):
             
         except (FileNotFoundError, AssertionError):
             cache = None
-        
-        
+
         h = w = 0
         
         for f_name, f in self.frames.items():
@@ -457,10 +410,7 @@ class MCVQoEGui(tk.Tk):
         
         # add bottom buttons into equation (not sure why they are not already?)
         h += 50 + self.BottomButtons.winfo_reqheight()
-        
-         
-        
-        
+
         #leave the left-most frame's width out of the width equation
             # because it automatically hides.
             
@@ -471,8 +421,7 @@ class MCVQoEGui(tk.Tk):
         
         # dimensions to ensure all frames fit in the window
         self.minsize(width=minw, height=minh)
-        
-        
+
         if cache is not None and not max_:
             x, y, w, h = cache['x'], cache['y'], cache['w'], cache['h']
         else:
@@ -501,10 +450,9 @@ class MCVQoEGui(tk.Tk):
             except:
                 try:
                     self.state("zoomed")
-                except: pass
-                    
-        
-        
+                except: 
+                    pass
+
     def _cache_dimensions(self):
         """saves the window's placement and dimensions to a cache for later
 
@@ -540,9 +488,7 @@ class MCVQoEGui(tk.Tk):
         
                 
         self._old_selected_test = new
-            
-        
-    
+
     @in_thread('GuiThread')
     def show_frame(self, framename):
         """shows the specified frame on the right side of the gui.
@@ -620,12 +566,11 @@ class MCVQoEGui(tk.Tk):
             show_error(RuntimeError('Hardware Settings were not saved.'))
         
         # end the main-thread's event loop
-        main.stop()
+        tk_main.stop()
         
         #waits for main thread to close gracefully
-        while main.is_running:
-            
-            
+        while tk_main.is_running:
+
             # if get_post_notes() gets called, or if the measurement is aborting,
                 # wait for user to enter notes post notes
             if self.step in ('aborting', 'post-notes'):
@@ -643,9 +588,7 @@ class MCVQoEGui(tk.Tk):
         
         # destroy the window and stop the gui-thread's event loop.
         self.destroy()
-        
-        
-        
+
     def _wait_to_destroy(self):
         """Waits for the abort to complete and then closes the application
         
@@ -661,7 +604,7 @@ class MCVQoEGui(tk.Tk):
             # submit post notes to prevent freeze.
             self._post_test_submit()
         
-        if main.is_running:
+        if tk_main.is_running:
             # keep calling this function until the main-thread event loop stops
             self.after(50, self._wait_to_destroy)
             
@@ -765,8 +708,6 @@ class MCVQoEGui(tk.Tk):
     def save_as(self, *args, **kwargs) -> bool:
         """Prompts the user to save the parameters as a .json file
 
-
-
         Returns
         -------
         cancelled : bool
@@ -793,10 +734,7 @@ class MCVQoEGui(tk.Tk):
         """Saves config to .json file.
         
         If there is no loaded .json file, this is equivalent to save_as()
-        
-        
-        
-        
+
         Returns
         -------
         cancelled : bool
@@ -846,7 +784,6 @@ class MCVQoEGui(tk.Tk):
     def set_saved_state(self, is_saved: bool = True):
         """changes whether or not the program considers the config unmodified
 
-
         Parameters
         ----------
         is_saved : bool, optional
@@ -865,7 +802,6 @@ class MCVQoEGui(tk.Tk):
     @in_thread('GuiThread', wait=True, except_=Exception)
     def get_cnf(self) -> dict:
         """
-        
 
         Returns
         -------
@@ -889,10 +825,7 @@ class MCVQoEGui(tk.Tk):
         
         
         return obj
-    
 
-    
-        
     @in_thread('GuiThread', wait=False)    
     def show_invalid_parameter(self, e : InvalidParameter):
         
@@ -907,13 +840,8 @@ class MCVQoEGui(tk.Tk):
         Parameters
         ----------
         e : InvalidParameter
-            
-
-
         """
-        
-        
-        
+
         loc = self.frames[self.selected_test.get()]
         
         if not hasattr(loc, 'controls') or e.parameter not in loc.controls:
@@ -987,13 +915,10 @@ class MCVQoEGui(tk.Tk):
     def pretest(self, root_cfg):
         """Shows the pre-test-notes frame.
         
-
         Parameters
         ----------
         root_cfg : dict
             see self.get_cnf()
-
-
         """
         if root_cfg['is_simulation']:
             tech = root_cfg['SimSettings']['channel_tech']
@@ -1043,8 +968,6 @@ class MCVQoEGui(tk.Tk):
         """ Button to submit the configuration and start the measurement
         
         calls the main run() function.
-        
-
         """
         
         # update the progress screen to say 'Loading...'
@@ -1071,7 +994,6 @@ class MCVQoEGui(tk.Tk):
         -------
         cancel : bool
             True if the user cancelled the abort.
-
         """
         
         if tk.messagebox.askyesno('Abort Test',
@@ -1141,9 +1063,6 @@ class MCVQoEGui(tk.Tk):
             
             Example: rec_stop object for m2e_2loc_rx, which overrides the abort button
             to become a stop recording button
-
-        
-
         """
         self.step = step
         
@@ -1217,8 +1136,7 @@ class MCVQoEGui(tk.Tk):
         else:
             # invalid step
             raise ValueError(f'"{step}" is not a known step')
-            
-        
+
         #changes function and text of the next button
         self.set_next_btn(next_btn_txt, next_btn)
         
@@ -1233,9 +1151,6 @@ class MCVQoEGui(tk.Tk):
         """
         Clears pre-notes, post-notes, and de-highlights invalid parameters
         to prepare for the next measurement
-
-        
-
         """
         
         # clears pre_test and post_test notes
@@ -1287,11 +1202,7 @@ def set_styles():
                 background='white')
     f('McvToolTip.TFrame',
                 background='white', relief='groove')
-    
-    
-    
-    
-    
+
 #red highlight for missing or invalid controls
     
     #for Entry
@@ -1325,8 +1236,7 @@ def set_styles():
     f('Error.McvToolTip.TLabel',
       foreground='maroon',
       )
-    
-    
+
 def dpi_scaling():
     """ increases the size of everything on the gui proportional to the window size.
     
@@ -1363,7 +1273,6 @@ def dpi_scaling():
     
     root.destroy()
 
-
 # aliases
 
 dev_dly_char = 'DevDlyCharFrame'
@@ -1372,14 +1281,6 @@ accesstime = 'AccssDFrame'
 psud = 'PSuDFrame'
 intelligibility = 'IgtibyFrame'
 
-
-
-
-
-
-
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -1387,41 +1288,37 @@ intelligibility = 'IgtibyFrame'
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-main = None
-try:
-    main = Main(MCVQoEGui)
+tk_main = None
+try:    
+    tk_main = Main(MCVQoEGui)
     
     # function to update the loading-window's text
-    prog = main.win.load_progress
-    
-    
-    
+    prog = tk_main.win.load_progress
+
     import mcvqoe.base
     
     prog('Loading ABC_MRT (Intelligibility Estimator)')
     import abcmrt
     
     prog('Loading Hardware Interfaces')
-    from mcvqoe.simulation.QoEsim import QoEsim
+    from mcvqoe.simulation import QoEsim
     from mcvqoe import hardware, simulation
     
     prog('Loading Package: Mouth to Ear')
-    import m2e_gui
-    from m2e_gui import M2eFrame, DevDlyCharFrame
+    import mcvqoe.hub.m2e_gui as m2e_gui
+    from .m2e_gui import M2eFrame, DevDlyCharFrame
     
     prog('Loading Package: Access Time')
-    import accesstime_gui
-    from accesstime_gui import AccssDFrame
-    
+    import mcvqoe.hub.accesstime_gui as accesstime_gui
+    from .accesstime_gui import AccssDFrame
 
-    
     prog('Loading Package: PSuD')
-    import psud_gui
-    from psud_gui import PSuDFrame
+    import mcvqoe.hub.psud_gui as psud_gui
+    from .psud_gui import PSuDFrame
     
     prog('Loading Package: Intelligibility')
-    import intelligibility_gui
-    from intelligibility_gui import IgtibyFrame
+    import mcvqoe.hub.intelligibility_gui as intelligibility_gui
+    from .intelligibility_gui import IgtibyFrame
     
     prog('Finalizing...')
     import matplotlib
@@ -1429,44 +1326,22 @@ try:
     use_alternate_plot_rendering = True
     try:
         import PyQt5
-    except: use_alternate_plot_rendering = False
-    else:
         matplotlib.use('Qt5Agg')
+    except:
+        #there was a problem, don't do plots
+        use_alternate_plot_rendering = False
     
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     import numpy as np
-    
-    
 
 except Exception as e:
     show_error(e)
-    if main is not None:
-        main.stop()
-        main.gui_thread.stop()
+    if tk_main is not None:
+        tk_main.stop()
+        tk_main.gui_thread.stop()
         
     raise SystemExit(1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -1474,9 +1349,7 @@ except Exception as e:
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-
-
-class McvQoeAbout(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
+class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1500,7 +1373,6 @@ class McvQoeAbout(tk.Toplevel, metaclass = tk_threading.SingletonWindow):
             for i, txt in {1: a, 2:b}.items():
                 ttk.Label(self, text=txt).grid(column=i, row=index, padx=10, pady=10, sticky='W')
             index += 1
-        
 
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
@@ -1626,7 +1498,6 @@ class LeftFrame(tk.Frame):
             self.MenuVisible = True
             self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
 
-
 class MenuFrame(tk.Frame):
     """Contains the Logo frame and the Choose Test Type frame
 
@@ -1644,8 +1515,6 @@ class MenuFrame(tk.Frame):
                                            padx=10, pady=10)
         
         self.TestTypeFrame.pack(side=tk.LEFT, fill=tk.Y)
-        
-        
 
 class MenuButton(tk.Frame):
     def __init__(self, master, *args, command=None, **kwargs):
@@ -1679,8 +1548,7 @@ class TestTypeFrame(tk.Frame):
         # simulation test
         ttk.Radiobutton(self, text='Simulation Test',
                         variable=is_sim, value=True).pack(fill=tk.X)
-        
-        
+
         # hardware and simulation settings button
         self.set_btn_txtvar = tk.StringVar(value='Hardware Settings')
                
@@ -1743,12 +1611,8 @@ class TestTypeFrame(tk.Frame):
     @in_thread('GuiThread', wait=False)
     def _test_audio_on_finish(self):
         self._test_btn.state(['!disabled'])
-        
-        
-        
 
 class LogoFrame(tk.Canvas):
-
 
     def __init__(self, master, width=150, height=170, *args, **kwargs):
         super().__init__(*args,
@@ -1758,35 +1622,25 @@ class LogoFrame(tk.Canvas):
                          bg='white',
                          **kwargs)
 
-        crest = left_frame_image
-        if crest is not None:
+        with importlib.resources.path('mcvqoe.hub','pscr_logo.png') as crest:
+            if crest is not None:
 
-            img = Image.open(crest)
-            img = img.resize(
-                (width, height),
-                Image.ANTIALIAS
-            )
-            self.crestimg = ImageTk.PhotoImage(img)
-            self.create_image(
-                width // 2, height // 2 + 10,
-                image=self.crestimg
-            )
-
-
-
-
-
-
-
-
+                img = Image.open(crest)
+                img = img.resize(
+                    (width, height),
+                    Image.ANTIALIAS
+                )
+                self.crestimg = ImageTk.PhotoImage(img)
+                self.create_image(
+                    width // 2, height // 2 + 10,
+                    image=self.crestimg
+                )
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 #-------------------------The right side of the gui----------------------------
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
 
 class EmptyFrame(tk.Frame):
     """An empty frame: shown when no test is selected yet
@@ -1805,8 +1659,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
     """Replacement for the TestInfoGui. Collects pre-test notes
     
     """
-    
-    
+
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, text='Test Information', **kwargs)
         
@@ -1817,12 +1670,9 @@ class TestInfoGuiFrame(ttk.Labelframe):
             'System': 'System:',
             'Test Loc': 'Test Location:'
             }
-        
-        
+
         self.btnvars = btnvars
-        
-        
-        
+
         padx = shared.PADX
         pady = shared.PADY
         
@@ -1830,8 +1680,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
         for k, label in labels.items():
             
             self.btnvars.add_entry(k, value='')
-            
-            
+
             ttk.Label(self, text=label).grid(column=0, row=ct,
                        sticky='W', padx=padx, pady=pady)
             
@@ -1852,9 +1701,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
         #text widget expand to fit frame
         self.columnconfigure(1, weight=1)
         self.rowconfigure(ct, weight=1)
-        
-        
-        
+
 class PostTestGuiFrame(ttk.Labelframe):
     """Replacement for PostTestGui. Collects post-test notes.
     
@@ -1888,25 +1735,17 @@ class PostTestGuiFrame(ttk.Labelframe):
                 
         else:
             self.error_text.set('')
-                
-        
-       
-
-
 
 class TestProgressFrame(tk.LabelFrame):
     """Reports on the measurement's progress by handling progress_update events.
     
     see the gui_progress_update() function
-    
-    
-    
     """
-    
+
     def pack(self, *args, **kwargs):
         super().pack(*args, **kwargs)
         self.pack_configure(expand=True, fill=tk.BOTH)
-    
+
     def __init__(self, master, btnvars, *args, **kwargs):
         # a stopwatch to help estimate time remaining
         self.stopwatch = _StopWatch()
@@ -1916,28 +1755,22 @@ class TestProgressFrame(tk.LabelFrame):
         self.rec_stop = None
         self._is_paused = False
         self.warnings = []
-        
+
         self.btnvars = btnvars
-        
+
         super().__init__(master, *args, text='', **kwargs)
-        
-        
+
         #pause button
         ttk.Button(self, text='Pause', command=self.pause).pack(padx=10, pady=10)
-               
-        
+
         # text above bar
         self.primary_text = txt = tk.StringVar()
         ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
-        
-        
-        
+
         # the progress bar
         self.bar = ttk.Progressbar(self, mode='indeterminate')
         self.bar.pack(fill=tk.X, padx=10, pady=10)
-        
-        
-        
+
         #the text below the bar
         self.secondary_text = tk.StringVar()
         self.time_estimate_ = tk.StringVar()
@@ -1953,9 +1786,7 @@ class TestProgressFrame(tk.LabelFrame):
                     ):
                     
             ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
-            
-        
-    
+
     def check_for_abort(self):
         """Checks to see if the user pressed abort, and if so, aborts.
         
@@ -1967,7 +1798,7 @@ class TestProgressFrame(tk.LabelFrame):
 
 
         """
-        if main.win.step == 'aborting':
+        if tk_main.win.step == 'aborting':
             # indicate that the test should not continue
             raise Abort_by_User()
         
@@ -2007,28 +1838,24 @@ class TestProgressFrame(tk.LabelFrame):
             'status' : ('', msg)
             
             }
-        
-        
+
         if prog_type in messages:
             
             # set text based on above messages
             self.primary_text.set(messages[prog_type][0])
             self.secondary_text.set(messages[prog_type][1])
-                
-        
+
         if not num_trials:
             #make an indeterminate progress bar
             self.bar.configure(mode='indeterminate', maximum = 100)
             self.bar.start()
             self.time_estimate_.set('')
-            
-            
+
         elif prog_type in ('pre', 'proc', 'test'):
             # show current progress on a determinate progress bar
             self.bar.stop()
             self.bar.configure(value=current_trial, maximum = num_trials,
                                mode='determinate')
-            
 
             # estimate time remaining
             
@@ -2057,14 +1884,10 @@ class TestProgressFrame(tk.LabelFrame):
                     
                     # format text
                     time_est = f'{time_est}\n{time_left_set} {time_unit_set} until next pause.'
-                
 
                 # set text for time estimate
                 self.time_estimate_.set(time_est)
-        
-        
-        
-        
+
         if prog_type == 'pre':
             # remove all info from the frame to prepare for next measurement
             self.clip_name_.set('')
@@ -2086,8 +1909,7 @@ class TestProgressFrame(tk.LabelFrame):
                 w.pack()
             else:
                 w.destroy()
-            
-            
+
         elif prog_type == 'csv-update':
             self.clip_name_.set(f'Current Clip: {clip_name}')
             self.file_.set(self._trim_text(f'Storing data in: "{file}"'))
@@ -2100,9 +1922,7 @@ class TestProgressFrame(tk.LabelFrame):
             self.file_.set(self._trim_text(f'Renaming "{file}"')+
                            '\n'+
                            self._trim_text(f'to "{new_file}"'))
-        
-        
-        
+
         # if the user pressed pause button, pause
         if self._is_paused:
             self._is_paused = False
@@ -2110,11 +1930,9 @@ class TestProgressFrame(tk.LabelFrame):
             tk.messagebox.showinfo('Test Paused',
                                    'Press OK to continue.')
             self.stopwatch.start()
-            
-        
+
         return True
-    
-    
+
     @in_thread('GuiThread', except_=Abort_by_User)
     def user_check(self,
                    reason,
@@ -2126,12 +1944,9 @@ class TestProgressFrame(tk.LabelFrame):
             message = msg
         if trials:
             self.pause_after = trials
-        
-        
+
         self.check_for_abort()
-        
-        
-        
+
         # pause the stopwatch to preserve time estimate accuracy
         self.stopwatch.pause()
         
@@ -2144,8 +1959,7 @@ class TestProgressFrame(tk.LabelFrame):
             tk.messagebox.showerror('Test Paused',
                                     message+'\n\n'+
                                     'Press OK to continue.')
-            
-        
+
         # resume stopwatch
         self.stopwatch.start()
         
@@ -2251,10 +2065,7 @@ class _StopWatch:
             time_unit = 'days'
     
         return (time_left, time_unit)
-    
-    
-    
-        
+
     def _update_elapsed_time(self):
         """updates the stopwatch based on current time
 
@@ -2266,12 +2077,12 @@ class _StopWatch:
             new_elapsed = now - self.start_time
             
             self.elapsed_time = self.elapsed_time + new_elapsed
-            
-            
+ 
         self.start_time = now
         
 class WarningBox(tk.Frame):
-    """A colored warning box that shows a message and an X button
+    """
+    A colored warning box that shows a message and an X button
     """
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
@@ -2281,25 +2092,19 @@ class WarningBox(tk.Frame):
         
         ttk.Label(self, text=text, background=color).pack(
             side=tk.LEFT, padx=10, pady=10)
-        
-        
+
         self.text = text
-        
-        
+
     def __eq__(self, other):
         return isinstance(other, WarningBox) and self.text == other.text
     
     def pack(self, *args, **kwargs):
         
         super().pack(*args, side=tk.BOTTOM, fill=tk.X, **kwargs)
-        
-        
-        
-        
-
 
 class PostProcessingFrame(ttk.Frame):
-    """A frame to show results, plot data, open the output folder, etc.
+    """
+    A frame to show results, plot data, open the output folder, etc.
     
     Elements can be added to the frame using the add_element method (see below)
     """
@@ -2320,7 +2125,8 @@ class PostProcessingFrame(ttk.Frame):
     
     @in_thread('GuiThread', wait=False)
     def add_element(self, element):
-        """Adds an element to the post-processing frame
+        """
+        Adds an element to the post-processing frame
         
         Parameters
         ----------
@@ -2348,7 +2154,8 @@ class PostProcessingFrame(ttk.Frame):
     
     @in_thread('GuiThread', wait=True)
     def reset(self):
-        """Removes all elements from the post-processing-frame
+        """
+        Removes all elements from the post-processing-frame
 
         """
         
@@ -2369,14 +2176,8 @@ class PostProcessingFrame(ttk.Frame):
         except (FileNotFoundError, OSError):
             try:
                 sp.Popen(['open', dir_])
-            except (FileNotFoundError, OSError): pass
-        
-
-
-
-        
-        
-        
+            except (FileNotFoundError, OSError):
+                pass
         
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
@@ -2384,12 +2185,10 @@ class PostProcessingFrame(ttk.Frame):
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-
-
 @in_thread('MainThread', wait=False)
 def test_audio(root_cfg, on_finish=None):
-    """Button to test the audio setup
-    
+    """
+    Button to test the audio setup
 
     Parameters
     ----------
@@ -2417,42 +2216,34 @@ def test_audio(root_cfg, on_finish=None):
         if 'channel_rate' in root_cfg['SimSettings'] and root_cfg[
             'SimSettings']['channel_rate'] == 'None':
             root_cfg['SimSettings']['channel_rate'] = None
-        
-        
+
         radio_interface, ap = get_interfaces(root_cfg)
-        
-        
+
         # get selected audio file
         if 'audio_files' in cfg:
             
             fp = ''
-            
-            
-            
+
             # get individual audio file
             if cfg['audio_files'][0] and not (
                     '<' in cfg['audio_files'][0] and
                     '>' in cfg['audio_files'][0]
                     ):
-            
-                
+
                 fp = path.join(cfg['audio_path'], cfg['audio_files'][0])
-            
+
             # in case of full_audio_dir
             elif cfg['audio_path']:
-                
-                
+
                 files = [f for f in listdir(cfg['audio_path']) if path.isfile(
                     path.join(fp, f))]
-                
-                
+
                 for f in files:
                     ext = path.splitext(f)[1]
                     if ext.lower() == '.wav':
                         fp = path.join(fp, f)
                         break
-                    
-                    
+
             else:
                 # uses default file for single_play()
                 fp = None
@@ -2463,34 +2254,24 @@ def test_audio(root_cfg, on_finish=None):
         else:
             # use default file for single_play()
             fp = None
-    
-        
+
         with radio_interface as ri:
             
             # check if there is a ptt_wait to use, otherwise use default
             ptt_wait_arg = {}
             if 'ptt_wait' in cfg and not root_cfg['is_simulation']:
                 ptt_wait_arg['ptt_wait'] = cfg['ptt_wait']
-            
-            
+
             #play the audio through the system
             hardware.PTT_play.single_play(ri, ap, fp,
                     playback=root_cfg['is_simulation'], **ptt_wait_arg)
-            
-                
-                
+
     except Exception as error:
         show_error(error)
     
     if on_finish is not None:
         # call the is_finished callback
         on_finish()
-
-    
-
-
-
-
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
@@ -2501,20 +2282,17 @@ def test_audio(root_cfg, on_finish=None):
 
 @in_thread('MainThread', wait=False)
 def run(root_cfg):
-    """Runs the measurement:
+    """
+    Runs the measurement:
     
     Constructs the measure class and sets its instance variables
     based on the given configuration, collects pre-notes, runs the .run() function,
     displays the results, and handles any errors.
-    
-    
-    
 
     Parameters
     ----------
     root_cfg : dict
         the parameters to use. see MCVQoEGui.get_cnf().
-
 
     """
     
@@ -2522,8 +2300,8 @@ def run(root_cfg):
     # this may be not needed anymore???
     gc.collect(2)
     
-    ppf = main.win.frames['PostProcessingFrame']
-    tpf = main.win.frames['TestProgressFrame']
+    ppf = tk_main.win.frames['PostProcessingFrame']
+    tpf = tk_main.win.frames['TestProgressFrame']
     
     # subclasses of the measure() classes for each measurement
     constructors = {
@@ -2534,8 +2312,7 @@ def run(root_cfg):
         psud : psud_gui.PSuD_fromGui,
         intelligibility: intelligibility_gui.Igtiby_from_Gui,
             }
-    
-    
+
     # extract test configuration:
         
     # the selected measurement
@@ -2544,13 +2321,10 @@ def run(root_cfg):
     cfg = root_cfg[sel_tst]
     # is it a simulation?
     is_sim = root_cfg['is_simulation']
-    
 
-    
     #initialize test object
     my_obj = constructors[sel_tst]()
-    
-    
+
     #-------------- Begin try statement for error handling --------------------
     try:
         
@@ -2568,19 +2342,14 @@ def run(root_cfg):
             'progress_update',
             'get_post_notes',
         )
-        
-        
-        
-        
-        
+
         #--------------------------- Recovery ---------------------------------
         if sel_tst == accesstime:
             #if the program closes between now and end of function, 
             # prompt for recovery on next session.
             loadandsave.misc_cache['accesstime.need_recovery'] = True
             loadandsave.misc_cache.dump()
-        
-        
+
         if 'data_file' in cfg and cfg['data_file'] != "":
             my_obj.data_file = cfg['data_file']
             with open(my_obj.data_file, "rb") as pkl:
@@ -2612,10 +2381,7 @@ def run(root_cfg):
             # Check for value errors with instance variables
             # this is last resort and should not be needed after param_modify()
             my_obj.param_check()
-        
-        
-        
-                
+ 
         #-------------------- Setting Callbacks -------------------------------
         
         # set post_notes callback
@@ -2624,9 +2390,7 @@ def run(root_cfg):
         
         # set progress update callback
         my_obj.progress_update = gui_progress_update
-        
-        
-        
+
         if 'pause_trials' in cfg:
             #set user check callback
             my_obj.user_check = tpf.user_check
@@ -2636,12 +2400,7 @@ def run(root_cfg):
         
         # set the rec_stop for 2-location rx
         tpf.rec_stop = ap.rec_stop
-        
 
-        
-        
-
-        
         # ----------- Gather pretest notes and parameters ---------------------
         my_obj.info = get_pre_notes(root_cfg)
         if my_obj.info is None: 
@@ -2658,25 +2417,17 @@ def run(root_cfg):
             my_obj.info['PBI P_a2']=str(pcfg['P_a2'])
             my_obj.info['PBI P_r'] =str(pcfg['P_r'])
             my_obj.info['PBI interval']=str(pcfg['interval'])
-        
-        
-        
+
         #------------- Set up progress and post-process frames ----------------
         
         #show progress bar in gui
-        main.win.set_step('in-progress', extra=ap.rec_stop)
+        tk_main.win.set_step('in-progress', extra=ap.rec_stop)
         
         # clear pretest notes from window
-        main.win.clear_old_entries()
+        tk_main.win.clear_old_entries()
         
         # remove any old post-processing info from frame
         ppf.reset()
-        
-
-        
-        
-        
-        
         
         #----------------------- RUN THE TEST ---------------------------------
         
@@ -2689,12 +2440,9 @@ def run(root_cfg):
             result = my_obj.run(**recovery_kw)
             
             # prevent freezing if user is trying desperately to close window
-            if main.win._is_force_closing:
+            if tk_main.win._is_force_closing:
                 return
-            
-            
-            
-            
+
         #------------------- Show post-processing data ------------------------
         """
         use ppf.add_element() to add something to the post-processing-frame.
@@ -2702,14 +2450,11 @@ def run(root_cfg):
         see PostProcessingFrame.add_element.__doc__ for details
         
         """
-        
-        
+
         # intelligibility estimate
         if sel_tst == intelligibility:
             ppf.add_element(f'Intelligibility Estimate: {result}')
-        
-        
-        
+
         # M2e: mean, std, and plots
         elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
@@ -2734,17 +2479,12 @@ def run(root_cfg):
                 ppf.add_element(ShowPlots)
             else:
                 ppf.add_element('To show plots, please install PyQt5')
-        
-        
-        
-        
+
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
                             'collection on the receiving end')
-            
-        
-        
+
         # device delay characterization: show new device delay
         if sel_tst == dev_dly_char:
             
@@ -2755,25 +2495,14 @@ def run(root_cfg):
             if is_sim:
                 show_error(Warning('Device Delay will not be saved, '+
                                    'because this is a simulation.'))
-                
-                
-                
-                
 
-        
-        
-        
-        
-        
     # ------------------------- Error handling --------------------------------
     
     except InvalidParameter as e:
         # highlight offending parameter in red
-        main.win.show_invalid_parameter(e)
+        tk_main.win.show_invalid_parameter(e)
         return
-        
-    
-        
+
     #if the measurement was in some way aborted
     except (Abort_by_User, KeyboardInterrupt, SystemExit):
         if sel_tst == accesstime:
@@ -2781,16 +2510,14 @@ def run(root_cfg):
                             '"recovery file" entry in the configuration.')
         
     except Exception as e:
-        if main.last_error is not e:
+        if tk_main.last_error is not e:
             show_error(e)
         
         if sel_tst == accesstime:
             ppf.add_element('You may recover your test using the \n'+
                             '"recovery file" entry in the configuration.')
 
-    
-        
-    
+
     # ---------------------- Last things to do --------------------------------
     
     if sel_tst == accesstime:
@@ -2801,29 +2528,19 @@ def run(root_cfg):
     #delete radio interface (not sure if this is still needed or not)
     my_obj.ri = None
     ri = None
-    
-    
+
     # put outdir folder into frame
     try: ppf.outdir = my_obj.outdir
     except AttributeError: ppf.outdir = ''
     
     
     #show post-processing frame
-    main.win.set_step('post-process')
-    
-    
-        
-    
+    tk_main.win.set_step('post-process')
     
 # ------------------------- END OF RUN FUNCTION -------------------------------
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
-
-
-
 
 
 
@@ -2869,7 +2586,7 @@ def gui_progress_update(prog_type,
 
     """
     
-    tpf = main.win.frames['TestProgressFrame']
+    tpf = tk_main.win.frames['TestProgressFrame']
     
     return tpf.gui_progress_update(prog_type,
                                   num_trials,
@@ -2880,20 +2597,18 @@ def gui_progress_update(prog_type,
                                   file,
                                   new_file,
                                   )
-    
-    
 
 
 # ------------------- Pretest Notes and Posttest Notes ------------------------
 
 def get_pre_notes(root_cfg):
-    main.win.pretest(root_cfg)
+    tk_main.win.pretest(root_cfg)
     
     #wait for user submit or program close
-    while main.win._pre_notes_wait and not main.win._is_closing and not main.win.is_destroyed:
+    while tk_main.win._pre_notes_wait and not tk_main.win._is_closing and not tk_main.win.is_destroyed:
         time.sleep(0.1)
      
-    return main.win._pre_notes
+    return tk_main.win._pre_notes
         
 def get_post_notes(error_only=False):
     
@@ -2907,31 +2622,25 @@ def get_post_notes(error_only=False):
         #nothing to do, bye!
         return {}
     
-        
     # show post_test_gui frame
-    main.win.post_test_info = None
-    main.win.set_step('post-notes', extra=error)
+    tk_main.win.post_test_info = None
+    tk_main.win.set_step('post-notes', extra=error)
     
     
     if is_showable_error:
-        main.last_error = error
+        tk_main.last_error = error
         show_error()
     
     # wait for completion or program close
     
-    while main.win.post_test_info is None and not main.win._is_force_closing:
+    while tk_main.win.post_test_info is None and not tk_main.win._is_force_closing:
         time.sleep(0.1)
     
     # retrieve notes
-    nts = main.win.post_test_info
+    nts = tk_main.win.post_test_info
     if nts is None:
         nts = {}
     return nts
-    
-
-    
-
-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -2979,12 +2688,8 @@ def param_modify(root_cfg):
         del default_cfg['outdir']
         
         cfg.update(default_cfg)
-        
-        
-    
-    
-    
-    
+
+
     # device delay should be either entered manually or characterized.
     if 'dev_dly' in cfg:
         
@@ -3015,9 +2720,6 @@ def param_modify(root_cfg):
             )
         
         p = cfg['audio_path']
-        
-        
-        
         
         if cfg['full_audio_dir']:
             # we are finding our own audio files now
@@ -3050,8 +2752,7 @@ def param_modify(root_cfg):
                     message='Folder must contain .wav files') 
             
         else: #if not full_audio_dir
-            
-            
+
             # check: audio files should all exist
             for f in cfg['audio_files']:
                 af = path.join(p, f)
@@ -3063,8 +2764,7 @@ def param_modify(root_cfg):
                 if not path.splitext(af)[1].lower() == '.wav':
                     raise InvalidParameter('audio_files',
                         message='All audio files must be .wav files')
-                
-    
+
     
     # relative outdirs will go into the default outdir
     cfg['outdir'] = path.join(DEFAULTS[sel_tst]['outdir'], cfg['outdir'])
@@ -3076,10 +2776,8 @@ def param_modify(root_cfg):
     # turn multi-choice SaveAudio into 2 booleans
     if 'SaveAudio' in cfg:
         cfg['save_audio']    = (cfg['SaveAudio'] != 'no_audio')
-        cfg['save_tx_audio'] = (cfg['SaveAudio'] == 'all_audio')
-        
-    
-    
+        cfg['save_tx_audio'] = (cfg['SaveAudio'] == 'all_audio') 
+
     # make pause_trials an integer or np.inf
     if 'pause_trials' in cfg:
         
@@ -3095,10 +2793,7 @@ def param_modify(root_cfg):
                 else:
                     raise InvalidParameter('pause_trials',
                         message='Number of trials must be a whole number') from None
-    
-    
-    
-    
+
     # combine the 2 ptt_delays into a vector
     if '_ptt_delay_min' in cfg:
         cfg['ptt_delay'] = [cfg['_ptt_delay_min']]
@@ -3113,13 +2808,6 @@ def param_modify(root_cfg):
         try:
             cfg['time_expand'].append(float(cfg['_time_expand_f']))
         except ValueError:pass
-        
-        
-        
-        
-        
-        
-    
     
     # check auto_stop with ptt_rep
     if ('auto_stop' in cfg) and ('ptt_rep' in cfg) and cfg['auto_stop'] and (
@@ -3277,8 +2965,6 @@ def get_interfaces(root_cfg):
         
         ri = sim
         ap = sim
-        
-        
     
     else:
         hdw_cfg = root_cfg['HdwSettings']
@@ -3313,15 +2999,10 @@ def get_interfaces(root_cfg):
     
     return ri, ap
 
-
-
     
 class _FakeRadioInterface:
     def __enter__(self, *args, **kwargs): return self
     def __exit__(self, *args, **kwargs): return False
-
-
-
 
 def _set_values_from_cfg(my_obj, cfg):
     """sets the attributes of an object using the keys of a dict
@@ -3338,13 +3019,6 @@ def _set_values_from_cfg(my_obj, cfg):
         if hasattr(my_obj, k):
             setattr(my_obj, k, v)
 
-
-
-
-
-        
-        
-    
 def _get_dev_dly(ignore_error = True):
     """
     
@@ -3370,7 +3044,7 @@ def _get_dev_dly(ignore_error = True):
         dev_dly = 0
     else:
         # put value into dev_dly entry
-        main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
+        tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
         return dev_dly
     
@@ -3402,14 +3076,10 @@ def calculate_dev_dly(test_obj, is_simulation = False):
         loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
         
         # put value into field
-        main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
+        tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
     
     return dev_dly
-    
-    
-
-
 
 class GuiRecStop:
     """uses an event generated in the GuiThread to stop the recording in the main-thread
@@ -3433,18 +3103,6 @@ class GuiRecStop:
     def is_done(self):
         
         return self._stopped
-        
-
-
-
-
-
-
-
-
-
-
-
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -3590,10 +3248,6 @@ initial_measure_objects = {
     'HdwSettings': shared._HdwPrototype()
     }
 
-
-
-
-
 # ----------------------load default values from objects-----------------------
 DEFAULTS = {}
 for name_, key_group in control_list.items():
@@ -3651,7 +3305,6 @@ for name_, cfg in DEFAULTS.items():
             cfg['SaveAudio'] = 'rx_only'
 
 
-
 #values that require more than one control
 DEFAULTS[accesstime]['_ptt_delay_min'] = initial_measure_objects[
     accesstime].ptt_delay[0]
@@ -3686,41 +3339,24 @@ for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
     DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
 
 
-
 # the following do not have a default value
 DEFAULTS['SimSettings']['_enable_PBI'] = False
-
-
-
 
 
 #free initial objects
 del initial_measure_objects
 del obj
 
-
-
-
-
-
-
-
-
-
-
-
-        
-
-if __name__ == '__main__':
-    
-
+def main():
     try:
-        main.win.init_as_mainwindow()
+        tk_main.win.init_as_mainwindow()
     except:
         show_error()
         raise SystemExit(1)
     
-    main.main_loop()
+    tk_main.main_loop()
 
+if __name__ == '__main__':
+    main()
 else:
-    main.win.withdraw()
+    tk_main.win.withdraw()

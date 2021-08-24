@@ -11,25 +11,26 @@ import mcvqoe.accesstime as adly
 
 import tkinter as tk
 
-import shared
-from shared import TestCfgFrame, SubCfgFrame
-import loadandsave
+from .shared import TestCfgFrame, SubCfgFrame
+from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride
+from .shared import advanced as shared_advanced
+from .loadandsave import Vec1Or2Var
 
 
 #------------------------------controls--------------------------------------
 
-from shared import audio_files, outdir, ptt_gap, time_expand
-from shared import BgNoise
-from shared import dev_dly, RadioCheck, audio_path, SaveAudio
+from .shared import audio_files, outdir, ptt_gap, time_expand
+from .shared import BgNoise
+from .shared import dev_dly, RadioCheck, audio_path, SaveAudio
 
 
         
-class auto_stop(shared.LabeledCheckbox):
+class auto_stop(LabeledCheckbox):
     """Enable checking for access and stopping the test when it is detected."""
     
     middle_text = 'Enable Auto-Stop'
     
-class stop_rep(shared.LabeledNumber):
+class stop_rep(LabeledNumber):
     """Number of times that access must be detected in a row before the
     test is completed."""
     
@@ -46,7 +47,7 @@ class stop_rep(shared.LabeledNumber):
 class ptt_delay(SubCfgFrame):
     text = 'PTT Delay (sec)'
     
-    variable_type = loadandsave.Vec1Or2Var
+    variable_type = Vec1Or2Var
     
     def get_controls(self):
         return (
@@ -54,7 +55,7 @@ class ptt_delay(SubCfgFrame):
             _ptt_delay_max
             )
     
-class _ptt_delay_min(shared.LabeledNumber):
+class _ptt_delay_min(LabeledNumber):
     """The smallest ptt_delay"""
     
     text = 'Min Delay Time:'
@@ -62,7 +63,7 @@ class _ptt_delay_min(shared.LabeledNumber):
     increment = 0.01
     
     
-class _ptt_delay_max(shared.LabeledNumber):
+class _ptt_delay_max(LabeledNumber):
     """The largest ptt_delay. By default, this will be set to the end
     of the first word in the clip."""
     
@@ -71,7 +72,7 @@ class _ptt_delay_max(shared.LabeledNumber):
     increment = 0.01
     
 
-class ptt_step(shared.LabeledNumber):
+class ptt_step(LabeledNumber):
     """Time difference in seconds between successive ptt_delays."""
     
     text = 'Time Increase per Step:'
@@ -80,7 +81,7 @@ class ptt_step(shared.LabeledNumber):
     
 
 
-class ptt_rep(shared.LabeledNumber):
+class ptt_rep(LabeledNumber):
     """Number of times to repeat a given PTT delay value. If auto_stop is
     used, this must be greater than 15."""
     
@@ -89,7 +90,7 @@ class ptt_rep(shared.LabeledNumber):
     
 
     
-class s_thresh(shared.LabeledNumber):
+class s_thresh(LabeledNumber):
     """The threshold of A-weight power for P2, in dB, below which a trial
     is considered to have no audio."""
     
@@ -98,14 +99,14 @@ class s_thresh(shared.LabeledNumber):
     min_ = -2**15 +1
     max_ = 0
 
-class s_tries(shared.LabeledNumber):
+class s_tries(LabeledNumber):
     """Number of times to retry the test before giving up."""
     
     text = 'Retry Attempts:'
     
     
     
-class data_file(shared.EntryWithButton):
+class data_file(EntryWithButton):
     """A temporary datafile to use to restart a test. If this is
     given all other parameters are ignored and the settings of the original
     test are used."""
@@ -178,7 +179,7 @@ class AccssDFrame(TestCfgFrame):
 
 # -------------------------- The advanced window ------------------------------
 
-class AccDlyAdvanced(shared.AdvancedConfigGUI):
+class AccDlyAdvanced(AdvancedConfigGUI):
     text = 'Access Delay - Advanced'
     
     def get_controls(self):
@@ -194,7 +195,7 @@ class AccDlyAdvanced(shared.AdvancedConfigGUI):
             )
         
     
-class advanced(shared.advanced):
+class advanced(shared_advanced):
     toplevel = AccDlyAdvanced
     
     
@@ -206,7 +207,7 @@ class advanced(shared.advanced):
 
 
 
-class Access_fromGui(shared.SignalOverride, adly.measure):
+class Access_fromGui(SignalOverride, adly.measure):
     
     def run(self, recovery = False):
         super().run(recovery)
