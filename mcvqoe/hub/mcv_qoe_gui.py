@@ -32,6 +32,7 @@ import _tkinter
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
+from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
 
@@ -1357,6 +1358,7 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         self.title('Version Information')
         
         text = {
+            'GUI:'  : gui_version,
             'Mouth to ear:'  : m2e_gui.m2e.version,
             'Access time:'   : accesstime_gui.adly.version,
             'PSuD:'          : psud_gui.psud.version,
