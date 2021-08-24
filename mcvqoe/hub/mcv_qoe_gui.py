@@ -3114,130 +3114,6 @@ class GuiRecStop:
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
-# declare values here to pull default values from measure (or interface) class
-control_list = {
-    'EmptyFrame': [],
-    
-    'TestInfoGuiFrame': [
-            'Test Type',
-            'Tx Device',
-            'Rx Device',
-            'System',
-            'Test Loc'
-            ],
-    
-    'PostTestGuiFrame': [],
-    
-    'TestProgressFrame': [],
-    
-    'PostProcessingFrame': [],
-    
-    
-    dev_dly_char: [
-        'audio_files',
-        'audio_path',
-        'bgnoise_file',
-        'bgnoise_volume',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'test',
-        'trials',
-        'save_tx_audio',
-        'save_audio',
-    ],
-    
-    m2e: [
-        'audio_files',
-        'audio_path',
-        'bgnoise_file',
-        'bgnoise_volume',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'test',
-        'trials',
-        'save_tx_audio',
-        'save_audio',
-        'save_tx_audio',
-        'save_audio',
-    ],
-
-    accesstime: [
-        'audio_files',
-        'audio_path',
-        'audio_path',
-        'auto_stop',
-        'bgnoise_file',
-        'bgnoise_volume',
-        'data_file',
-        'outdir',
-        'ptt_gap',
-        'ptt_rep',
-        'ptt_step',
-        's_thresh',
-        's_tries',
-        'stop_rep',
-        'pause_trials',
-        'save_tx_audio',
-        'save_audio',
-    ],
-    
-    psud : [
-        'audio_files',
-        'audio_path',
-        'audio_path',
-        'trials',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'm2e_min_corr',
-        'intell_est',
-        'save_tx_audio',
-        'save_audio',
-    ],
-    
-    intelligibility: [
-        'trials',
-        'outdir',
-        'ptt_wait',
-        'ptt_gap',
-        'pause_trials',
-        'intell_est',
-        'save_tx_audio',
-        'save_audio',
-    ],
-        
-    'SimSettings': [
-        'overplay',
-        'channel_tech',
-        'channel_rate',
-        'm2e_latency',
-        'access_delay',
-        'rec_snr',
-        'PTT_sig_freq',
-        'PTT_sig_aplitude',
-        
-        '_enable_PBI',
-        'P_a1',
-        'P_a2',
-        'P_r',
-        'interval',
-        
-        '_impairment_plugin',
-        
-    ],
-    
-    'HdwSettings' : [
-        
-        'overplay',
-        'radioport',
-        'dev_dly',
-        'blocksize',
-        'buffersize',
-        ],
-}
-
 #empty dictionary for defaults, filled with load_defaults
 DEFAULTS = {}
 
@@ -3247,6 +3123,130 @@ def load_defaults():
     if DEFAULTS:
         print('Defaults have alread been loaded!')
         return
+
+    # declare values here to pull default values from measure (or interface) class
+    control_list = {
+        'EmptyFrame': [],
+        
+        'TestInfoGuiFrame': [
+                'Test Type',
+                'Tx Device',
+                'Rx Device',
+                'System',
+                'Test Loc'
+                ],
+        
+        'PostTestGuiFrame': [],
+        
+        'TestProgressFrame': [],
+        
+        'PostProcessingFrame': [],
+        
+        
+        dev_dly_char: [
+            'audio_files',
+            'audio_path',
+            'bgnoise_file',
+            'bgnoise_volume',
+            'outdir',
+            'ptt_wait',
+            'ptt_gap',
+            'test',
+            'trials',
+            'save_tx_audio',
+            'save_audio',
+        ],
+        
+        m2e: [
+            'audio_files',
+            'audio_path',
+            'bgnoise_file',
+            'bgnoise_volume',
+            'outdir',
+            'ptt_wait',
+            'ptt_gap',
+            'test',
+            'trials',
+            'save_tx_audio',
+            'save_audio',
+            'save_tx_audio',
+            'save_audio',
+        ],
+
+        accesstime: [
+            'audio_files',
+            'audio_path',
+            'audio_path',
+            'auto_stop',
+            'bgnoise_file',
+            'bgnoise_volume',
+            'data_file',
+            'outdir',
+            'ptt_gap',
+            'ptt_rep',
+            'ptt_step',
+            's_thresh',
+            's_tries',
+            'stop_rep',
+            'pause_trials',
+            'save_tx_audio',
+            'save_audio',
+        ],
+        
+        psud : [
+            'audio_files',
+            'audio_path',
+            'audio_path',
+            'trials',
+            'outdir',
+            'ptt_wait',
+            'ptt_gap',
+            'm2e_min_corr',
+            'intell_est',
+            'save_tx_audio',
+            'save_audio',
+        ],
+        
+        intelligibility: [
+            'trials',
+            'outdir',
+            'ptt_wait',
+            'ptt_gap',
+            'pause_trials',
+            'intell_est',
+            'save_tx_audio',
+            'save_audio',
+        ],
+            
+        'SimSettings': [
+            'overplay',
+            'channel_tech',
+            'channel_rate',
+            'm2e_latency',
+            'access_delay',
+            'rec_snr',
+            'PTT_sig_freq',
+            'PTT_sig_aplitude',
+            
+            '_enable_PBI',
+            'P_a1',
+            'P_a2',
+            'P_r',
+            'interval',
+            
+            '_impairment_plugin',
+            
+        ],
+        
+        'HdwSettings' : [
+            
+            'overplay',
+            'radioport',
+            'dev_dly',
+            'blocksize',
+            'buffersize',
+            ],
+    }
 
     # the objects to pull the default values from
     initial_measure_objects = {
