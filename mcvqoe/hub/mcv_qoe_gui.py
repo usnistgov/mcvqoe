@@ -96,10 +96,6 @@ class MCVQoEGui(tk.Tk):
         
         self.geometry(f'{w}x{h}+{x}+{y}')
 
-        #TODO : make this actually work! right now this code runs on import which 
-        #basically happens when importlib.resource.path is called
-        #if importlib.resources.is_resource('mcvqoe.hub','MCV-sm.ico'):
-
         with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
             if icon:
                 #set the title- and taskbar icon
