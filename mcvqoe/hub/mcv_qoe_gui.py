@@ -1388,8 +1388,8 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
             'PSuD:'          : loader.psud_gui.psud.version,
             'Intelligibility': loader.intelligibility_gui.igtiby.version,
             
-            'MCV QoE Base Library:': mcvqoe.base.version,
-            'ABC MRT:'             : abcmrt.version,
+            'MCV QoE Base Library:': loader.mcvqoe_base.version,
+            'ABC MRT:'             : loader.abcmrt.version,
             #'Hardware Interface:'  : loader.hardware.version,
             #'Simulation Interface:':loader.simulation.version,
             }
