@@ -99,13 +99,13 @@ class MCVQoEGui(tk.Tk):
         #TODO : make this actually work! right now this code runs on import which 
         #basically happens when importlib.resource.path is called
         #if importlib.resources.is_resource('mcvqoe.hub','MCV-sm.ico'):
-        if False:
-            with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
-                if icon:
-                    #set the title- and taskbar icon
-                    self.iconbitmap(icon)
-                else:
-                    print('Could not find icon file')
+
+        with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+            if icon:
+                #set the title- and taskbar icon
+                self.iconbitmap(icon)
+            else:
+                print('Could not find icon file')
         
         # when the user closes the window
         self.protocol("WM_DELETE_WINDOW", self.on_close)
