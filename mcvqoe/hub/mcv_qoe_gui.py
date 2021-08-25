@@ -46,6 +46,7 @@ from os import path, listdir
 import gc
 import subprocess as sp
 import traceback
+import numpy as np
 
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
@@ -300,12 +301,12 @@ class MCVQoEGui(tk.Tk):
             TestProgressFrame,
             PostProcessingFrame,
             
-            DevDlyCharFrame,
+            loader.DevDlyCharFrame,
             
-            M2eFrame,
-            AccssDFrame,
-            PSuDFrame,
-            IgtibyFrame,
+            loader.M2eFrame,
+            loader.AccssDFrame,
+            loader.PSuDFrame,
+            loader.IgtibyFrame,
         ]
         
         # frames from the above can be copied in here to give them scrollbar
@@ -348,10 +349,10 @@ class MCVQoEGui(tk.Tk):
         
         # which frames should set the minimum size
         important_frame_types = (
-            DevDlyCharFrame,
-            M2eFrame,
-            PSuDFrame,
-            IgtibyFrame,
+            loader.DevDlyCharFrame,
+            loader.M2eFrame,
+            loader.PSuDFrame,
+            loader.IgtibyFrame,
         )
 
         # get screen dimensions
@@ -567,10 +568,10 @@ class MCVQoEGui(tk.Tk):
             show_error(RuntimeError('Hardware Settings were not saved.'))
         
         # end the main-thread's event loop
-        tk_main.stop()
+        loader.tk_main.stop()
         
         #waits for main thread to close gracefully
-        while tk_main.is_running:
+        while loader.tk_main.is_running:
 
             # if get_post_notes() gets called, or if the measurement is aborting,
                 # wait for user to enter notes post notes
@@ -605,7 +606,7 @@ class MCVQoEGui(tk.Tk):
             # submit post notes to prevent freeze.
             self._post_test_submit()
         
-        if tk_main.is_running:
+        if loader.tk_main.is_running:
             # keep calling this function until the main-thread event loop stops
             self.after(50, self._wait_to_destroy)
             
@@ -1289,60 +1290,87 @@ intelligibility = 'IgtibyFrame'
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-tk_main = None
-try:    
-    tk_main = Main(MCVQoEGui)
-    
-    # function to update the loading-window's text
-    prog = tk_main.win.load_progress
 
-    import mcvqoe.base
-    
-    prog('Loading ABC_MRT (Intelligibility Estimator)')
-    import abcmrt
-    
-    prog('Loading Hardware Interfaces')
-    from mcvqoe.simulation import QoEsim
-    from mcvqoe import hardware, simulation
-    
-    prog('Loading Package: Mouth to Ear')
-    import mcvqoe.hub.m2e_gui as m2e_gui
-    from .m2e_gui import M2eFrame, DevDlyCharFrame
-    
-    prog('Loading Package: Access Time')
-    import mcvqoe.hub.accesstime_gui as accesstime_gui
-    from .accesstime_gui import AccssDFrame
+class ImportLoader():
+    def __init__(self):
+        self.tk_main = None
 
-    prog('Loading Package: PSuD')
-    import mcvqoe.hub.psud_gui as psud_gui
-    from .psud_gui import PSuDFrame
-    
-    prog('Loading Package: Intelligibility')
-    import mcvqoe.hub.intelligibility_gui as intelligibility_gui
-    from .intelligibility_gui import IgtibyFrame
-    
-    prog('Finalizing...')
-    import matplotlib
-    #alternate rendering for pyplot to avoid conflicts with tkinter
-    use_alternate_plot_rendering = True
-    try:
-        import PyQt5
-        matplotlib.use('Qt5Agg')
-    except:
-        #there was a problem, don't do plots
-        use_alternate_plot_rendering = False
-    
-    from matplotlib.figure import Figure
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    import numpy as np
+    def measure_imports(self):
+        import_progress = {
+            'Base Libraries' : {
+                                'mcvqoe_base' : 'mcvqoe.base',
+                                },
+            'ABC_MRT (Intelligibility Estimator)' : {'abcmrt' : 'abcmrt'},
+            'Loading Hardware Interfaces' : {
+                                              'simulation' : 'mcvqoe.simulation',
+                                              'hardware' : 'mcvqoe.hardware',
+                                            },
+            'Mouth 2 Ear' : {
+                              'm2e_gui' : 'mcvqoe.hub.m2e_gui',
+                              'DevDlyCharFrame' : ('mcvqoe.hub.m2e_gui','DevDlyCharFrame'),
+                              'M2eFrame' : ('mcvqoe.hub.m2e_gui','M2eFrame'),
+                            },
+            'Access Time' : {
+                             'accesstime_gui' : 'mcvqoe.hub.accesstime_gui',
+                             'AccssDFrame' : ('mcvqoe.hub.accesstime_gui','AccssDFrame'),
+                            },
+            'PSuD' : {
+                        'psud_gui' : 'mcvqoe.hub.psud_gui',
+                        'PSuDFrame' : ('mcvqoe.hub.psud_gui','PSuDFrame'),
+                     },
+            'Intelligibility' : {
+                                 'intelligibility_gui' : 'mcvqoe.hub.intelligibility_gui',
+                                 'IgtibyFrame' : ('mcvqoe.hub.intelligibility_gui','IgtibyFrame'),
+                                },
+            'Plotting' : {
+                            'Figure' : ('matplotlib.figure','Figure'),
+                            'FigureCanvasTkAgg' : ('matplotlib.backends.backend_tkagg','FigureCanvasTkAgg'),
+                         },
+        }
 
-except Exception as e:
-    show_error(e)
-    if tk_main is not None:
-        tk_main.stop()
-        tk_main.gui_thread.stop()
-        
-    raise SystemExit(1)
+        try:
+            self.tk_main = Main(MCVQoEGui)
+
+            # function to update the loading-window's text
+            prog = self.tk_main.win.load_progress
+
+            for step in import_progress:
+                prog(f'Loading : {step}...')
+
+                for name in import_progress[step]:
+                    source = import_progress[step][name]
+                    if isinstance(source, tuple):
+                        module = source[0]
+                        member = source[1]
+                        value = getattr(importlib.import_module(module), member)
+                    else:
+                        value = importlib.import_module(source)
+                    setattr(self, name, value)
+
+            prog('Finalizing...')
+            import matplotlib
+            #alternate rendering for pyplot to avoid conflicts with tkinter
+            loader.use_alternate_plot_rendering = True
+            try:
+                #TODO : figure out why this doesn't seem to work now???
+                #also TODO : fix this abomination of using two GUI toolkits
+                import PyQt5
+                matplotlib.use('Qt5Agg')
+            except Exception as e:
+                print(f'Error while switching to Qt5Agg backend : \'{e}\' plotting not enabled')
+                #there was a problem, don't do plots
+                self.use_alternate_plot_rendering = False
+
+        except Exception as e:
+            show_error(e)
+            if self.tk_main is not None:
+                self.tk_main.stop()
+                self.tk_main.gui_thread.stop()
+
+            raise SystemExit(1)
+
+
+loader = ImportLoader()
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -1359,15 +1387,15 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         
         text = {
             'GUI:'  : gui_version,
-            'Mouth to ear:'  : m2e_gui.m2e.version,
-            'Access time:'   : accesstime_gui.adly.version,
-            'PSuD:'          : psud_gui.psud.version,
-            'Intelligibility': intelligibility_gui.igtiby.version,
+            'Mouth to ear:'  : loader.m2e_gui.m2e.version,
+            'Access time:'   : loader.accesstime_gui.adly.version,
+            'PSuD:'          : loader.psud_gui.psud.version,
+            'Intelligibility': loader.intelligibility_gui.igtiby.version,
             
             'MCV QoE Base Library:': mcvqoe.base.version,
             'ABC MRT:'             : abcmrt.version,
-            #'Hardware Interface:'  : hardware.version,
-            #'Simulation Interface:': simulation.version,
+            #'Hardware Interface:'  : loader.hardware.version,
+            #'Simulation Interface:':loader.simulation.version,
             }
         
         index = 0
@@ -1800,7 +1828,7 @@ class TestProgressFrame(tk.LabelFrame):
 
 
         """
-        if tk_main.win.step == 'aborting':
+        if loader.tk_main.win.step == 'aborting':
             # indicate that the test should not continue
             raise Abort_by_User()
         
@@ -2138,8 +2166,8 @@ class PostProcessingFrame(ttk.Frame):
 
         """
         
-        if isinstance(element, Figure):
-            canvas = FigureCanvasTkAgg(element, master=self)
+        if isinstance(element, loader.Figure):
+            canvas = loader.FigureCanvasTkAgg(element, master=self)
             widget = canvas.get_tk_widget()
             canvas.draw()
             self.canvasses.append(widget)
@@ -2265,7 +2293,7 @@ def test_audio(root_cfg, on_finish=None):
                 ptt_wait_arg['ptt_wait'] = cfg['ptt_wait']
 
             #play the audio through the system
-            hardware.PTT_play.single_play(ri, ap, fp,
+            loader.hardware.PTT_play.single_play(ri, ap, fp,
                     playback=root_cfg['is_simulation'], **ptt_wait_arg)
 
     except Exception as error:
@@ -2302,17 +2330,17 @@ def run(root_cfg):
     # this may be not needed anymore???
     gc.collect(2)
     
-    ppf = tk_main.win.frames['PostProcessingFrame']
-    tpf = tk_main.win.frames['TestProgressFrame']
+    ppf = loader.tk_main.win.frames['PostProcessingFrame']
+    tpf = loader.tk_main.win.frames['TestProgressFrame']
     
     # subclasses of the measure() classes for each measurement
     constructors = {
-        dev_dly_char : m2e_gui.DevChar_fromGui,
+        dev_dly_char : loader.m2e_gui.DevChar_fromGui,
         
-        m2e: m2e_gui.M2E_fromGui,
-        accesstime: accesstime_gui.Access_fromGui,
-        psud : psud_gui.PSuD_fromGui,
-        intelligibility: intelligibility_gui.Igtiby_from_Gui,
+        m2e: loader.m2e_gui.M2E_fromGui,
+        accesstime: loader.accesstime_gui.Access_fromGui,
+        psud : loader.psud_gui.PSuD_fromGui,
+        intelligibility: loader.intelligibility_gui.Igtiby_from_Gui,
             }
 
     # extract test configuration:
@@ -2423,10 +2451,10 @@ def run(root_cfg):
         #------------- Set up progress and post-process frames ----------------
         
         #show progress bar in gui
-        tk_main.win.set_step('in-progress', extra=ap.rec_stop)
+        loader.tk_main.win.set_step('in-progress', extra=ap.rec_stop)
         
         # clear pretest notes from window
-        tk_main.win.clear_old_entries()
+        loader.tk_main.win.clear_old_entries()
         
         # remove any old post-processing info from frame
         ppf.reset()
@@ -2442,7 +2470,7 @@ def run(root_cfg):
             result = my_obj.run(**recovery_kw)
             
             # prevent freezing if user is trying desperately to close window
-            if tk_main.win._is_force_closing:
+            if loader.tk_main.win._is_force_closing:
                 return
 
         #------------------- Show post-processing data ------------------------
@@ -2466,7 +2494,7 @@ def run(root_cfg):
             ppf.add_element("StD: %.2fus" % std)
             
             # plots will leak memory if this is false.
-            if use_alternate_plot_rendering:
+            if loader.use_alternate_plot_rendering:
                 
                 #create "show plots" button
                 class ShowPlots(ttk.Button):
@@ -2502,7 +2530,7 @@ def run(root_cfg):
     
     except InvalidParameter as e:
         # highlight offending parameter in red
-        tk_main.win.show_invalid_parameter(e)
+        loader.tk_main.win.show_invalid_parameter(e)
         return
 
     #if the measurement was in some way aborted
@@ -2512,7 +2540,7 @@ def run(root_cfg):
                             '"recovery file" entry in the configuration.')
         
     except Exception as e:
-        if tk_main.last_error is not e:
+        if loader.tk_main.last_error is not e:
             show_error(e)
         
         if sel_tst == accesstime:
@@ -2537,7 +2565,7 @@ def run(root_cfg):
     
     
     #show post-processing frame
-    tk_main.win.set_step('post-process')
+    loader.tk_main.win.set_step('post-process')
     
 # ------------------------- END OF RUN FUNCTION -------------------------------
 
@@ -2588,7 +2616,7 @@ def gui_progress_update(prog_type,
 
     """
     
-    tpf = tk_main.win.frames['TestProgressFrame']
+    tpf = loader.tk_main.win.frames['TestProgressFrame']
     
     return tpf.gui_progress_update(prog_type,
                                   num_trials,
@@ -2604,13 +2632,13 @@ def gui_progress_update(prog_type,
 # ------------------- Pretest Notes and Posttest Notes ------------------------
 
 def get_pre_notes(root_cfg):
-    tk_main.win.pretest(root_cfg)
+    loader.tk_main.win.pretest(root_cfg)
     
     #wait for user submit or program close
-    while tk_main.win._pre_notes_wait and not tk_main.win._is_closing and not tk_main.win.is_destroyed:
+    while loader.tk_main.win._pre_notes_wait and not loader.tk_main.win._is_closing and not loader.tk_main.win.is_destroyed:
         time.sleep(0.1)
      
-    return tk_main.win._pre_notes
+    return loader.tk_main.win._pre_notes
         
 def get_post_notes(error_only=False):
     
@@ -2625,21 +2653,21 @@ def get_post_notes(error_only=False):
         return {}
     
     # show post_test_gui frame
-    tk_main.win.post_test_info = None
-    tk_main.win.set_step('post-notes', extra=error)
+    loader.tk_main.win.post_test_info = None
+    loader.tk_main.win.set_step('post-notes', extra=error)
     
     
     if is_showable_error:
-        tk_main.last_error = error
+        loader.tk_main.last_error = error
         show_error()
     
     # wait for completion or program close
     
-    while tk_main.win.post_test_info is None and not tk_main.win._is_force_closing:
+    while loader.tk_main.win.post_test_info is None and not loader.tk_main.win._is_force_closing:
         time.sleep(0.1)
     
     # retrieve notes
-    nts = tk_main.win.post_test_info
+    nts = loader.tk_main.win.post_test_info
     if nts is None:
         nts = {}
     return nts
@@ -2929,7 +2957,7 @@ def get_interfaces(root_cfg):
     # in case of simulation test
     if is_sim:
         
-        sim = QoEsim(**channels)
+        sim = loader.simulation.QoEsim(**channels)
         
         _set_values_from_cfg(sim, sim_cfg)
         
@@ -2953,7 +2981,7 @@ def get_interfaces(root_cfg):
                 
         if sim_cfg['_enable_PBI']:
             
-            prob=simulation.PBI()
+            prob=loader.simulation.PBI()
             
             prob.P_a1=sim_cfg['P_a1']
             prob.P_a2=sim_cfg['P_a2']
@@ -2982,10 +3010,10 @@ def get_interfaces(root_cfg):
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
-            ri = hardware.RadioInterface(radioport)
+            ri = loader.hardware.RadioInterface(radioport)
         
         
-        ap = hardware.AudioPlayer(**channels)
+        ap = loader.hardware.AudioPlayer(**channels)
         
             
             
@@ -3046,7 +3074,7 @@ def _get_dev_dly(ignore_error = True):
         dev_dly = 0
     else:
         # put value into dev_dly entry
-        tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
+        loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
         return dev_dly
     
@@ -3078,7 +3106,7 @@ def calculate_dev_dly(test_obj, is_simulation = False):
         loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
         
         # put value into field
-        tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
+        loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
     
     
     return dev_dly
@@ -3250,11 +3278,11 @@ def load_defaults():
 
     # the objects to pull the default values from
     initial_measure_objects = {
-        dev_dly_char: m2e_gui.DevChar_Defaults(),
-        m2e: m2e_gui.m2e.measure(),
-        accesstime: accesstime_gui.adly.measure(),
-        psud : psud_gui.psud.measure(),
-        intelligibility: intelligibility_gui.igtiby.measure(),
+        dev_dly_char: loader.m2e_gui.DevChar_Defaults(),
+        m2e: loader.m2e_gui.m2e.measure(),
+        accesstime: loader.accesstime_gui.adly.measure(),
+        psud : loader.psud_gui.psud.measure(),
+        intelligibility: loader.intelligibility_gui.igtiby.measure(),
         'SimSettings': shared._SimPrototype(),
         'HdwSettings': shared._HdwPrototype()
         }
@@ -3345,18 +3373,20 @@ def load_defaults():
 
 
 def main():
+
+    #import measurement things
+    loader.measure_imports()
+
     #load default values from measurements
     load_defaults()
 
     try:
-        tk_main.win.init_as_mainwindow()
-    except:
+        loader.tk_main.win.init_as_mainwindow()
+    except e:
         show_error()
         raise SystemExit(1)
     
-    tk_main.main_loop()
+    loader.tk_main.main_loop()
 
 if __name__ == '__main__':
     main()
-else:
-    tk_main.win.withdraw()
