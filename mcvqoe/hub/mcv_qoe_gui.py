@@ -88,8 +88,13 @@ class MCVQoEGui(tk.Tk):
         screenw = self.winfo_screenwidth()
         screenh = self.winfo_screenheight()
         
+        #get height of text
+        txt_h = tk.font.Font(font='TkDefaultFont').metrics('linespace')
+        #make sure we have room
+        txt_h *= 2
+
         w = 470
-        h = 290
+        h = 250 + txt_h
         
         x = (screenw - w) // 2
         y = (screenh - h) // 2
@@ -110,7 +115,7 @@ class MCVQoEGui(tk.Tk):
         dpi_scaling()
         
         #add MCV sticker logo
-        sticker = StickerFrame(self, width=w, height=h-30)
+        sticker = StickerFrame(self, width = w, height = h - txt_h)
         sticker.pack()
         
         self.text = tk.StringVar(value='Loading Libraries...')
