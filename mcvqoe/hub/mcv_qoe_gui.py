@@ -88,8 +88,8 @@ class MCVQoEGui(tk.Tk):
         screenw = self.winfo_screenwidth()
         screenh = self.winfo_screenheight()
         
-        w = 400
-        h = 200
+        w = 470
+        h = 290
         
         x = (screenw - w) // 2
         y = (screenh - h) // 2
@@ -109,9 +109,13 @@ class MCVQoEGui(tk.Tk):
         # set the dpi scaling based on the window size
         dpi_scaling()
         
+        #add MCV sticker logo
+        sticker = StickerFrame(self, width=w, height=h-30)
+        sticker.pack()
+        
         self.text = tk.StringVar(value='Loading Libraries...')
         ttk.Label(self, textvariable = self.text).pack(
-            side=tk.BOTTOM,pady=30)
+            side=tk.BOTTOM)
         
     def load_progress(self, text):
         self.text.set(text)
@@ -1168,6 +1172,28 @@ class MCVQoEGui(tk.Tk):
         self._red_controls = []
         
 # --------------------- END OF CLASS MCVQOEGUI -------------------------------
+
+#sticker frame for MCV logo on loading screen
+class StickerFrame(tk.Canvas):
+
+    def __init__(self, master, width=150, height=170, *args, **kwargs):
+        super().__init__(*args,
+                         width=width,
+                         height=height,
+                         master=master,
+                         **kwargs)
+        
+        try:
+            with importlib.resources.path('mcvqoe.hub','MCV-logo.png') as sticker:
+                self.stickerimg = ImageTk.PhotoImage(file=sticker)
+                self.create_image(
+                    width // 2, height // 2 + 10,
+                    image=self.stickerimg
+                )
+        except FileNotFoundError:
+            #fallback text
+            self.create_text(width // 2, height // 2 + 10,
+                        text="MCV logo not found")
 
 
 # -------------------------------appearance-----------------------------------
