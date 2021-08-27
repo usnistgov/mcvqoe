@@ -986,11 +986,24 @@ class audio_path(EntryWithButton):
                 f'{self.master.__class__.__name__}.audio_path',
                 path_,
                 )
-            
-            
-            
-            
-            
+
+
+class Audio_Set(LabeledControl):
+    """Default audio set to use for measurement, if applicable."""
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        self.text = 'Audio Set:'
+        self.MCtrl = ttk.Menubutton
+        self.do_font_scaling = False
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+
+        self.m_ctrl.configure(menu=self.menu)
+
+
 class trials(LabeledNumber):
     """Number of trials to use for test."""
     

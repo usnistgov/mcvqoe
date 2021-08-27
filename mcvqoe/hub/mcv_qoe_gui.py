@@ -2759,7 +2759,6 @@ def param_modify(root_cfg):
             message='Make sure to calibrate your device delay (recommended)\n\n'+
             'Or, enter your known device delay here.')
         
-    
     # audio files should exist and should be .wav files
     if 'audio_files' in cfg and 'audio_path' in cfg:
         
@@ -3248,7 +3247,9 @@ def load_defaults():
             'save_audio',
         ],
         
-        psud : [
+        psud: [
+            '_default_audio_sets',
+            'audio_set',
             'audio_files',
             'audio_path',
             'audio_path',
@@ -3397,7 +3398,7 @@ def load_defaults():
 
     # the following do not have a default value
     DEFAULTS['SimSettings']['_enable_PBI'] = False
-
+    DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
 
 def main():
 
