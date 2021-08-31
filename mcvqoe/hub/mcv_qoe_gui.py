@@ -3013,10 +3013,11 @@ def get_interfaces(root_cfg):
             prob.P_a2=sim_cfg['P_a2']
             prob.P_r=sim_cfg['P_r']
             prob.interval=sim_cfg['interval']
-            
+            if sim_cfg['pre_vs_post'] == 'pre':
+                sim.pre_impairment = prob.process_audio
+            else:
+                sim.post_impairment = prob.process_audio
 
-            
-            sim.pre_impairment=prob.process_audio
 
         
         ri = sim
@@ -3285,6 +3286,7 @@ def load_defaults():
             'PTT_sig_aplitude',
             
             '_enable_PBI',
+            'pre_vs_post',
             'P_a1',
             'P_a2',
             'P_r',
@@ -3398,6 +3400,7 @@ def load_defaults():
 
     # the following do not have a default value
     DEFAULTS['SimSettings']['_enable_PBI'] = False
+    DEFAULTS['SimSettings']['pre_vs_post'] = 'post'
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
 
 def main():

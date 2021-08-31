@@ -1565,6 +1565,7 @@ class Probabilityizer(SubCfgFrame):
     def get_controls(self):
         return (
             _enable_PBI,
+            pre_vs_post,
             P_a1,
             P_a2,
             P_r,
@@ -1585,6 +1586,14 @@ class Probabilityizer(SubCfgFrame):
 class _enable_PBI(LabeledCheckbox):
     
     text = 'Enable P.B.I Impairments'
+class pre_vs_post(MultiChoice):
+    """Determine whether audio dropouts happen before or after channel simulation"""
+    text = "PBI Placement"
+    
+    association = {
+        'pre' : 'Before channel',
+        'post'  : 'After channel',
+        }
 
 class P_a1(LabeledNumber):
     min_ = 0
