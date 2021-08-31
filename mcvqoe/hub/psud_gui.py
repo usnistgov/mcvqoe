@@ -20,6 +20,7 @@ from .shared import trials, audio_files, audio_path, outdir
 from .shared import ptt_wait, ptt_gap, time_expand
 from .shared import SaveAudio, MultiChoice
 
+
 class m2e_min_corr(LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
     text = 'Min Corr. for Success:'
@@ -118,7 +119,6 @@ class PSuDFrame(TestCfgFrame):
     
     text = 'Probability of Successful Delivery Test'
     
-    
     def get_controls(self):
         return (
             audio_set,
@@ -146,23 +146,6 @@ class PSuDAdvanced(AdvancedConfigGUI):
 class advanced(shared_advanced):
     toplevel = PSuDAdvanced
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 #-------------------------Running the test------------------------------------
 
 class PSuD_fromGui(SignalOverride, psud.measure):
@@ -171,10 +154,3 @@ class PSuD_fromGui(SignalOverride, psud.measure):
         # future-proofing this param-check override
         if hasattr(super(), 'param_check'):
             super().param_check()
-        
-    
-    
-    
-    
-    
-    
