@@ -71,7 +71,9 @@ class audio_set(Audio_Set):
         # Update audio files and audio paths
         self.master.btnvars['psud_audio_files'].set(files)
         self.master.btnvars['psud_audio_path'].set(path_)
-        
+        # Update true controls
+        self.master.btnvars['audio_files'].set(files)
+        self.master.btnvars['audio_path'].set(path_)
         # Disable Number of trials button
         self.master.controls['psud_trials'].m_ctrl['state'] = 'disable'
 
@@ -86,6 +88,8 @@ class psud_audio_files(audio_files):
         # Set psud_audio path to updated path
         new_path = self.master.btnvars['audio_path'].get()
         self.master.btnvars['psud_audio_path'].set(new_path)
+        # Update real control for audio files
+        self.master.btnvars['audio_files'].set(self.btnvar.get())
         # Enable trials button
         self.master.controls['psud_trials'].m_ctrl['state'] = 'normal'
 
@@ -101,6 +105,9 @@ class psud_audio_path(audio_path):
         # Update psud audio files
         new_files = self.master.btnvars['audio_files'].get()
         self.master.btnvars['psud_audio_files'].set(new_files)
+        # Update real control for audio path
+        self.master.btnvars['audio_path'].set(self.btnvar.get())
+        # Disable trials
         self.master.controls['psud_trials'].m_ctrl['state'] = 'disable'
 
 
