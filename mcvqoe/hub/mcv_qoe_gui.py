@@ -48,6 +48,8 @@ import subprocess as sp
 import traceback
 import numpy as np
 
+from pkg_resources import resource_filename
+
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
 #                       -----------------------------
@@ -2286,20 +2288,18 @@ def test_audio(root_cfg, on_finish=None):
                     '<' in cfg['audio_files'][0] and
                     '>' in cfg['audio_files'][0]
                     ):
+                f = np.random.choice(cfg['audio_files'])
 
-                fp = path.join(cfg['audio_path'], cfg['audio_files'][0])
+                fp = path.join(cfg['audio_path'], f)
 
             # in case of full_audio_dir
             elif cfg['audio_path']:
 
-                files = [f for f in listdir(cfg['audio_path']) if path.isfile(
-                    path.join(fp, f))]
-
-                for f in files:
-                    ext = path.splitext(f)[1]
-                    if ext.lower() == '.wav':
-                        fp = path.join(fp, f)
-                        break
+                files = [f for f in listdir(cfg['audio_path'])
+                         if path.splitext(f)[1] == '.wav']
+                # Choose a random file
+                f = np.random.choice(files)
+                fp = path.join(cfg['audio_path'], f)
 
             else:
                 # uses default file for single_play()
@@ -2307,11 +2307,16 @@ def test_audio(root_cfg, on_finish=None):
                     
             if (not fp or not path.isfile(fp)) and fp is not None:
                 raise ValueError('Audio File not found')
-            
+        elif sel_tst == intelligibility:
+            # If running intelligibility grab a random clip
+            apath = resource_filename('mcvqoe.intelligibility',
+                                      'audio_clips')
+            files = listdir(apath)
+            f = np.random.choice(files)
+            fp = path.join(apath, f)
         else:
             # use default file for single_play()
             fp = None
-
         with radio_interface as ri:
             
             # check if there is a ptt_wait to use, otherwise use default
