@@ -7,6 +7,7 @@ Created on Thu Jun 17 14:06:49 2021
 import os
 import mcvqoe.psud as psud
 import tkinter as tk
+import tkinter.filedialog as fdl
 
 from .shared import LabeledSlider, TestCfgFrame, AdvancedConfigGUI, SignalOverride
 from .shared import Audio_Set
@@ -57,18 +58,60 @@ class audio_set(Audio_Set):
                 label=aset,
                 command=lambda value=aset: self.update_audio_selection(value)
                 )
+        # Disable number of trials button
 
     def update_audio_selection(self, aset):
         """Update audio files and audio paths based on audio set selection."""
         # update audio set button
         self.btnvar.set(aset)
-        # TODO: Update audio_files and audio_path
-        # tk._setit(self.btnvar, audio_set)
+        # Get path to audio set
         path = os.path.join(self.default_path, aset)
         path_, files = format_audio_files(path_=path, files=[])
-        self.master.btnvars['audio_files'].set(files)
-        self.master.btnvars['audio_path'].set(path_)
+        # Update audio files and audio paths
+        self.master.btnvars['psud_audio_files'].set(files)
+        self.master.btnvars['psud_audio_path'].set(path_)
+        
+        # Disable Number of trials button
+        self.master.controls['psud_trials'].m_ctrl['state'] = 'disable'
 
+class psud_audio_files(audio_files):
+    __doc__ = audio_files.__doc__
+
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
+
+    def on_button(self):
+        super().on_button()
+        # Set psud_audio path to updated path
+        new_path = self.master.btnvars['audio_path'].get()
+        self.master.btnvars['psud_audio_path'].set(new_path)
+        # Enable trials button
+        self.master.controls['psud_trials'].m_ctrl['state'] = 'normal'
+
+
+
+class psud_audio_path(audio_path):
+    __doc__ = audio_path.__doc__
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
+    
+    def on_button(self):
+        super().on_button()
+        # Update psud audio files
+        new_files = self.master.btnvars['audio_files'].get()
+        self.master.btnvars['psud_audio_files'].set(new_files)
+        self.master.controls['psud_trials'].m_ctrl['state'] = 'disable'
+
+
+
+class psud_trials(trials):
+    __doc__ = trials.__doc__
+    
+    def __init__(self, master, row, *args, **kwargs):
+        super().__init__(master, row, *args, **kwargs)
+        self.m_ctrl['state'] = 'disable'
+    
+    
 # ---------------------- The main config frame --------------------------------
 
 class PSuDFrame(TestCfgFrame):
@@ -79,10 +122,10 @@ class PSuDFrame(TestCfgFrame):
     def get_controls(self):
         return (
             audio_set,
-            audio_files,
-            audio_path,
+            psud_audio_files,
+            psud_audio_path,
             outdir,
-            trials,
+            psud_trials,
             SaveAudio,
             ptt_wait,
             ptt_gap,

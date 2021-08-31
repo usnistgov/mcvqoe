@@ -2735,7 +2735,11 @@ def param_modify(root_cfg):
     is_sim = root_cfg['is_simulation']
     cfg = root_cfg[sel_tst]
     
-    
+    if sel_tst == psud:
+        # Overwrite generic names with the psud specific controls
+        cfg['audio_files'] = cfg['psud_audio_files']
+        cfg['audio_path'] = cfg['psud_audio_path']
+        cfg['trials'] = cfg['psud_trials']
     # ensure the user is only doing default settings for dev dly characterization
         # except for outdir
         
@@ -3255,6 +3259,7 @@ def load_defaults():
             'audio_path',
             'audio_path',
             'trials',
+            'psud_trials',
             'outdir',
             'ptt_wait',
             'ptt_gap',
@@ -3401,7 +3406,11 @@ def load_defaults():
     # the following do not have a default value
     DEFAULTS['SimSettings']['_enable_PBI'] = False
     DEFAULTS['SimSettings']['pre_vs_post'] = 'post'
+    
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
+    DEFAULTS[psud]['psud_trials'] = DEFAULTS[psud]['trials']
+    DEFAULTS[psud]['psud_audio_files'] = DEFAULTS[psud]['audio_files']
+    DEFAULTS[psud]['psud_audio_path'] = DEFAULTS[psud]['audio_path']
 
 def main():
 
