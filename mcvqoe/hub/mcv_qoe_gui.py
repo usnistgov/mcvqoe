@@ -1230,9 +1230,10 @@ def set_styles():
     f('McvHelpBtn.TLabel', font=('TkDefaultFont',
                 round(shared.FONT_SIZE * 0.75)), relief='groove')
     f('McvToolTip.TLabel', 
-                background='white')
+                background='white',
+                font=('Courier', 16))
     f('McvToolTip.TFrame',
-                background='white', relief='groove')
+                background='white', relief='groove',)
 
 #red highlight for missing or invalid controls
     
@@ -2747,7 +2748,8 @@ def param_modify(root_cfg):
         cfg['trials'] = cfg['psud_trials']
     # ensure the user is only doing default settings for dev dly characterization
         # except for outdir
-        
+    if sel_tst == intelligibility:
+        cfg['trials'] = cfg['intell_trials']
     if sel_tst == dev_dly_char:
         
         default_cfg = DEFAULTS[sel_tst].copy()
@@ -3412,10 +3414,14 @@ def load_defaults():
     DEFAULTS['SimSettings']['_enable_PBI'] = False
     DEFAULTS['SimSettings']['pre_vs_post'] = 'post'
     
+    # Set PSuD wrapper class defaults
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
     DEFAULTS[psud]['psud_trials'] = DEFAULTS[psud]['trials']
     DEFAULTS[psud]['psud_audio_files'] = DEFAULTS[psud]['audio_files']
     DEFAULTS[psud]['psud_audio_path'] = DEFAULTS[psud]['audio_path']
+    
+    # Set Intelligibility wrapper class defaults
+    DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
 
 def main():
 

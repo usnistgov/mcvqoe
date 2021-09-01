@@ -36,7 +36,23 @@ class intell_est(MultiChoice):
                    'aggregate': 'After Test',
                    'none': 'Never',
                    }
-    
+
+class intell_trials(trials):
+    """
+Estimated errors and test time for different number of tests.
+
+Simulations will run faster than estimated times.
+
+N	RMS Deviation	Maximum Absolute Deviation	Estimated Test Time
+16	    0.017	           0.053	            1.75 minutes
+32	    0.009	           0.033                    3.5 minutes
+64	    0.005	           0.014	            7 minutes
+128	    0.003	           0.008	            14 minutes
+256	    0.002	           0.004                    28 minutes
+512         0.001                  0.002	            56 minutes
+1200        0.000                  0.000	            131 minutes
+"""
+    __doc__ = trials.__doc__ + __doc__
 # ---------------------- The main configuration frame -------------------------
 
 class IgtibyFrame(TestCfgFrame):
@@ -44,7 +60,7 @@ class IgtibyFrame(TestCfgFrame):
     def get_controls(self):
         return (
             outdir,
-            trials,
+            intell_trials,
             ptt_wait,
             ptt_gap,
             SaveAudio,
