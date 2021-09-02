@@ -36,6 +36,7 @@ from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
 
+import sounddevice as sd
 import sys
 import time
 import _thread
@@ -1623,6 +1624,29 @@ class TestTypeFrame(tk.Frame):
         #auto-update button text based on is_simulation
         is_sim.trace_add('write', self.update_settings_btn)
         
+        # ------[ Audio Interface Dropdown ]-------
+        ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
+        
+        self.audio_device = tk.StringVar(self)
+        dev = self.valid_devices[0]
+        self.audio_device.set(dev['name'])
+        
+        self.audio_select = tk.OptionMenu(
+            self,
+            self.audio_device,
+            dev['name'],
+            '',
+            )
+        self.audio_select.pack(fill=tk.X)
+        self.refresh_audio_devices()
+
+        # menu = self.audio_select['menu']
+        # for ad in audio_devices:
+        #     menu.add_command(
+        #         label=ad,
+        #         command=lambda value=ad: print(value)
+        #         )
+            
         
         ttk.Separator(self).pack(fill=tk.X, pady=20)
 
@@ -1671,6 +1695,49 @@ class TestTypeFrame(tk.Frame):
     @in_thread('GuiThread', wait=False)
     def _test_audio_on_finish(self):
         self._test_btn.state(['!disabled'])
+
+    @property
+    def audio_device_options(self):
+        menu = self.audio_select['menu']
+        ix = 0
+        items = []
+        while(ix == menu.index(ix)):
+            items.append(menu.entrycget(ix, "label"))
+            ix += 1
+        return items
+
+    def refresh_audio_devices(self):
+        """Delete, requery, and refresh audio device options."""
+        print('hit refresh')
+        menu = self.audio_select['menu']
+        for dev in self.audio_device_options:
+            menu.delete(dev)
+        sd._terminate()
+        sd._initialize()
+        self.update_audio_devices()
+
+    def update_audio_devices(self):
+        """Update audio device list with valid devices"""
+        valid_devices = self.valid_devices
+        menu = self.audio_select['menu']
+        for dev in valid_devices:
+            menu.add_command(
+                label=dev['name'],
+                command=lambda: print(self.audio_device.get())
+                             )
+    @property
+    def valid_devices(self):
+        """ List of audio devices with at least 1 input and 1 output"""
+        audio_devices = sd.query_devices()
+        valid_devices = []
+        for device in audio_devices:
+            if(device["max_output_channels"] >= 1
+               and device["max_input_channels"] >= 1):
+                valid_devices.append(device)
+        if valid_devices == []:
+            valid_devices.append({'name': '<no valid audio devices>'})
+        return valid_devices
+        
 
 class LogoFrame(tk.Canvas):
 
