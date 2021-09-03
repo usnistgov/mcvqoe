@@ -154,6 +154,9 @@ class MCVQoEGui(tk.Tk):
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
+        
+        # variable to determine selected audio interface
+        self.audio_device = tk.StringVar(value='')
 
         # change test frame when user selects a test
         self.selected_test.trace_add(
@@ -827,6 +830,7 @@ class MCVQoEGui(tk.Tk):
             'selected_test': self.selected_test.get(),
             'SimSettings'  : self.simulation_settings.get(),
             'HdwSettings'  : self.hardware_settings.get(),
+            'audio_device': self.audio_device.get()
         }
 
         for framename, frame in self.frames.items():
@@ -1598,6 +1602,7 @@ class TestTypeFrame(tk.Frame):
         # StringVars to determine what test to run and show config for
         is_sim = main_.is_simulation
         sel_txt = main_.selected_test
+        self.audio_device = main_.audio_device
 
         # Test Type
         ttk.Label(self, text='Test Method:').pack(fill=tk.X)
@@ -1627,8 +1632,16 @@ class TestTypeFrame(tk.Frame):
         # ------[ Audio Interface Dropdown ]-------
         ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
         
-        self.audio_device = tk.StringVar(self)
-        dev = self.valid_devices[0]
+        # Find umc device if it exists
+        umc_flag = False
+        for ad in self.valid_devices:
+            if 'UMC' in ad['name']:
+                dev = ad
+                umc_flag = True
+        # Otherwise grab first valid device
+        if not umc_flag:
+            dev = self.valid_devices[0]
+        
         self.audio_device.set(dev['name'])
         
         self.audio_select = tk.OptionMenu(
@@ -1639,14 +1652,6 @@ class TestTypeFrame(tk.Frame):
             )
         self.audio_select.pack(fill=tk.X)
         self.refresh_audio_devices()
-
-        # menu = self.audio_select['menu']
-        # for ad in audio_devices:
-        #     menu.add_command(
-        #         label=ad,
-        #         command=lambda value=ad: print(value)
-        #         )
-            
         
         ttk.Separator(self).pack(fill=tk.X, pady=20)
 
@@ -1670,7 +1675,7 @@ class TestTypeFrame(tk.Frame):
         
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
             side=tk.BOTTOM, fill=tk.X)
-        
+    
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
             val = 'Simulation Settings'
@@ -1723,8 +1728,11 @@ class TestTypeFrame(tk.Frame):
         for dev in valid_devices:
             menu.add_command(
                 label=dev['name'],
-                command=lambda: print(self.audio_device.get())
-                             )
+                command=lambda val=dev['name']: self.select_audio_device(val))
+
+    def select_audio_device(self, val):
+        self.audio_device.set(val)
+
     @property
     def valid_devices(self):
         """ List of audio devices with at least 1 input and 1 output"""
@@ -3110,16 +3118,15 @@ def get_interfaces(root_cfg):
         else:
             radioport = ''
         
-        
         if not ri_needed:
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
             ri = loader.hardware.RadioInterface(radioport)
         
-        
-        ap = loader.hardware.AudioPlayer(**channels)
-        
+        audio_device = root_cfg['audio_device']
+        ap = loader.hardware.AudioPlayer(device_str=audio_device,
+                                         **channels)
             
             
         _set_values_from_cfg(ap, hdw_cfg)
