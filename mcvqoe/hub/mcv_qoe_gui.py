@@ -1239,7 +1239,8 @@ def set_styles():
                 font=('Courier', 16))
     f('McvToolTip.TFrame',
                 background='white', relief='groove',)
-
+    f('audio_drop.TMenubutton', font=('TkDefaultFont',
+                                   round(shared.FONT_SIZE*0.75)))
 #red highlight for missing or invalid controls
     
     #for Entry
@@ -1644,12 +1645,15 @@ class TestTypeFrame(tk.Frame):
         
         self.audio_device.set(dev['name'])
         
-        self.audio_select = tk.OptionMenu(
+        self.audio_select = ttk.OptionMenu(
             self,
             self.audio_device,
             dev['name'],
             '',
+            style='audio_drop.TMenubutton',
             )
+        # TODO: Figure out how to make menu selection text smaller
+        self.audio_select['menu'].config(font=(10, ))
         self.audio_select.pack(fill=tk.X)
         self.refresh_audio_devices()
         
