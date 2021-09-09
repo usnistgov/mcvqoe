@@ -3405,13 +3405,11 @@ def load_defaults():
     # the following should be a float
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
 
-    for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
-        DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
-
     # the following do not have a default value
-    DEFAULTS['SimSettings']['_enable_PBI'] = False
-    DEFAULTS['SimSettings']['pre_vs_post'] = 'post'
-    
+    DEFAULTS['SimSettings']['PreImpairment'] = 'None'
+    DEFAULTS['SimSettings']['ChannelImpairment'] = 'None'
+    DEFAULTS['SimSettings']['PostImpairment'] = 'None'
+
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
     DEFAULTS[psud]['psud_trials'] = DEFAULTS[psud]['trials']
     DEFAULTS[psud]['psud_audio_files'] = DEFAULTS[psud]['audio_files']
