@@ -298,6 +298,7 @@ class DescriptionBlock:
 
         #destroy all the things
         if hasattr(self,'description') and self.description is not None:
+            self.description.grid_forget()
             self.description.destroy()
             self.description = None
             
@@ -483,18 +484,22 @@ class LabeledControl:
 
         #destroy all the things
         if hasattr(self,'l_ctrl') and self.l_ctrl is not None:
+            self.l_ctrl.grid_forget()
             self.l_ctrl.destroy()
             self.l_ctrl = None
 
         if hasattr(self,'m_ctrl') and self.m_ctrl is not None:
+            self.m_ctrl.grid_forget()
             self.m_ctrl.destroy()
             self.m_ctrl = None
 
         if hasattr(self,'r_ctrl') and self.r_ctrl is not None:
+            self.r_ctrl.grid_forget()
             self.r_ctrl.destroy()
             self.r_ctrl = None
 
         if hasattr(self,'h_ctrl') and self.h_ctrl is not None:
+            self.h_ctrl.grid_forget()
             self.h_ctrl.destroy()
             self.h_ctrl = None
         
