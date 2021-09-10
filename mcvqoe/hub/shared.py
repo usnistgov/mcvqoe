@@ -1643,8 +1643,12 @@ class ChannelImpairment(LabeledControl):
             if chan_tech == 'None':
                 failed = True
             else:
-                impairments = QoEsim.get_impairment_names(chan_tech)
-                
+                #get channel type
+                chan_type = QoEsim().get_channel_type(chan_tech)
+
+                #get list of impairments for the channel type
+                impairments = QoEsim.get_impairment_names(chan_type)
+
                 old = self.btnvar.get()
                 if old not in impairments:
                     self.btnvar.set('None')
