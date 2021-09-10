@@ -298,8 +298,11 @@ class DescriptionBlock:
 
         #destroy all the things
         if hasattr(self,'description') and self.description is not None:
-            self.description.grid_forget()
-            self.description.destroy()
+            #make sure widget exists
+            if self.description.winfo_exists():
+                self.description.grid_forget()
+                self.description.destroy()
+            #mark as destroyed
             self.description = None
             
 
@@ -484,23 +487,31 @@ class LabeledControl:
 
         #destroy all the things
         if hasattr(self,'l_ctrl') and self.l_ctrl is not None:
-            self.l_ctrl.grid_forget()
-            self.l_ctrl.destroy()
+            #make sure window exists
+            if self.l_ctrl.winfo_exists():
+                self.l_ctrl.grid_forget()
+                self.l_ctrl.destroy()
             self.l_ctrl = None
 
         if hasattr(self,'m_ctrl') and self.m_ctrl is not None:
-            self.m_ctrl.grid_forget()
-            self.m_ctrl.destroy()
+            #make sure window exists
+            if self.m_ctrl.winfo_exists():
+                self.m_ctrl.grid_forget()
+                self.m_ctrl.destroy()
             self.m_ctrl = None
 
         if hasattr(self,'r_ctrl') and self.r_ctrl is not None:
-            self.r_ctrl.grid_forget()
-            self.r_ctrl.destroy()
+            #make sure window exists
+            if self.r_ctrl.winfo_exists():
+                self.r_ctrl.grid_forget()
+                self.r_ctrl.destroy()
             self.r_ctrl = None
 
         if hasattr(self,'h_ctrl') and self.h_ctrl is not None:
-            self.h_ctrl.grid_forget()
-            self.h_ctrl.destroy()
+            #make sure window exists
+            if self.h_ctrl.winfo_exists():
+                self.h_ctrl.grid_forget()
+                self.h_ctrl.destroy()
             self.h_ctrl = None
         
     def on_button(self):
@@ -1746,23 +1757,12 @@ class ImpairmentSettings(SubCfgFrame):
         #update impairment name
         self.impairment = self.master.btnvars[self.impairment_name].get()
         
-        if self.impairment == 'None':
-            self.set_name('')
-        else:
-            self.set_name(self.impairment)
-        
         cls_name = self.__class__.__name__
-        
-        print(f'Before destroy : {self.grid_bbox()}')
-        
+
         for n,c in self.master.controls.items():
             if n.startswith(cls_name) and n != cls_name:
                 c.destroy()
-        
-        #self.grid_propagate(0)
-        
-        print(f'After destroy : {self.grid_bbox()}')
-                
+
         #sets what controls will be in this frame
         control_classes = self.get_controls()
         
@@ -1773,6 +1773,7 @@ class ImpairmentSettings(SubCfgFrame):
             #add back to grid
             self.grid(column=0, row=self.row_num, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
+            self.set_name(self.impairment)
         
         #initializes controls
         controls = {}
@@ -1782,14 +1783,12 @@ class ImpairmentSettings(SubCfgFrame):
             controls[c.__class__.__name__] = c
         
         self.master.controls = controls
-        
-        print(f'After widgets : {self.grid_bbox()}')
     
     def set_name(self,impairment):
         if impairment:
             self.update_title(f'{impairment} Settings')
-        else:
-            self.update_title('')
+        #else:
+        #    self.update_title('')
 
 class ChannelImpairmentSettings(ImpairmentSettings):    
     
