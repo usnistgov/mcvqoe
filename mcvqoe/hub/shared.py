@@ -1690,6 +1690,7 @@ class ImpairmentSettings(SubCfgFrame):
         id = self.master.btnvars[self.impairment_name].trace_add('write', self.update)
         self.master.traces_.append((self.master.btnvars[self.impairment_name], id))
         
+        self.update()
         
     def get_controls(self):
         
