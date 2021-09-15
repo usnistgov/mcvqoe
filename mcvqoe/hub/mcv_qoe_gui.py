@@ -1422,21 +1422,53 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         self.title('Version Information')
         
         text = {
-            'GUI:'  : gui_version,
-            'Mouth to ear:'  : loader.m2e_gui.m2e.version,
-            'Access time:'   : loader.accesstime_gui.adly.version,
-            'PSuD:'          : loader.psud_gui.psud.version,
+            'Core Libraries' : '',
+            'GUI'  : gui_version,
+            'Mouth to ear'  : loader.m2e_gui.m2e.version,
+            'Access time'   : loader.accesstime_gui.adly.version,
+            'PSuD'          : loader.psud_gui.psud.version,
             'Intelligibility': loader.intelligibility_gui.igtiby.version,
             
-            'MCV QoE Base Library:': loader.mcvqoe_base.version,
-            'ABC MRT:'             : loader.abcmrt.version,
+            'MCV QoE Base Library': loader.mcvqoe_base.version,
+            'ABC MRT'             : loader.abcmrt.version,
             #'Hardware Interface:'  : loader.hardware.version,
             #'Simulation Interface:':loader.simulation.version,
             }
+
+        #save this so things aren't so long...
+        sim = loader.simulation.QoEsim
+
+        #seperate dict for now
+        chan_versions = {}
+
+        #get channel plugin versions
+        for chan in sim.get_channel_techs():
+            if chan == 'clean':
+                #skip clean channel, it's the same as mcvqoe
+                continue
+            chan_versions[f'{chan} channel'] = sim.get_channel_version(chan)
+
+        if chan_versions:
+            text['Channel Plugins']=''
+            text.update(chan_versions)
         
+        normal_font = tk.font.nametofont('TkTextFont')
+
+        section_font = tk.font.Font(**normal_font.actual())
+        section_font.configure(weight='bold')
+
         for index,vals in enumerate(text.items()):
             for i, txt in enumerate(vals):
-                ttk.Label(self, text=txt).grid(column=i, row=index, padx=10, pady=10, sticky='W')
+                if txt:
+                    if vals[1]:
+                        span = 1 
+                        sticky = 'W'
+                        font = normal_font
+                    else:
+                        span = 2
+                        sticky = ''
+                        font = section_font
+                    ttk.Label(self, text=txt, font=font).grid(column=i, row=index, padx=5, pady=5, sticky=sticky, columnspan=span)
 
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
