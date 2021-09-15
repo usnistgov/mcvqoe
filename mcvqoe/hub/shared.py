@@ -1445,7 +1445,7 @@ class channel_tech(LabeledControl):
         self.m_ctrl.configure(menu=self.menu)
         
         try:
-            rates = QoEsim().get_channel_techs()
+            rates = QoEsim.get_channel_techs()
         except Exception as e:
             show_error(e)
         
@@ -1488,7 +1488,7 @@ class channel_rate(LabeledControl):
             
             self.menu.delete(0, 'end')
             
-            default, rates = QoEsim().get_channel_rates(chan_tech)
+            default, rates = QoEsim.get_channel_rates(chan_tech)
             
             old = self.btnvar.get()
             if old not in rates:
