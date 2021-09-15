@@ -1729,10 +1729,12 @@ class ImpairmentSettings(SubCfgFrame):
                 if info.choice_type in ('range', 'positive'):
                     #create type name from class and parameter name
                     type_name = f'{cls_name}_{name}'
-                    
-                    #add default
-                    self.master.btnvars.add_entry(type_name,info.value_type(info.default))
-                    
+
+                    # check if a value exists
+                    if type_name not in self.master.btnvars:
+                        #add default
+                        self.master.btnvars.add_entry(type_name,info.value_type(info.default))
+
                     class_vals = {
                                     'min_' : info.min_val,
                                     'max_' : info.max_val,
