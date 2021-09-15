@@ -1434,11 +1434,9 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
             #'Simulation Interface:':loader.simulation.version,
             }
         
-        index = 0
-        for a, b in text.items():
-            for i, txt in {1: a, 2:b}.items():
+        for index,vals in enumerate(text.items()):
+            for i, txt in enumerate(vals):
                 ttk.Label(self, text=txt).grid(column=i, row=index, padx=10, pady=10, sticky='W')
-            index += 1
 
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
