@@ -1451,7 +1451,22 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         if chan_versions:
             text['Channel Plugins']=''
             text.update(chan_versions)
+
+        #seperate dict for now
+        impairment_versions = {}
         
+        #get channel plugin versions
+        for imp in sim.get_all_impairment_names():
+            print(f'Getting version for : {imp}')
+            if imp == 'probabilityiser':
+                #skip probabilityiser, it's the same as mcvqoe
+                continue
+            impairment_versions[f'{imp} impairment'] = sim.get_impairment_version(imp)
+
+        if impairment_versions:
+            text['Impairment Plugins']=''
+            text.update(impairment_versions)
+
         normal_font = tk.font.nametofont('TkTextFont')
 
         section_font = tk.font.Font(**normal_font.actual())
