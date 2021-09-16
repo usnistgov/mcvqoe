@@ -1763,7 +1763,6 @@ class TestTypeFrame(tk.Frame):
 
     def refresh_audio_devices(self):
         """Delete, requery, and refresh audio device options."""
-        print('hit refresh')
         menu = self.audio_select['menu']
         for dev in self.audio_device_options:
             menu.delete(dev)
