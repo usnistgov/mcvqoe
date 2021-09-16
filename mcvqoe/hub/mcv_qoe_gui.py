@@ -32,6 +32,7 @@ import _tkinter
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
+from .shared import add_mcv_icon
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
@@ -104,12 +105,7 @@ class MCVQoEGui(tk.Tk):
         
         self.geometry(f'{w}x{h}+{x}+{y}')
 
-        with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
-            if icon:
-                #set the title- and taskbar icon
-                self.iconbitmap(icon)
-            else:
-                print('Could not find icon file')
+        add_mcv_icon(self)
         
         # when the user closes the window
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -1421,6 +1417,8 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         
         self.title('Version Information')
         
+        add_mcv_icon(self)
+
         text = {
             'Core Libraries' : '',
             'GUI'  : gui_version,
@@ -2271,6 +2269,8 @@ class WarningBox(tk.Frame):
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
         
+        add_mcv_icon(self)
+
         tk.Button(self, text='x', command=self.destroy, background=color).pack(
             side=tk.RIGHT, padx=10, pady=10)
         

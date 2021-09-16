@@ -25,6 +25,15 @@ PADY = 10
 
 FONT_SIZE = 10
 
+#find MCV icon and add set as window icon
+def add_mcv_icon(win):
+    with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+        if icon:
+            #set the title- and taskbar icon
+            win.iconbitmap(icon)
+        else:
+            print('Could not find icon file')
+
 
 class ScrollableFrame(ttk.Frame):
     """Used to add a scrollbar to frames. see MCVQoEGui.init_frames() for
@@ -230,6 +239,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # take keyboard focus
         self.focus_force()
         
+        add_mcv_icon(self)
         
         self.controls = master.controls
         #initializes controls
@@ -1265,6 +1275,8 @@ class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        add_mcv_icon(self)
         
         self.title('Device Delay Characterization')
         
