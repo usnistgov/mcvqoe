@@ -220,6 +220,10 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         
         
         super().__init__(master, *args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
         
         # keeps track of tcl variable traces for later destruction
         # this prevents some errors in the simulation settings window.
@@ -1275,6 +1279,10 @@ class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
 
         add_mcv_icon(self)
         

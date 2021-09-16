@@ -1414,6 +1414,10 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
         
         self.title('Version Information')
         
