@@ -1459,7 +1459,6 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         
         #get channel plugin versions
         for imp in sim.get_all_impairment_names():
-            print(f'Getting version for : {imp}')
             if imp == 'probabilityiser':
                 #skip probabilityiser, it's the same as mcvqoe
                 continue
