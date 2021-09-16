@@ -24,6 +24,15 @@ PADY = 10
 
 FONT_SIZE = 10
 
+#find MCV icon and add set as window icon
+def add_mcv_icon(win):
+    with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+        if icon:
+            #set the title- and taskbar icon
+            win.iconbitmap(icon)
+        else:
+            print('Could not find icon file')
+
 
 class ScrollableFrame(ttk.Frame):
     """Used to add a scrollbar to frames. see MCVQoEGui.init_frames() for
@@ -212,6 +221,10 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         
         
         super().__init__(master, *args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
         
         # keeps track of tcl variable traces for later destruction
         # this prevents some errors in the simulation settings window.
@@ -231,6 +244,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # take keyboard focus
         self.focus_force()
         
+        add_mcv_icon(self)
         
         self.controls = master.controls
         #initializes controls
@@ -1323,6 +1337,12 @@ class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
+
+        add_mcv_icon(self)
         
         self.title('Device Delay Characterization')
         
@@ -1501,7 +1521,7 @@ class channel_tech(LabeledControl):
         self.m_ctrl.configure(menu=self.menu)
         
         try:
-            rates = QoEsim().get_channel_techs()
+            rates = QoEsim.get_channel_techs()
         except Exception as e:
             show_error(e)
         
@@ -1544,7 +1564,7 @@ class channel_rate(LabeledControl):
             
             self.menu.delete(0, 'end')
             
-            default, rates = QoEsim().get_channel_rates(chan_tech)
+            default, rates = QoEsim.get_channel_rates(chan_tech)
             
             old = self.btnvar.get()
             if old not in rates:

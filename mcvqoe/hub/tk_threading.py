@@ -5,6 +5,7 @@ Created on Mon Aug  9 14:51:59 2021
 @author: MkZee
 """
 
+import datetime
 import sys
 import functools
 import threading
@@ -12,7 +13,7 @@ from threading import Thread
 import time
 import traceback
 import tkinter as tk
-
+import os.path
 
 
 def in_thread(thread, wait=True, except_ = None):
@@ -279,8 +280,31 @@ class SingletonWindow(type):
 
 
 def show_error(exc=None):
-    
-    
+
+    err_time = datetime.datetime.now()
+
+    #dir for traceback.log file
+    #TODO : make this configurable??
+    base_fold = os.path.join(os.path.expanduser("~"),'MCV-QoE')
+    #full path to log file
+    err_log = os.path.join(base_fold,'traceback.log')
+
+    try:
+        #get traceback info in a string
+        tb_str = traceback.format_exc()
+        #make sure directory exists
+        os.makedirs(base_fold, exist_ok=True)
+
+        with open(err_log, 'at') as f:
+            #write Heading for start of traceback
+            f.write(f'##Error Encountered on {err_time.strftime("%c")}:\n')
+            #write traceback
+            f.write(tb_str)
+            #add an extra newline for seperation
+            f.write('\n')
+    except (OSError, IOError):
+        print('Unable to write traceback.log')
+
     traceback.print_exc()
     
     if exc is None:

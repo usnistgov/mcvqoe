@@ -32,10 +32,12 @@ import _tkinter
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
+from .shared import add_mcv_icon
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
 
+import sounddevice as sd
 import sys
 import time
 import _thread
@@ -103,12 +105,7 @@ class MCVQoEGui(tk.Tk):
         
         self.geometry(f'{w}x{h}+{x}+{y}')
 
-        with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
-            if icon:
-                #set the title- and taskbar icon
-                self.iconbitmap(icon)
-            else:
-                print('Could not find icon file')
+        add_mcv_icon(self)
         
         # when the user closes the window
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -153,6 +150,9 @@ class MCVQoEGui(tk.Tk):
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
+        
+        # variable to determine selected audio interface
+        self.audio_device = tk.StringVar(value='')
 
         # change test frame when user selects a test
         self.selected_test.trace_add(
@@ -826,6 +826,7 @@ class MCVQoEGui(tk.Tk):
             'selected_test': self.selected_test.get(),
             'SimSettings'  : self.simulation_settings.get(),
             'HdwSettings'  : self.hardware_settings.get(),
+            'audio_device': self.audio_device.get()
         }
 
         for framename, frame in self.frames.items():
@@ -1230,10 +1231,12 @@ def set_styles():
     f('McvHelpBtn.TLabel', font=('TkDefaultFont',
                 round(shared.FONT_SIZE * 0.75)), relief='groove')
     f('McvToolTip.TLabel', 
-                background='white')
+                background='white',
+                font=('Courier', 16))
     f('McvToolTip.TFrame',
-                background='white', relief='groove')
-
+                background='white', relief='groove',)
+    f('audio_drop.TMenubutton', font=('TkDefaultFont',
+                                   round(shared.FONT_SIZE*0.75)))
 #red highlight for missing or invalid controls
     
     #for Entry
@@ -1411,27 +1414,77 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #hide the window
+        self.withdraw()
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
         
         self.title('Version Information')
         
+        add_mcv_icon(self)
+
         text = {
-            'GUI:'  : gui_version,
-            'Mouth to ear:'  : loader.m2e_gui.m2e.version,
-            'Access time:'   : loader.accesstime_gui.adly.version,
-            'PSuD:'          : loader.psud_gui.psud.version,
+            'Core Libraries' : '',
+            'GUI'  : gui_version,
+            'Mouth to ear'  : loader.m2e_gui.m2e.version,
+            'Access time'   : loader.accesstime_gui.adly.version,
+            'PSuD'          : loader.psud_gui.psud.version,
             'Intelligibility': loader.intelligibility_gui.igtiby.version,
             
-            'MCV QoE Base Library:': loader.mcvqoe_base.version,
-            'ABC MRT:'             : loader.abcmrt.version,
+            'MCV QoE Base Library': loader.mcvqoe_base.version,
+            'ABC MRT'             : loader.abcmrt.version,
             #'Hardware Interface:'  : loader.hardware.version,
             #'Simulation Interface:':loader.simulation.version,
             }
+
+        #save this so things aren't so long...
+        sim = loader.simulation.QoEsim
+
+        #seperate dict for now
+        chan_versions = {}
+
+        #get channel plugin versions
+        for chan in sim.get_channel_techs():
+            if chan == 'clean':
+                #skip clean channel, it's the same as mcvqoe
+                continue
+            chan_versions[f'{chan} channel'] = sim.get_channel_version(chan)
+
+        if chan_versions:
+            text['Channel Plugins']=''
+            text.update(chan_versions)
+
+        #seperate dict for now
+        impairment_versions = {}
         
-        index = 0
-        for a, b in text.items():
-            for i, txt in {1: a, 2:b}.items():
-                ttk.Label(self, text=txt).grid(column=i, row=index, padx=10, pady=10, sticky='W')
-            index += 1
+        #get channel plugin versions
+        for imp in sim.get_all_impairment_names():
+            if imp == 'probabilityiser':
+                #skip probabilityiser, it's the same as mcvqoe
+                continue
+            impairment_versions[f'{imp} impairment'] = sim.get_impairment_version(imp)
+
+        if impairment_versions:
+            text['Impairment Plugins']=''
+            text.update(impairment_versions)
+
+        normal_font = tk.font.nametofont('TkTextFont')
+
+        section_font = tk.font.Font(**normal_font.actual())
+        section_font.configure(weight='bold')
+
+        for index,vals in enumerate(text.items()):
+            for i, txt in enumerate(vals):
+                if txt:
+                    if vals[1]:
+                        span = 1 
+                        sticky = 'W'
+                        font = normal_font
+                    else:
+                        span = 2
+                        sticky = ''
+                        font = section_font
+                    ttk.Label(self, text=txt, font=font).grid(column=i, row=index, padx=5, pady=5, sticky=sticky, columnspan=span)
 
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
@@ -1596,6 +1649,7 @@ class TestTypeFrame(tk.Frame):
         # StringVars to determine what test to run and show config for
         is_sim = main_.is_simulation
         sel_txt = main_.selected_test
+        self.audio_device = main_.audio_device
 
         # Test Type
         ttk.Label(self, text='Test Method:').pack(fill=tk.X)
@@ -1622,6 +1676,32 @@ class TestTypeFrame(tk.Frame):
         #auto-update button text based on is_simulation
         is_sim.trace_add('write', self.update_settings_btn)
         
+        # ------[ Audio Interface Dropdown ]-------
+        ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
+        
+        # Find umc device if it exists
+        umc_flag = False
+        for ad in self.valid_devices:
+            if 'UMC' in ad['name']:
+                dev = ad
+                umc_flag = True
+        # Otherwise grab first valid device
+        if not umc_flag:
+            dev = self.valid_devices[0]
+        
+        self.audio_device.set(dev['name'])
+        
+        self.audio_select = ttk.OptionMenu(
+            self,
+            self.audio_device,
+            dev['name'],
+            '',
+            style='audio_drop.TMenubutton',
+            )
+        # TODO: Figure out how to make menu selection text smaller
+        self.audio_select['menu'].config(font=(10, ))
+        self.audio_select.pack(fill=tk.X)
+        self.refresh_audio_devices()
         
         ttk.Separator(self).pack(fill=tk.X, pady=20)
 
@@ -1645,7 +1725,7 @@ class TestTypeFrame(tk.Frame):
         
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
             side=tk.BOTTOM, fill=tk.X)
-        
+    
     def update_settings_btn(self, *args, **kwargs):
         if self.main_.is_simulation.get():
             val = 'Simulation Settings'
@@ -1670,6 +1750,51 @@ class TestTypeFrame(tk.Frame):
     @in_thread('GuiThread', wait=False)
     def _test_audio_on_finish(self):
         self._test_btn.state(['!disabled'])
+
+    @property
+    def audio_device_options(self):
+        menu = self.audio_select['menu']
+        ix = 0
+        items = []
+        while(ix == menu.index(ix)):
+            items.append(menu.entrycget(ix, "label"))
+            ix += 1
+        return items
+
+    def refresh_audio_devices(self):
+        """Delete, requery, and refresh audio device options."""
+        menu = self.audio_select['menu']
+        for dev in self.audio_device_options:
+            menu.delete(dev)
+        sd._terminate()
+        sd._initialize()
+        self.update_audio_devices()
+
+    def update_audio_devices(self):
+        """Update audio device list with valid devices"""
+        valid_devices = self.valid_devices
+        menu = self.audio_select['menu']
+        for dev in valid_devices:
+            menu.add_command(
+                label=dev['name'],
+                command=lambda val=dev['name']: self.select_audio_device(val))
+
+    def select_audio_device(self, val):
+        self.audio_device.set(val)
+
+    @property
+    def valid_devices(self):
+        """ List of audio devices with at least 1 input and 1 output"""
+        audio_devices = sd.query_devices()
+        valid_devices = []
+        for device in audio_devices:
+            if(device["max_output_channels"] >= 1
+               and device["max_input_channels"] >= 1):
+                valid_devices.append(device)
+        if valid_devices == []:
+            valid_devices.append({'name': '<no valid audio devices>'})
+        return valid_devices
+        
 
 class LogoFrame(tk.Canvas):
 
@@ -2146,6 +2271,8 @@ class WarningBox(tk.Frame):
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
         
+        add_mcv_icon(self)
+
         tk.Button(self, text='x', command=self.destroy, background=color).pack(
             side=tk.RIGHT, padx=10, pady=10)
         
@@ -2738,7 +2865,8 @@ def param_modify(root_cfg):
         cfg['trials'] = cfg['psud_trials']
     # ensure the user is only doing default settings for dev dly characterization
         # except for outdir
-        
+    if sel_tst == intelligibility:
+        cfg['trials'] = cfg['intell_trials']
     if sel_tst == dev_dly_char:
         
         default_cfg = DEFAULTS[sel_tst].copy()
@@ -3004,16 +3132,15 @@ def get_interfaces(root_cfg):
         else:
             radioport = ''
         
-        
         if not ri_needed:
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
             ri = loader.hardware.RadioInterface(radioport)
         
-        
-        ap = loader.hardware.AudioPlayer(**channels)
-        
+        audio_device = root_cfg['audio_device']
+        ap = loader.hardware.AudioPlayer(device_str=audio_device,
+                                         **channels)
             
             
         _set_values_from_cfg(ap, hdw_cfg)
@@ -3394,10 +3521,14 @@ def load_defaults():
     DEFAULTS['SimSettings']['ChannelImpairment'] = 'None'
     DEFAULTS['SimSettings']['PostImpairment'] = 'None'
 
+    # Set PSuD wrapper class defaults
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
     DEFAULTS[psud]['psud_trials'] = DEFAULTS[psud]['trials']
     DEFAULTS[psud]['psud_audio_files'] = DEFAULTS[psud]['audio_files']
     DEFAULTS[psud]['psud_audio_path'] = DEFAULTS[psud]['audio_path']
+    
+    # Set Intelligibility wrapper class defaults
+    DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
 
 def main():
 
