@@ -3089,16 +3089,56 @@ def get_interfaces(root_cfg):
         
         # turn str(None) into None
         sim_cfg['channel_rate'] = None
-    
-    
-    # convert simulated m2e-latency to optional float
-    try:
-        sim_cfg['m2e_latency'] = float(
-                sim_cfg['m2e_latency'])
-    except ValueError:
-        sim_cfg['m2e_latency'] = None
-        
-        
+
+
+    # check m2e type
+    if sim_cfg['m2e_latency_type'] == 'constant':
+        if sim_cfg['m2e_latency'].lower() == 'minimum':
+            #minimum
+            sim_cfg['m2e_latency'] = None
+        else:
+            sim_cfg['m2e_latency'] = float(
+                    sim_cfg['m2e_latency'])
+    elif sim_cfg['m2e_latency_type'] == 'Gaussian':
+        #m2e is using a Gaussian distribution
+
+        m2e_val  = float(sim_cfg['m2e_latency'])
+        m2e_sigma  = float(sim_cfg['m2e_latency_sigma'])
+        rng = np.random.default_rng()
+        #this seems slightly silly here as opposed to a lambda, but avoids
+        #errors on closing with delete and " main thread is not in main loop"
+        def Gaussian_m2e():
+             return rng.normal(m2e_val, m2e_sigma)
+
+        #set to function
+        sim_cfg['m2e_latency'] = Gaussian_m2e
+    else:
+        raise ValueError(f'Unknown m2e type \'{sim_cfg["m2e_latency_type"]}\'')
+
+    # check access delay type
+    if sim_cfg['access_delay_type'] == 'constant':
+        sim_cfg['access_delay'] = float(sim_cfg['access_delay'])
+    elif sim_cfg['access_delay_type'] == 'Gaussian':
+        #m2e is using a Gaussian distribution
+
+        acc_val  = float(sim_cfg['access_delay'])
+        acc_sigma  = float(sim_cfg['access_delay'])
+        #TESTING : print some things
+        print(f'Access delay : {acc_val} sigma : {acc_sigma}')
+        rng = np.random.default_rng()
+        #this seems slightly silly here as opposed to a lambda, but avoids
+        #errors on closing with delete and " main thread is not in main loop"
+        def Gaussian_access_delay():
+            dly = rng.normal(acc_val, acc_sigma)
+            #TESTING : print some things
+            print(f'Access delay : {dly} sec')
+            return dly
+
+        #set to function
+        sim_cfg['access_delay'] = Gaussian_access_delay
+    else:
+        raise ValueError(f'Unknown access delay type \'{sim_cfg["access_delay_type"]}\'')
+
     #------------------------- set channels -----------------------------------
     
     if sel_tst in (accesstime,):
@@ -3553,9 +3593,14 @@ def load_defaults():
 
     DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
     DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
+    DEFAULTS['SimSettings']['m2e_latency_type'] = 'constant'
+    DEFAULTS['SimSettings']['m2e_latency_sigma'] = 2e-3
 
     # the following should be a float
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+
+    DEFAULTS['SimSettings']['access_delay_type'] = 'constant'
+    DEFAULTS['SimSettings']['access_delay_sigma'] =  2e-3
 
     for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
         DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])

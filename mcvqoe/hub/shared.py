@@ -12,6 +12,8 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 from PIL import Image, ImageTk
+#used to catch errors from tk
+import _tkinter
 
 import mcvqoe.hub.loadandsave as loadandsave
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
@@ -1437,8 +1439,8 @@ class SimSettings(AdvancedConfigGUI):
             
             overplay,
             
-            m2e_latency,
-            access_delay,
+            m2e_latency_cfg,
+            access_delay_cfg,
             rec_snr,
             PTT_sig_freq,
             PTT_sig_aplitude,
@@ -1525,16 +1527,151 @@ class channel_rate(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
 
+class m2e_latency_cfg(SubCfgFrame):
+    '''
+    Config to control m2e latency
+    '''
+
+    text = 'Mouth to Ear Latency'
+
+    def get_controls(self):
+        return (
+            m2e_latency_type,
+            m2e_latency,
+            m2e_latency_sigma,
+            m2e_latency_range,
+            )
+
+class DistributionType(LabeledControl):
+    """Control to get the type of a distrobution"""
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        self.text = 'Type:'
+        self.MCtrl = ttk.Menubutton
+
+        self.do_font_scaling = False
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        self.m_ctrl.configure(menu=self.menu)
+
+        #fill menu with options
+        self.update()
+
+    def update(self, *args, **kwargs):
+
+        for t in ('constant', 'Gaussian'):
+            #add a drop down list option
+            self.menu.add_command(label=t,
+                        command=tk._setit(self.btnvar, t))
+
+
+class m2e_latency_type(DistributionType):
+    """Type of mouth to ear latency"""
+    #nothing else needs to be configured
+    pass
+
+
 class m2e_latency(LabeledControl):
     """Simulated mouth to ear latency for the channel in seconds.
+    'minimum' is the minimum latency for the channel technology."""
     
-    Defaults to the minimum latency allowed by the channel tech."""
+    text = 'Value:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class m2e_latency_sigma(LabeledControl):
+    """
+    Sigma value for m2e latency
+    """
     
-    text = 'Mouth-to-ear Latency:'
+    text = '\u03C3:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
     
-    
+
+class RangeDisplay:
+
+    text = ''
+
+    padx = PADX
+    pady = PADY
+
+    def __init__(self, master, row):
+        self.master = master
+
+        ttk.Label(master, text=self.text).grid(
+            padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
+
+        self.range_textvar = tk.StringVar()
+
+        # initialize the control
+        self.m_ctrl = ttk.Label(master, textvariable=self.range_textvar)
+        self.m_ctrl.grid(
+            column=2, columnspan=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
+
+    def update_rng(self, val):
+        self.range_textvar.set(str(val))
+
+class m2e_latency_range(RangeDisplay):
+    """display of the range of the mouth to ear latency"""
+
+    text = 'm2e range:'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        #track selection of m2e type
+        id = self.master.master.btnvars['m2e_latency_type'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['m2e_latency_type'], id))
+
+        #track selection of m2e value
+        id = self.master.master.btnvars['m2e_latency'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['m2e_latency'], id))
+
+        #track selection of m2e value
+        id = self.master.master.btnvars['m2e_latency_sigma'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['m2e_latency_sigma'], id))
+
+        self.update()
+
+
+    def update(self, *args):
+        m2e_type = self.master.btnvars['m2e_latency_type'].get()
+        m2e_val  = self.master.btnvars['m2e_latency'].get()
+        m2e_sigma  = self.master.btnvars['m2e_latency_sigma'].get()
+
+        if m2e_type == 'constant':
+            self.update_rng(f'{m2e_val}')
+            #disable sigma
+            self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='disabled')
+        elif m2e_type == 'Gaussian':
+
+            self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='!disabled')
+
+            if m2e_val == 'minimum':
+                m2e_val = 0
+                #set to zero
+                #TODO : should this be something else?
+                self.master.btnvars['m2e_latency'].set(0)
+
+            try:
+                #convert values to float
+                m2e_val = float(m2e_val)
+                m2e_sigma = float(m2e_sigma)
+
+                lower = round(m2e_val - m2e_sigma, 4)
+                upper = round(m2e_val + m2e_sigma, 4)
+                #update range
+                self.update_rng(f'from {lower} to {upper} sec')
+            except ValueError:
+                #ignore value errors (partially entered number)
+                pass
+
+
 class access_delay(LabeledControl):
     """Delay between the time that the simulated push to talk button is pushed
     and when audio starts coming through the channel. If the 'ptt_delay'
@@ -1542,12 +1679,89 @@ class access_delay(LabeledControl):
     'ptt_delay' is added to access_delay to get the time when access is
     granted. Otherwise access is granted 'access_delay' seconds after the
     clip starts."""
-    
-    text = 'Access Delay:'
+
+    text = 'Value:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
+
+class access_delay_cfg(SubCfgFrame):
+    '''
+    Config to control access delay
+    '''
+
+    text = 'Access Delay'
+
+    def get_controls(self):
+        return (
+            access_delay_type,
+            access_delay,
+            access_delay_sigma,
+            access_delay_range,
+            )
+
+class access_delay_type(DistributionType):
+    """Type of access delay"""
+    pass
+
+class access_delay_sigma(LabeledControl):
+    """
+    Sigma value for m2e latency
+    """
+
+    text = '\u03C3:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class access_delay_range(RangeDisplay):
+    """display of the range of access delay"""
     
-    
+    text = 'range:'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        #track selection of access delay type
+        id = self.master.master.btnvars['access_delay_type'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['access_delay_type'], id))
+
+        #track selection of access delay value
+        id = self.master.master.btnvars['access_delay'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['access_delay'], id))
+
+        #track selection of access delay value
+        id = self.master.master.btnvars['access_delay_sigma'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['access_delay_sigma'], id))
+
+        self.update()
+
+
+    def update(self, *args):
+        try:
+            acc_type = self.master.btnvars['access_delay_type'].get()
+            acc_val  = self.master.btnvars['access_delay'].get()
+            acc_sigma  = self.master.btnvars['access_delay_sigma'].get()
+
+            if acc_type == 'constant':
+                self.update_rng(f'{acc_val}')
+                #disable sigma
+                self.master.controls['access_delay_sigma'].m_ctrl.configure(state='disabled')
+            elif acc_type == 'Gaussian':
+
+                self.master.controls['access_delay_sigma'].m_ctrl.configure(state='!disabled')
+
+                #convert values to float
+                acc_val = float(acc_val)
+                acc_sigma = float(acc_sigma)
+
+                lower = round(acc_val - acc_sigma, 4)
+                upper = round(acc_val + acc_sigma, 4)
+                #update range
+                self.update_rng(f'from {lower} to {upper} sec')
+        except (ValueError,_tkinter.TclError):
+            #ignore value errors (partially entered number)
+            pass
+
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
     text = 'Channel SNR:'
