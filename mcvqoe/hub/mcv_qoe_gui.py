@@ -2238,20 +2238,22 @@ class _StopWatch:
         time_left = time_left / 60
         
         if time_left < 60:
+            time_unit = 'minute'
             time_left = round(time_left)
-            if time_left == 0:
-                time_left = 'Less than 1'
-                time_unit = 'minute'
-            elif time_left == 1:
-                time_unit = 'minute'
-            else:
-                time_unit = 'minutes'
         elif time_left < 60 * 24:
             time_left = round(time_left // 60)
-            time_unit = 'hours'
+            time_unit = 'hour'
         else:
             time_left = round(time_left // 60 // 24)
-            time_unit = 'days'
+            time_unit = 'day'
+
+        #check if we have more than one left
+        if time_left > 1:
+            #pluralize
+            time_unit = time_unit + 's'
+        #check for zero
+        if time_left == 0:
+            time_left = 'Less than 1'
     
         return (time_left, time_unit)
 
