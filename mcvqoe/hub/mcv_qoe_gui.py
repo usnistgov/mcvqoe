@@ -2270,8 +2270,6 @@ class WarningBox(tk.Frame):
     """
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
-        
-        add_mcv_icon(self)
 
         tk.Button(self, text='x', command=self.destroy, background=color).pack(
             side=tk.RIGHT, padx=10, pady=10)
