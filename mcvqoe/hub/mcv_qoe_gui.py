@@ -2149,6 +2149,11 @@ class TestProgressFrame(tk.LabelFrame):
         
         return False
     
+    def remove_warning(self, w):
+        '''
+        Remove `w` from the list of warnings.
+        '''
+        self.warnings.remove(w)
     
     def _trim_text(self, text):
         """remove characters from text to fit the width of the window"""
@@ -2271,7 +2276,10 @@ class WarningBox(tk.Frame):
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
 
-        tk.Button(self, text='x', command=self.destroy, background=color).pack(
+        tk.Button(self, text='x', command=self.close, background=color).pack(
+            side=tk.RIGHT, padx=10, pady=10)
+
+        tk.Button(self, text='suppress', command=self.suppress, background=color).pack(
             side=tk.RIGHT, padx=10, pady=10)
         
         ttk.Label(self, text=text, background=color).pack(
@@ -2285,6 +2293,23 @@ class WarningBox(tk.Frame):
     def pack(self, *args, **kwargs):
         
         super().pack(*args, side=tk.BOTTOM, fill=tk.X, **kwargs)
+
+    def suppress(self):
+        '''
+        Destroy widget, but leave warning in list.
+        '''
+        self.destroy()
+
+    def close(self):
+        '''
+        Destroy widget, and remove from warnings list.
+        '''
+
+        #destroy widget
+        self.destroy()
+        #remove from warning list
+        self.master.remove_warning(self)
+
 
 class PostProcessingFrame(ttk.Frame):
     """
