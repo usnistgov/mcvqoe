@@ -244,8 +244,14 @@ class MCVQoEGui(tk.Tk):
         """
         state = ('!disabled', 'disabled')[disabled]
         
+        disable_classes = (
+            ttk.Button,
+            ttk.Radiobutton,
+            ttk.Label,
+            ttk.OptionMenu,
+            )
         for n_, w in self.LeftFrame.MenuFrame.TestTypeFrame.children.items():
-            if isinstance(w, (ttk.Button, ttk.Radiobutton, ttk.Label)):
+            if isinstance(w, disable_classes):
                 w.configure(state=state)
 
     def _rm_waits_in_sim(self):
