@@ -3451,7 +3451,7 @@ def load_defaults():
             'access_delay',
             'rec_snr',
             'PTT_sig_freq',
-            'PTT_sig_aplitude',
+            'PTT_sig_amplitude',
             
             '_enable_PBI',
             'pre_vs_post',

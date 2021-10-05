@@ -1441,7 +1441,7 @@ class SimSettings(AdvancedConfigGUI):
             access_delay,
             rec_snr,
             PTT_sig_freq,
-            PTT_sig_aplitude,
+            PTT_sig_amplitude,
             
             Probabilityizer,
             _impairment_plugin,
@@ -1561,7 +1561,7 @@ class PTT_sig_freq(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
     
-class PTT_sig_aplitude(LabeledControl):
+class PTT_sig_amplitude(LabeledControl):
     """Amplitude of the PTT signal from the play_record method."""
     text = 'PTT Signal Amplitude:'
     MCtrl = ttk.Spinbox
