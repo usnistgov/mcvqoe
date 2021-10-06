@@ -97,8 +97,8 @@ class ScrollableFrame(ttk.Frame):
 
 
         
-
 class TestCfgFrame(ttk.LabelFrame):
+
     """
     Base class for frames to configure and run a measurement.
     
@@ -1350,6 +1350,7 @@ class _HdwPrototype:
     blocksize=512
     buffersize=20
     overplay=1.0
+    timecode_type='RIGB_timecode'
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
@@ -1363,6 +1364,7 @@ class HdwSettings(AdvancedConfigGUI):
             AudioSettings,
             overplay,
             radioport,
+            timecode_type,
             _restore_defaults,
             )
             
@@ -1371,6 +1373,13 @@ class radioport(LabeledControl):
     port where a radio interface is detected"""
     
     text = 'Radio Port:'
+    
+class timecode_type(LabeledControl):
+    """type of timecode to use for two location tests"""
+
+    text = 'Timecode Type:'
+    MCtrl = ttk.Combobox
+    MCtrlkwargs = {'values' : ('RIGB_timecode','soft_timecode')}
 
 class AudioSettings(SubCfgFrame):
     
