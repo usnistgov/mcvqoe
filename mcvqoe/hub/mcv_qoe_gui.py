@@ -33,6 +33,8 @@ from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from .shared import add_mcv_icon
+#import for save locations
+from .common import save_dir, old_save_dir
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
@@ -44,6 +46,7 @@ import _thread
 import json
 import pickle
 import os
+import shutil
 from os import path, listdir
 import gc
 import subprocess as sp
@@ -3512,9 +3515,7 @@ def load_defaults():
         }
     for name_, cfg in DEFAULTS.items():
         if 'outdir' in cfg:
-            cfg['outdir'] = path.join(path.expanduser("~"),
-                                      'MCV-QoE',
-                                      dir_names[name_])
+            cfg['outdir'] = path.join(save_dir, dir_names[name_])
 
         # formats audio_files and audio_path to make them more readable
         if 'audio_files' in cfg and 'audio_path' in cfg:
@@ -3581,6 +3582,20 @@ def load_defaults():
 
 def main():
 
+    #check if old folder exists and copy
+    if path.exists(old_save_dir):
+        #print message
+        print(f'Moving data from \'{old_save_dir}\' to \'{save_dir}\'')
+        try:
+            #check that new dir does not exist
+            if path.exists(save_dir):
+                raise RuntimeError(f'Both \'{old_save_dir}\' and \'{save_dir}\' exist!')
+            #copy files to new location
+            os.renames(old_save_dir,save_dir)
+        except:
+            show_error(err_func=tk.messagebox.showerror)
+            raise SystemExit(1)
+
     #import measurement things
     loader.measure_imports()
 
@@ -3590,7 +3605,7 @@ def main():
     try:
         loader.tk_main.win.init_as_mainwindow()
     except e:
-        show_error()
+        show_error(err_func=tk.messagebox.showerror)
         raise SystemExit(1)
     
     loader.tk_main.main_loop()
