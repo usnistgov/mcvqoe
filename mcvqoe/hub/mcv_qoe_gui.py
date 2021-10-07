@@ -3451,6 +3451,7 @@ def load_defaults():
             'channel_rate',
             'm2e_latency',
             'access_delay',
+            'device_delay',
             'rec_snr',
             'PTT_sig_freq',
             'PTT_sig_amplitude',
@@ -3563,6 +3564,7 @@ def load_defaults():
 
     # the following should be a float
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+    DEFAULTS['SimSettings']['device_delay'] = float(DEFAULTS['SimSettings']['device_delay'])
 
     for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
         DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])

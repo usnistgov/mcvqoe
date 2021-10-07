@@ -1448,6 +1448,7 @@ class SimSettings(AdvancedConfigGUI):
             
             m2e_latency,
             access_delay,
+            device_delay,
             rec_snr,
             PTT_sig_freq,
             PTT_sig_amplitude,
@@ -1555,7 +1556,13 @@ class access_delay(LabeledControl):
     text = 'Access Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
+
+class device_delay(LabeledControl):
+    """Simulated device delay in seconds."""
     
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
     
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
