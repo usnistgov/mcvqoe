@@ -3508,7 +3508,7 @@ def load_defaults():
 
     # set the default outdir directories
     dir_names = {
-        dev_dly_char: 'Device_Delay_Characterization',
+        dev_dly_char: 'Mouth_2_Ear',
         m2e: 'Mouth_2_Ear',
         accesstime: 'Access_Time',
         psud: 'PSuD',
