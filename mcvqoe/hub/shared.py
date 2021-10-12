@@ -1350,7 +1350,7 @@ class _HdwPrototype:
     blocksize=512
     buffersize=20
     overplay=1.0
-    timecode_type='RIGB_timecode'
+    timecode_type='IRIGB_timecode'
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
@@ -1379,7 +1379,7 @@ class timecode_type(LabeledControl):
 
     text = 'Timecode Type:'
     MCtrl = ttk.Combobox
-    MCtrlkwargs = {'values' : ('RIGB_timecode','soft_timecode')}
+    MCtrlkwargs = {'values' : ('IRIGB_timecode','soft_timecode')}
 
 class AudioSettings(SubCfgFrame):
     
