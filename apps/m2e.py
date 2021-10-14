@@ -7,14 +7,8 @@ Created on Tue Oct 12 12:26:08 2021
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
-from ipywidgets import widgets
-from plotly.subplots import make_subplots
-
 
 import base64
-import dash
-
-import datetime
 
 import json
 import io
@@ -29,6 +23,9 @@ import pandas as pd
 import plotly.graph_objects as go
 
 def blank_fig():
+    """
+    Make a blank plotly figure for a placeholder prior to data load
+    """
     fig = go.Figure(go.Scatter(x=[], y = []))
     fig.update_layout(template = None)
     fig.update_xaxes(showgrid = False, showticklabels = False, zeroline=False)
@@ -36,19 +33,22 @@ def blank_fig():
     
     return fig
 
+# --------------------[Define Styles]----------------------
+# TODO: These should probably move somewhere more general and be imported
 radio_button_style = {'width': '15%', 'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
+#-----------------------[Begin layout]---------------------------
 layout = html.Div([
     # TODO: This should probably be local or session
+    # Element to store json representations of data
     dcc.Store(id='json-data',
               storage_type='memory',
               ),
-    
     html.H1('MCV QoE Measurements Processing'),
     
     html.H3('Mouth-to-ear latency data analysis'),
-    
+    #--------------[Upload Data]------------------------------
     dcc.Upload(
         id='upload-data',
         children=html.Div([
@@ -107,7 +107,7 @@ layout = html.Div([
             labelStyle={'display': 'inline-block'}
             ),
     ], style=radio_button_style),
-    
+    # -------------------------[Plots]----------------------------------------
     html.Div([
         # ------------[Scatter Plot]---------------------
         html.Div([
@@ -122,6 +122,7 @@ layout = html.Div([
               ),
             ], className='six columns'),
         ]),
+    # ----------------------[Bottom Navigation]-------------------------
     html.Br(),
     html.Div([
         html.Hr(),
@@ -131,6 +132,26 @@ layout = html.Div([
 
 
 def parse_contents(contents, filename, date):
+    """
+    Parse contents of uploaded data
+
+    Parameters
+    ----------
+    contents : TYPE
+        DESCRIPTION.
+    filename : TYPE
+        DESCRIPTION.
+    date : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    children : TYPE
+        HTML representations of filename or error string.
+    df : pd.DataFrame
+        Data stored as dataframe.
+
+    """
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     fname, ext = os.path.splitext(filename)
@@ -149,43 +170,56 @@ def parse_contents(contents, filename, date):
     
     children = html.Div([
             html.Div(filename),
-            # html.H6(datetime.datetime.fromtimestamp(date)),
-            
-            # dash.dash_table.DataTable(
-            #     data=df.to_dict('records'),
-            #     columns=[{'name': i, 'id': i} for i in df.columns],
-            #     page_size=10,
-            #     ),
-            # html.Hr(),
-            
-            # # For debugging, display the raw contents provided by the web browser
-            # html.Div('Raw Content'),
-            # html.Pre(contents[0:200] + '...', style={
-            #     'whiteSpace': 'pre-wrap',
-            #     'wordBreak': 'break-all'
-            # }),
-            
-            # html.Hr(),
-            # html.Div('Object'),
-            
         ])
     return children, df
 
 def load_json_data(jsonified_data):
+    """
+    Load json data as mouth2ear.evaluate object
+
+    Parameters
+    ----------
+    jsonified_data : str
+        Jsonified dict of jsonified dataframes.
+
+    Returns
+    -------
+    m2e_eval : mcvqoe.mouth2ear.evaluate
+        Evaluate object of all stored data.
+
+    """
+    # Parse dict of dataframes
     test_dict = json.loads(jsonified_data)
     with tempfile.TemporaryDirectory() as tmpdirname:
+        # Initialize tmpdir
         os.makedirs(os.path.join(tmpdirname, 'csv'))
         outpaths = []
         for test_name in test_dict:
+            # Read json of dict element as a dataframe
             test_df = pd.read_json(test_dict[test_name])
             tmpname = os.path.join(tmpdirname, 'csv', test_name)
+            # Store temporary file
             test_df.to_csv(tmpname, index=False)
             outpaths.append(tmpname)
+        # Load temporary files
         m2e_eval = mouth2ear.evaluate(outpaths)
         return m2e_eval
     
 def format_m2e_results(m2e_eval):
-    
+    """
+    Format results from mouth2ear.evaluate object to be in nice HTML.
+
+    Parameters
+    ----------
+    m2e_eval : mcvqoe.mouth2ear.evaluate
+        DESCRIPTION.
+
+    Returns
+    -------
+    children : html.Div
+        DESCRIPTION.
+
+    """
     children = html.Div([
         html.H6('Mean mouth-to-ear latency'),
         html.Div(f'{m2e_eval.mean} seconds'),
@@ -202,6 +236,26 @@ def format_m2e_results(m2e_eval):
     Input('upload-data', 'last_modified'),
     )
 def update_output(list_of_contents, list_of_names, list_of_dates):
+    """
+    Process uploaded data and store csv files as json
+
+    Parameters
+    ----------
+    list_of_contents : TYPE
+        DESCRIPTION.
+    list_of_names : TYPE
+        DESCRIPTION.
+    list_of_dates : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    children : TYPE
+        DESCRIPTION.
+    final_json : TYPE
+        DESCRIPTION.
+
+    """
     if list_of_contents is not None:
         children = []
         dfs = []
@@ -235,6 +289,28 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     Input('x-axis', 'value'),
     )
 def update_plots(jsonified_data, thin, talker_select, session_select, x):
+    """
+    Update all plots
+
+    Parameters
+    ----------
+    jsonified_data : TYPE
+        DESCRIPTION.
+    thin : TYPE
+        DESCRIPTION.
+    talker_select : TYPE
+        DESCRIPTION.
+    session_select : TYPE
+        DESCRIPTION.
+    x : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    return_vals : TYPE
+        DESCRIPTION.
+
+    """
     if jsonified_data is not None:
     
         m2e_eval = load_json_data(jsonified_data)
