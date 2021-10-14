@@ -15,6 +15,8 @@ import traceback
 import tkinter as tk
 import os.path
 
+from .common import save_dir
+
 
 def in_thread(thread, wait=True, except_ = None):
     """A function decorator to ensure that a function runs in the given thread.
@@ -274,18 +276,17 @@ class SingletonWindow(type):
             cls._instances[cls].focus_force()
             cls._instances[cls].bell()
         return cls._instances[cls]
-            
 
+@in_thread('GuiThread')
+def _show_error(err_name, msg):
+    tk.messagebox.showerror(err_name, msg)
 
-
-
-def show_error(exc=None):
+def show_error(exc=None, err_func=None):
 
     err_time = datetime.datetime.now()
 
     #dir for traceback.log file
-    #TODO : make this configurable??
-    base_fold = os.path.join(os.path.expanduser("~"),'MCV-QoE')
+    base_fold = save_dir
     #full path to log file
     err_log = os.path.join(base_fold,'traceback.log')
 
@@ -316,12 +317,15 @@ def show_error(exc=None):
         #no error
         return
     
-    if isinstance(exc, InvalidParameter):
+    if isinstance(exc, InvalidParameter) and err_func is None:
         main.win.show_invalid_parameter(exc)
     else:
         err_name, msg = format_error(exc)
-    
-        _show_error(err_name, msg)
+
+        if err_func:
+            err_func(err_name, msg)
+        else:
+            _show_error(err_name, msg)
     
 
 def format_error(exc):
@@ -349,14 +353,8 @@ def format_error(exc):
     
         
     return err_name, msg
-    
-    
-    
-@in_thread('GuiThread')
-def _show_error(err_name, msg):
-    tk.messagebox.showerror(err_name, msg)
-    
-    
+
+
 class InvalidParameter(ValueError):
     """Raised when a user fails to input a required parameter.
     """
