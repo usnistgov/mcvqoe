@@ -71,7 +71,8 @@ layout = html.Div([
         ),
     html.Div(id='output-data-upload'),
     html.Div('False',
-             id='initial-data-passed'),
+             id='initial-data-passed',
+             style={'display': 'none'}),
     html.Div(id='m2e-results'),
     # ----------------[Dropdowns]------------------
     html.Div([
@@ -270,7 +271,13 @@ def update_output(list_of_contents, list_of_names,
     # print(initial_data_flag)
     if initial_data_flag == 'True':
         final_json = initial_data
-        children = html.Div('I need to do this part')
+        test_dict = json.loads(final_json)
+        children = []
+        for filename in test_dict:
+            children.append(html.Div([
+                html.Div(filename),
+                ]))
+        # children = html.Div('I need to do this part')
     else:
         # time.sleep(3)
         if list_of_contents is not None:
