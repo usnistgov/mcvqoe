@@ -238,6 +238,7 @@ def format_m2e_results(m2e_eval):
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('json-data', 'data'),
+    Output('initial-data-passed', 'children'),
     Input('upload-data', 'contents'),
     Input('upload-data', 'filename'),
     State('initial-data-passed', 'children'),
@@ -268,8 +269,6 @@ def update_output(list_of_contents, list_of_names,
     # print('sleeping in update_output')
     # print(initial_data_flag)
     if initial_data_flag == 'True':
-        print('we hit data pass')
-        # print(initial_data)
         final_json = initial_data
         children = html.Div('I need to do this part')
     else:
@@ -294,7 +293,8 @@ def update_output(list_of_contents, list_of_names,
             final_json = None
         # print(final_json)
     # print(children)
-    return children, final_json
+    initial_data_flag = html.Div('False')
+    return children, final_json, initial_data_flag
 
 @app.callback(
     Output('m2e-results', 'children'),

@@ -4,6 +4,7 @@ Created on Tue Oct  5 14:59:05 2021
 
 @author: jkp4
 """
+import argparse
 import base64
 import json
 import os
@@ -22,34 +23,45 @@ app.layout = html.Div([
     html.Div(id='page-content')
     ])
 
+def format_data(fpaths):
+    out_json = {}
+    children = []
+    for fpath in fpaths:
+        fname = os.path.basename(fpath)
+        df = pd.read_csv(fpath)
+        out_json[fname] = df.to_json()
+        
+        child = html.Div([
+            html.Div(fname),
+            ])
+        children.append(child)
+    
+    final_json = json.dumps(out_json)
+    return children, final_json
+
 @app.callback(Output('page-content', 'children'),
               Input('url', 'pathname'))
 def display_page(pathname):
+    global app
+    print(f'First Load: {app.first_load}')
+    has_data = (app.test_type is not None) and (app.test_files != [])
+    if app.first_load and has_data:
+        fpaths = app.test_files
+        pathname = '/apps/' + app.test_type
+    else:
+        fpaths = None
+    app.first_load = False
+    
     if pathname == '/apps/psud':
         return psud.layout
     elif pathname =='/apps/m2e':
         layout = m2e.layout
-        
-        fpaths = ['../mouth2ear-internal/data/csv/capture_AD-QoE-Board-Validation_04-Oct-2021_09-19-43.csv',
-                  '../mouth2ear-internal/data/csv/capture_QoE board baseline_21-Sep-2021_15-09-04.csv',
-                  ]
-        out_json = {}
-        children = []
-        for fpath in fpaths:
-            fname = os.path.basename(fpath)
-            df = pd.read_csv(fpath)
-            out_json[fname] = df.to_json()
+        if fpaths is not None:
+            children, final_json = format_data(fpaths)
+            layout.children[0].data = final_json
+            layout.children[4].children = children
             
-            child = html.Div([
-                html.Div(fname),
-                ])
-            children.append(child)
-        
-        final_json = json.dumps(out_json)
-        layout.children[0].data = final_json
-        layout.children[4].children = children
-        
-        layout.children[5].children = 'True'
+            layout.children[5].children = 'True'
         
         return layout
         # return m2e.layout
@@ -62,4 +74,24 @@ def display_page(pathname):
         return measurement_select.layout
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description=__doc__
+        )
+    parser.add_argument('--test-type',
+                        default=None,
+                        type=str,
+                        help='Test type, one of {m2e, access, intell, or psud}'
+                        )
+    parser.add_argument('--test-files',
+                        type=str,
+                        nargs="+",
+                        action="extend",
+                        help="Files to process, absolute paths")
+    args = parser.parse_args()
+    
+    
+    app.test_type = args.test_type
+    app.test_files = args.test_files
+    
+    app.first_load = True
     app.run_server(debug=True)
