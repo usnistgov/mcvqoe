@@ -48,17 +48,18 @@ def format_data(fpaths):
 def display_page(pathname):
     global app
     print(f'First Load: {app.first_load}')
+    
     has_data = (app.test_type is not None) and (app.test_files != [])
     if app.first_load and has_data:
         fpaths = app.test_files
-        pathname = '/apps/' + app.test_type
+        pathname = '/' + app.test_type
     else:
         fpaths = None
     app.first_load = False
-    
-    if pathname == '/apps/psud':
+    print(pathname)
+    if pathname == '/psud':
         return psud.layout
-    elif pathname =='/apps/m2e':
+    elif pathname =='/m2e':
         layout = m2e.layout
         if fpaths is not None:
             children, final_json = format_data(fpaths)
@@ -69,7 +70,7 @@ def display_page(pathname):
         
         return layout
         # return m2e.layout
-    elif pathname == '/apps/measurement_select':
+    elif pathname == 'measurement_select':
         
         return measurement_select.layout
     else:

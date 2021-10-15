@@ -132,7 +132,7 @@ layout = html.Div([
     html.Br(),
     html.Div([
         html.Hr(),
-        dcc.Link('Load new data', href='/apps/measurement_select')
+        dcc.Link('Load new data', href='/measurement_select')
         ], className='twelve columns'),
     ])
 

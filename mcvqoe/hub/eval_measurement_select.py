@@ -25,9 +25,9 @@ layout = html.Div([
             ]
         ),
     html.Div(id='measurement-select-display'),
-    dcc.Link('Go to PSuD', href='/apps/psud'),
+    dcc.Link('Go to PSuD', href='/psud'),
     html.Br(),
-    dcc.Link('Go to M2E', href='/apps/m2e'),
+    dcc.Link('Go to M2E', href='/m2e'),
     ])
 
 @app.callback(
