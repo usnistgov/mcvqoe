@@ -37,6 +37,9 @@ setuptools.setup(
         'gui_scripts':[
             'mcvqoe=mcvqoe.hub.mcv_qoe_gui:main',
         ],
+        'console_scripts':[
+            'mcvqoe-eval=mcvqoe.hub.eval_index:main',
+            ]
     },
     python_requires='>=3.8',
 )
