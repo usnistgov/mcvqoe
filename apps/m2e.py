@@ -6,7 +6,7 @@ Created on Tue Oct 12 12:26:08 2021
 """
 from dash import dcc
 from dash import html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 import base64
 
@@ -21,6 +21,8 @@ import numpy as np
 import os
 import pandas as pd
 import plotly.graph_objects as go
+
+import time
 
 def blank_fig():
     """
@@ -68,6 +70,8 @@ layout = html.Div([
         multiple=True
         ),
     html.Div(id='output-data-upload'),
+    html.Div('False',
+             id='initial-data-passed'),
     html.Div(id='m2e-results'),
     # ----------------[Dropdowns]------------------
     html.Div([
@@ -131,7 +135,7 @@ layout = html.Div([
     ])
 
 
-def parse_contents(contents, filename, date):
+def parse_contents(contents, filename):
     """
     Parse contents of uploaded data
 
@@ -153,6 +157,8 @@ def parse_contents(contents, filename, date):
 
     """
     content_type, content_string = contents.split(',')
+    # print(f'contents: {contents}')
+    # print(f'content_type: {content_type}')
     decoded = base64.b64decode(content_string)
     fname, ext = os.path.splitext(filename)
     try:
@@ -228,14 +234,17 @@ def format_m2e_results(m2e_eval):
         ])
     return children
 
+# --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
     Output('output-data-upload', 'children'),
     Output('json-data', 'data'),
     Input('upload-data', 'contents'),
     Input('upload-data', 'filename'),
-    Input('upload-data', 'last_modified'),
+    State('initial-data-passed', 'children'),
+    State('json-data', 'data'),
     )
-def update_output(list_of_contents, list_of_names, list_of_dates):
+def update_output(list_of_contents, list_of_names,
+                  initial_data_flag, initial_data):
     """
     Process uploaded data and store csv files as json
 
@@ -256,24 +265,35 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         DESCRIPTION.
 
     """
-    if list_of_contents is not None:
-        children = []
-        dfs = []
-        for c, n, d in zip(list_of_contents, list_of_names, list_of_dates):
-            child, df = parse_contents(c, n, d)
-            children.append(child)
-            dfs.append(df)
-        with tempfile.TemporaryDirectory() as tmpdirname:
-                os.makedirs(os.path.join(tmpdirname, 'csv'))
-                
-                out_json = {}
-                for filename, df in zip(list_of_names, dfs):
-                    out_json[filename] = df.to_json()
-                    
-        final_json = json.dumps(out_json)
+    # print('sleeping in update_output')
+    # print(initial_data_flag)
+    if initial_data_flag == 'True':
+        print('we hit data pass')
+        # print(initial_data)
+        final_json = initial_data
+        children = html.Div('I need to do this part')
     else:
-        children = None
-        final_json = None
+        # time.sleep(3)
+        if list_of_contents is not None:
+            children = []
+            dfs = []
+            for c, n in zip(list_of_contents, list_of_names):
+                child, df = parse_contents(c, n)
+                children.append(child)
+                dfs.append(df)
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                    os.makedirs(os.path.join(tmpdirname, 'csv'))
+                    
+                    out_json = {}
+                    for filename, df in zip(list_of_names, dfs):
+                        out_json[filename] = df.to_json()
+                        
+            final_json = json.dumps(out_json)
+        else:
+            children = None
+            final_json = None
+        # print(final_json)
+    # print(children)
     return children, final_json
 
 @app.callback(
@@ -311,10 +331,11 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x):
         DESCRIPTION.
 
     """
+    
     if jsonified_data is not None:
     
         m2e_eval = load_json_data(jsonified_data)
-            
+        
         thinned = thin == 'True'
         if x == 'index':
             x = None
