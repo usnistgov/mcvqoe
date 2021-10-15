@@ -14,7 +14,8 @@ import json
 import io
 import tempfile 
 
-from app import app
+from mcvqoe.hub.eval_app import app
+# from .eval_app import app
 
 import mcvqoe.mouth2ear as mouth2ear
 import numpy as np

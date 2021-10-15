@@ -15,8 +15,12 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
 
-from app import app
-from apps import measurement_select, psud, m2e
+from mcvqoe.hub.eval_app import app
+import mcvqoe.hub.eval_measurement_select as measurement_select
+import mcvqoe.hub.eval_m2e as m2e
+import mcvqoe.hub.eval_psud as psud
+# from .eval_app import app
+# from .apps import measurement_select, psud, m2e
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -73,7 +77,8 @@ def display_page(pathname):
         # return '404'
         return measurement_select.layout
 
-if __name__ == '__main__':
+def main():
+    global app
     parser = argparse.ArgumentParser(
         description=__doc__
         )
@@ -95,3 +100,5 @@ if __name__ == '__main__':
     
     app.first_load = True
     app.run_server(debug=True)
+if __name__ == '__main__':
+    main()

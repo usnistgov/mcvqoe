@@ -8,7 +8,8 @@ from dash import dcc
 from dash import html
 import dash
 
-from app import app
+from mcvqoe.hub.eval_app import app
+# from .eval_app import app
 
 layout = html.Div([
     html.H1('MCV QoE Measurements Processing'),

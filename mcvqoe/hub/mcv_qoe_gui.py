@@ -52,6 +52,7 @@ import gc
 import subprocess as sp
 import traceback
 import numpy as np
+import webbrowser
 
 from pkg_resources import resource_filename
 
@@ -2681,7 +2682,15 @@ def run(root_cfg):
         # M2e: mean, std, and plots
         elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
+            
             mean, std = my_obj.get_mean_and_std()
+            gui_call = ['mcvqoe-eval',
+                        '--test-type', 'm2e',
+                        '--test-files', my_obj.data_filename]
+            sp.Popen(gui_call)
+            
+            webbrowser.open('http://127.0.0.1:8050/')
+            # TODO: Kill the gui call when finish button pressed
             
             ppf.add_element("Mean: %.5fs" % mean)
             ppf.add_element("StD: %.2fus" % std)
