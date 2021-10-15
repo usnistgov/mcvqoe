@@ -2684,33 +2684,34 @@ def run(root_cfg):
             #show mean and std_dev
             
             mean, std = my_obj.get_mean_and_std()
-            gui_call = ['mcvqoe-eval',
-                        '--test-type', 'm2e',
-                        '--test-files', my_obj.data_filename]
-            sp.Popen(gui_call)
             
-            webbrowser.open('http://127.0.0.1:8050/')
             # TODO: Kill the gui call when finish button pressed
             
             ppf.add_element("Mean: %.5fs" % mean)
             ppf.add_element("StD: %.2fus" % std)
             
             # plots will leak memory if this is false.
-            if loader.use_alternate_plot_rendering:
+            # if loader.use_alternate_plot_rendering:
+            
+            #create "show plots" button
+            class ShowPlots(ttk.Button):
+                def __init__(self, master):
+                    super().__init__(master,
+                        text='Show Plots',
+                        command=self.plot)
                 
-                #create "show plots" button
-                class ShowPlots(ttk.Button):
-                    def __init__(self, master):
-                        super().__init__(master,
-                            text='Show Plots',
-                            command=self.plot)
+                @in_thread('MainThread', wait=False)
+                def plot(self):
+                    gui_call = ['mcvqoe-eval',
+                    '--test-type', 'm2e',
+                    '--test-files', my_obj.data_filename]
+                    sp.Popen(gui_call)
                     
-                    @in_thread('MainThread', wait=False)
-                    def plot(self):my_obj.plot()
-                
-                ppf.add_element(ShowPlots)
-            else:
-                ppf.add_element('To show plots, please install PyQt5')
+                    webbrowser.open('http://127.0.0.1:8050/')
+            
+            ppf.add_element(ShowPlots)
+            # else:
+            #     ppf.add_element('To show plots, please install PyQt5')
 
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
