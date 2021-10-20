@@ -42,6 +42,7 @@ radio_button_style = {'width': '15%', 'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 #-----------------------[Begin layout]---------------------------
+# TODO: Say something about common thinning fctor if data can't be thined
 layout = html.Div([
     # TODO: This should probably be local or session
     # Element to store json representations of data
