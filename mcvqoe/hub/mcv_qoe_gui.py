@@ -56,6 +56,8 @@ import webbrowser
 
 from pkg_resources import resource_filename
 
+
+
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
 #                       -----------------------------
@@ -604,7 +606,9 @@ class MCVQoEGui(tk.Tk):
             # gui as well. This is intended, so that the user can force
             # quit the frozen application
         
-        
+        if hasattr(self, 'eval_server'):
+            # Kill the server
+            webbrowser.open('http://127.0.0.1:8050/shutdown')
         # destroy the window and stop the gui-thread's event loop.
         self.destroy()
 
@@ -1149,7 +1153,8 @@ class MCVQoEGui(tk.Tk):
         elif step == 'post-process':
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
-            next_btn = lambda : self.set_step('empty')
+            # next_btn = lambda : self.set_step('empty')
+            next_btn = lambda : self.on_finish()
             back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
             
@@ -1165,6 +1170,11 @@ class MCVQoEGui(tk.Tk):
         
         # disable or enable leftmost buttons depending on if they are functional
         self._disable_left_frame(step not in ('empty', 'config'))
+    
+    def on_finish(self):
+        # Note: can kill evaluate server here if we want
+        self.set_step('empty')
+        
     
     @in_thread('GuiThread', wait=False)
     def clear_old_entries(self):
@@ -2340,6 +2350,10 @@ class PostProcessingFrame(ttk.Frame):
                    text='Open Output Folder',
                    command = self.open_folder
                    ).pack(padx=10, pady=10, fill=tk.X)
+        ttk.Button(self,
+                   text="Show Plots",
+                   command = self.plot,
+                   ).pack(padx=10, pady=10, fill=tk.X)
         
         self.elements = []
         self.canvasses = []
@@ -2388,6 +2402,46 @@ class PostProcessingFrame(ttk.Frame):
         
         self.canvasses = []
         self.elements = []
+    
+    @in_thread('MainThread', wait=False)
+    def plot(self):
+        selected_test = self.master.selected_test.get()
+        if selected_test == 'M2eFrame':
+            test_type = 'm2e'
+        elif selected_test == 'AccessFrame':
+            test_type = 'access'
+        elif selected_test == 'PSuDFrame':
+            test_type = 'psud'
+        elif selected_test == 'IntellFrame':
+            test_type = 'intell'
+        else:
+            # TODO: Do something here?
+            print('uh oh')
+            test_type = ''
+        test_files = self.last_test
+        gui_call = [
+            'mcvqoe-eval',
+            '--port', '8050',
+            '--test-type', test_type,
+            '--test-files', test_files,
+            ]
+        
+        # TODO: Rework everything to send data via url so no unnecessary shutdown/reopen
+        if hasattr(self.master, 'eval_server'):
+            webbrowser.open('http://127.0.0.1:8050/shutdown')
+        self.master.eval_server = sp.Popen(gui_call,
+                                    stdout=sp.PIPE,
+                                    bufsize=1,
+                                    universal_newlines=True)
+        
+        
+        for line in self.master.eval_server.stdout:
+            print(line, end='') # process line here
+    
+            if 'Dash is running' in line:
+                print('Starting server')
+                webbrowser.open('http://127.0.0.1:8050/')
+                break
     
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
@@ -2662,7 +2716,7 @@ def run(root_cfg):
             
             # run the test
             result = my_obj.run(**recovery_kw)
-            
+            ppf.last_test = my_obj.data_filename
             # prevent freezing if user is trying desperately to close window
             if loader.tk_main.win._is_force_closing:
                 return
@@ -2693,26 +2747,6 @@ def run(root_cfg):
             # plots will leak memory if this is false.
             # if loader.use_alternate_plot_rendering:
             
-            #create "show plots" button
-            class ShowPlots(ttk.Button):
-                def __init__(self, master):
-                    super().__init__(master,
-                        text='Show Plots',
-                        command=self.plot)
-                
-                @in_thread('MainThread', wait=False)
-                def plot(self):
-                    gui_call = ['mcvqoe-eval',
-                    '--test-type', 'm2e',
-                    '--test-files', my_obj.data_filename]
-                    sp.Popen(gui_call)
-                    
-                    webbrowser.open('http://127.0.0.1:8050/')
-            
-            ppf.add_element(ShowPlots)
-            # else:
-            #     ppf.add_element('To show plots, please install PyQt5')
-
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
