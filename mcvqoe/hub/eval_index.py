@@ -14,6 +14,7 @@ import pandas as pd
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
+from flask import request
 
 from mcvqoe.hub.eval_app import app
 import mcvqoe.hub.eval_measurement_select as measurement_select
@@ -24,8 +25,15 @@ import mcvqoe.hub.eval_psud as psud
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
+    html.Div(id='page-content'),
     ])
+
+
+def shutdown():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
 
 def format_data(fpaths):
     out_json = {}
@@ -70,19 +78,26 @@ def display_page(pathname):
         
         return layout
         # return m2e.layout
-    elif pathname == 'measurement_select':
-        
+    elif pathname == '/measurement_select' or pathname == '/':
         return measurement_select.layout
+    elif pathname == '/shutdown':
+        # TODO: Figure out if we can show people something acknowledging they quit
+        shutdown()
     else:
-        
-        # return '404'
-        return measurement_select.layout
+        return '404'
+        # return measurement_select.layout
+
+
 
 def main():
     global app
     parser = argparse.ArgumentParser(
         description=__doc__
         )
+    parser.add_argument('--port',
+                        default='8050',
+                        type=str,
+                        help='Port for dash server')
     parser.add_argument('--test-type',
                         default=None,
                         type=str,
@@ -93,6 +108,9 @@ def main():
                         nargs="+",
                         action="extend",
                         help="Files to process, absolute paths")
+    parser.add_argument('-d', '--debug',
+                        action='store_true',
+                        help='Run dash server in debug mode')
     args = parser.parse_args()
     
     
@@ -100,6 +118,7 @@ def main():
     app.test_files = args.test_files
     
     app.first_load = True
-    app.run_server(debug=True)
+    app.run_server(debug=args.debug,
+                   port=args.port)
 if __name__ == '__main__':
     main()
