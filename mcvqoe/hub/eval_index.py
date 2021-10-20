@@ -8,6 +8,7 @@ import argparse
 import base64
 import json
 import os
+import urllib
 
 import pandas as pd
 
@@ -57,6 +58,16 @@ def display_page(pathname):
     global app
     print(f'First Load: {app.first_load}')
     
+    pathparts = pathname.split(';')
+    test_type = pathparts[0]
+    if len(pathparts) > 1:
+        # We have data to load
+        data_files_url = pathparts[1:]
+        data_files = [urllib.request.url2pathname(x) for x in data_files_url]
+        children, final_json = format_data(data_files)
+    else:
+        final_json = None
+    print(f'test_type: {test_type}')
     has_data = (app.test_type is not None) and (app.test_files != [])
     if app.first_load and has_data:
         fpaths = app.test_files
@@ -64,28 +75,31 @@ def display_page(pathname):
     else:
         fpaths = None
     app.first_load = False
-    print(pathname)
-    if pathname == '/psud':
-        return psud.layout
-    elif pathname =='/m2e':
+    
+    if test_type == '/psud':
+        layout = psud.layout
+        
+    elif test_type =='/m2e':
         layout = m2e.layout
-        if fpaths is not None:
-            children, final_json = format_data(fpaths)
+        if final_json is not None:
+            # children, final_json = format_data(fpaths)
             layout.children[0].data = final_json
             layout.children[4].children = children
             
             layout.children[5].children = 'True'
         
-        return layout
+        
         # return m2e.layout
-    elif pathname == '/measurement_select' or pathname == '/':
-        return measurement_select.layout
-    elif pathname == '/shutdown':
+    elif test_type == '/measurement_select' or test_type == '/':
+        layout = measurement_select.layout
+    elif test_type == '/shutdown':
         # TODO: Figure out if we can show people something acknowledging they quit
         shutdown()
+        layout=html.H3('Successfully shutdown MCV QoE Data App')
     else:
-        return '404'
+        layout = '404'
         # return measurement_select.layout
+    return layout
 
 
 

@@ -52,6 +52,7 @@ import gc
 import subprocess as sp
 import traceback
 import numpy as np
+import urllib.request
 import webbrowser
 
 from pkg_resources import resource_filename
@@ -2419,29 +2420,35 @@ class PostProcessingFrame(ttk.Frame):
             print('uh oh')
             test_type = ''
         test_files = self.last_test
+        if isinstance(test_files, str):
+            test_files = [test_files]
+        url_files = [urllib.request.pathname2url(x) for x in test_files]
+        url_file_str = ';'.join(url_files)
         gui_call = [
             'mcvqoe-eval',
             '--port', '8050',
-            '--test-type', test_type,
-            '--test-files', test_files,
             ]
-        
+        data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
         # TODO: Rework everything to send data via url so no unnecessary shutdown/reopen
-        if hasattr(self.master, 'eval_server'):
-            webbrowser.open('http://127.0.0.1:8050/shutdown')
-        self.master.eval_server = sp.Popen(gui_call,
-                                    stdout=sp.PIPE,
-                                    bufsize=1,
-                                    universal_newlines=True)
+        if not hasattr(self.master, 'eval_server'):
+            # webbrowser.open('http://127.0.0.1:8050/shutdown')
+            self.master.eval_server = sp.Popen(gui_call,
+                                        stdout=sp.PIPE,
+                                        bufsize=1,
+                                        universal_newlines=True)
         
         
-        for line in self.master.eval_server.stdout:
-            print(line, end='') # process line here
-    
-            if 'Dash is running' in line:
-                print('Starting server')
-                webbrowser.open('http://127.0.0.1:8050/')
-                break
+            for line in self.master.eval_server.stdout:
+                print(line, end='') # process line here
+        
+                if 'Dash is running' in line:
+                    print('Starting server')
+                    
+                    webbrowser.open(data_url)
+                    break
+        else:
+            print('server already up so I am opening thing')
+            webbrowser.open(data_url)
     
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
