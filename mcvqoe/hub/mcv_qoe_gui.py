@@ -2028,8 +2028,10 @@ class TestProgressFrame(tk.LabelFrame):
             'check-resume' : ('Resuming test...',
                 f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
-            'status' : ('', msg)
+            'status' : ('', msg),
             
+            'compress' : ('Compressing audio data...',
+                          f'Compressing file {current_trial+1} of {num_trials}'),
             }
 
         if prog_type in messages:
@@ -2044,7 +2046,13 @@ class TestProgressFrame(tk.LabelFrame):
             self.bar.start()
             self.time_estimate_.set('')
 
-        elif prog_type in ('pre', 'proc', 'test'):
+        if prog_type in ('proc', 'compress'):
+            #test is done, clear out old info
+            self.clip_name_.set('')
+            self.file_.set('')
+            self.delay_.set('')
+
+        elif prog_type in ('pre', 'proc', 'test', 'compress'):
             # show current progress on a determinate progress bar
             self.bar.stop()
             self.bar.configure(value=current_trial, maximum = num_trials,
