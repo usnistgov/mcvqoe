@@ -16,7 +16,8 @@ import tempfile
 
 from mcvqoe.hub.eval_app import app
 # from .eval_app import app
-
+# from mcvqoe.hub.eval_shared import style_data_filename,format_data_filename, mcv_header
+import mcvqoe.hub.eval_shared as eval_shared
 import mcvqoe.mouth2ear as mouth2ear
 import numpy as np
 import os
@@ -25,118 +26,11 @@ import plotly.graph_objects as go
 
 import time
 
-def blank_fig():
-    """
-    Make a blank plotly figure for a placeholder prior to data load
-    """
-    fig = go.Figure(go.Scatter(x=[], y = []))
-    fig.update_layout(template = None)
-    fig.update_xaxes(showgrid = False, showticklabels = False, zeroline=False)
-    fig.update_yaxes(showgrid = False, showticklabels = False, zeroline=False)
-    
-    return fig
-
-# --------------------[Define Styles]----------------------
-# TODO: These should probably move somewhere more general and be imported
-radio_button_style = {'width': '15%', 'display': 'inline-block'}
-dropdown_style = {'width': '45%', 'display': 'inline-block'}
-
 #-----------------------[Begin layout]---------------------------
 # TODO: Say something about common thinning fctor if data can't be thined
-layout = html.Div([
-    # TODO: This should probably be local or session
-    # Element to store json representations of data
-    dcc.Store(id='json-data',
-              storage_type='memory',
-              ),
-    html.H1('MCV QoE Measurements Processing'),
-    
-    html.H3('Mouth-to-ear latency data analysis'),
-    #--------------[Upload Data]------------------------------
-    dcc.Upload(
-        id='upload-data',
-        children=html.Div([
-            'Drag and drop or ',
-            html.A('Select Files')
-            ]),
-        style={
-            'width': '50%',
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'margin': '10px'
-            },
-        multiple=True
-        ),
-    html.Div(id='output-data-upload'),
-    html.Div('False',
-             id='initial-data-passed',
-             style={'display': 'none'}),
-    html.Div(id='m2e-results'),
-    # ----------------[Dropdowns]------------------
-    html.Div([
-        html.Label('Session Select'),
-        dcc.Dropdown(
-            id='session-select',
-            multi=True
-            )
-        ], style=dropdown_style),
-    html.Div([
-        html.Label('Talker Select'),
-        dcc.Dropdown(
-            id='talker-select',
-            multi=True,
-            )
-        ], style=dropdown_style),
-    # --------------------[Radio Button Filtering]--------------------------
-    html.Div([
-        html.Label('Data thinning'),
-        dcc.RadioItems(
-            id='thin-select',
-            options=[{'label': 'Thinned', 'value': 'True'},
-                     {'label': 'All', 'value': 'False'}
-                     ],
-                     value='True',
-                     labelStyle={'display': 'inline-block'}
-            ),
-        ], style=radio_button_style),
-    html.Div([
-        html.Label('X-axis'),
-        dcc.RadioItems(
-            id='x-axis',
-            options = [{'label': 'Trial', 'value': 'index'},
-                       {'label': 'Timestamp', 'value': 'Timestamp'},
-                       ],
-            value='index',
-            labelStyle={'display': 'inline-block'}
-            ),
-    ], style=radio_button_style),
-    # -------------------------[Plots]----------------------------------------
-    html.Div([
-        # ------------[Scatter Plot]---------------------
-        html.Div([
-            dcc.Graph(id='m2e_scatter',
-                      figure=blank_fig(),
-              ),
-            ], className='twelve columns'),
-        # ----------------[Histogram]---------------------
-        html.Div([
-            dcc.Graph(id='m2e_hist',
-                      figure=blank_fig(),
-              ),
-            ], className='six columns'),
-        ]),
-    # ----------------------[Bottom Navigation]-------------------------
-    html.Br(),
-    html.Div([
-        html.Hr(),
-        dcc.Link('Load new data', href='/measurement_select')
-        ], className='twelve columns'),
-    ])
 
+
+layout = eval_shared.layout_template('m2e')
 
 def parse_contents(contents, filename):
     """
@@ -176,10 +70,8 @@ def parse_contents(contents, filename):
             'There was an error processing this file'
             ])
         return children, None
+    children = eval_shared.format_data_filename(filename)
     
-    children = html.Div([
-            html.Div(filename),
-        ])
     return children, df
 
 def load_json_data(jsonified_data):
@@ -234,7 +126,16 @@ def format_m2e_results(m2e_eval):
         html.Div(f'{m2e_eval.mean} seconds'),
         html.H6('95% Confidence Interval'),
         html.Div(f'{m2e_eval.ci} seconds')
-        ])
+        ],
+        style={
+            'backgroundColor': '#E5ECF6',
+            'width': '50%',
+            'borderWidth': '1px',
+            'borderStyle': 'sokid',
+            'borderRadius': '5px',
+            'textAlign': 'left',
+            'margin': '10px'
+            })
     return children
 
 # --------------[Callback functions (order matters here!)]--------------------
@@ -276,9 +177,7 @@ def update_output(list_of_contents, list_of_names,
         test_dict = json.loads(final_json)
         children = []
         for filename in test_dict:
-            children.append(html.Div([
-                html.Div(filename),
-                ]))
+            children.append(eval_shared.format_data_filename(filename))
         # children = html.Div('I need to do this part')
     else:
         # time.sleep(3)
@@ -306,7 +205,7 @@ def update_output(list_of_contents, list_of_names,
     return children, final_json, initial_data_flag
 
 @app.callback(
-    Output('m2e-results', 'children'),
+    Output('measurement-results', 'children'),
     Output('m2e_scatter', 'figure'),
     Output('m2e_hist', 'figure'),
     Output('talker-select', 'options'),
@@ -385,8 +284,8 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x):
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
         return_vals = (
             html.Div('Mouth-to-ear latency object could not be processed.'),
-            blank_fig(),
-            blank_fig(),
+            eval_shared.blank_fig(),
+            eval_shared.blank_fig(),
             none_dropdown,
             none_dropdown
             )
