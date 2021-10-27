@@ -51,6 +51,24 @@ def format_data(fpaths):
     final_json = json.dumps(out_json)
     return final_json
 
+def update_page_data(layout, final_json, measurement):
+    """
+    Update relevant json-data element and initial data flag
+    """
+    if final_json is not None:
+        for child in layout.children:
+            if hasattr(child, 'id'):
+                if child.id == f'{measurement}-json-data':
+                    child.data = final_json
+                elif child.id == f'{measurement}-initial-data-passed':
+                    child.children = 'True'
+    else:
+        for child in layout.children:
+            if hasattr(child, 'id'):
+                # Act like no data loaded yet
+                if child.id == f'{measurement}-initial-data-passed':
+                    child.children = 'False'
+
 @app.callback(Output('page-content', 'children'),
               Input('url', 'pathname'))
 def display_page(pathname):
@@ -65,25 +83,14 @@ def display_page(pathname):
     else:
         final_json = None
 
-    
+    measurement = test_type[1:]
     if test_type == '/psud':
         layout = psud.layout
         
     elif test_type =='/m2e':
         layout = m2e.layout
-        if final_json is not None:
-            for child in layout.children:
-                if hasattr(child, 'id'):
-                    if child.id == 'm2e-json-data':
-                        child.data = final_json
-                    elif child.id == 'm2e-initial-data-passed':
-                        child.children = 'True'
-        else:
-            for child in layout.children:
-                if hasattr(child, 'id'):
-                    # Act like no data loaded yet
-                    if child.id == 'm2e-initial-data-passed':
-                        child.children = 'False'
+        # Update relevant layout children
+        update_page_data(layout, final_json, measurement)
                 
     elif test_type == '/intell':
         layout = intell.layout
