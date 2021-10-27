@@ -8,7 +8,11 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 
+import base64
+import io
 import numpy as np
+import os
+import pandas as pd
 import plotly.graph_objects as go
 
 # --------------[General Style]--------------------------------------------
@@ -19,12 +23,57 @@ plotly_default_color = '#E5ECF6'
 def mcv_headers(measurement):
     if measurement == 'm2e':
         full_meas = 'Mouth-to-ear latency'
+    elif measurement == 'psud':
+        full_meas = 'Probability of successful delivery'
+    elif measurement == 'intell':
+        full_meas = 'Speech intelligibility'
+    else:
+        full_meas = 'Undefined measurement'
+            
     # TODO: Add other measurements
     children = [
         html.H1('MCV QoE Measurements Processing'),
         html.H3(f'{full_meas} data analysis')
         ]
     return children
+#---------------[Parsing Data]----------------------------
+def parse_contents(contents, filename):
+    """
+    Parse contents of uploaded data
+
+    Parameters
+    ----------
+    contents : TYPE
+        DESCRIPTION.
+    filename : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    children : TYPE
+        HTML representations of filename or error string.
+    df : pd.DataFrame
+        Data stored as dataframe.
+
+    """
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    fname, ext = os.path.splitext(filename)
+    try:
+        if ext == '.csv':
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8'))
+                )
+                
+    except Exception as e:
+        print(e)
+        children =  html.Div([
+            'There was an error processing this file'
+            ])
+        return children, None
+    children = format_data_filename(filename)
+    
+    return children, df
 # --------------[Data Filename Formattting]-----------------------
 style_data_filename = {
             'fontSize': 12,
@@ -60,18 +109,18 @@ style_measurement_format = {
     }
 digit_range = [1, 6]
 digit_default = 4
-def measurement_digits(display, digits=digit_default):
+def measurement_digits(display, digits=digit_default, measurement=''):
     style = style_measurement_format
     
     style['display'] = display
-    
+    # print(f'In measurement_digits: measurement-{measurement}, style[display]: {style["display"]}')
     children = html.Div([
         html.Label(f'Number of Digits in Results ({digit_range[0]} - {digit_range[1]}):'),
-        dcc.Input(id='measurement-digits',
+        dcc.Input(id=f'{measurement}-measurement-digits',
                   value=digits,
                   type='number',
-                  min=1,
-                  max=10,
+                  min=digit_range[0],
+                  max=digit_range[1],
                   style={
                       'backgroundColor': '#f0f2f5',
                       # 'width': '100%',
@@ -99,18 +148,20 @@ def dropdown_filters(measurement):
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
-                        id='session-select',
+                        id=f'{measurement}-session-select',
                         multi=True
                         )
                     ], style=dropdown_style),
                 html.Div([
                     html.Label('Talker Select'),
                     dcc.Dropdown(
-                        id='talker-select',
+                        id=f'{measurement}-talker-select',
                         multi=True,
                         )
                     ], style=dropdown_style),
                 ]
+    else:
+        children = [html.Div('Undefined Measurement')]
     return children
 
 def radio_filters(measurement):
@@ -119,7 +170,7 @@ def radio_filters(measurement):
             html.Div([
                 html.Label('Data thinning'),
                 dcc.RadioItems(
-                    id='thin-select',
+                    id=f'{measurement}-thin-select',
                     options=[{'label': 'Thinned', 'value': 'True'},
                              {'label': 'All', 'value': 'False'}
                              ],
@@ -130,7 +181,7 @@ def radio_filters(measurement):
             html.Div([
                 html.Label('X-axis'),
                 dcc.RadioItems(
-                    id='x-axis',
+                    id=f'{measurement}-x-axis',
                     options = [{'label': 'Trial', 'value': 'index'},
                                {'label': 'Timestamp', 'value': 'Timestamp'},
                                ],
@@ -141,6 +192,8 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    else:
+         children = [html.Div('Undefined measurement')]   
     return children
 #------------------------[Figure and Plots]----------------------------
 def blank_fig():
@@ -159,32 +212,35 @@ def measurement_plots(measurement):
         children = [
             # ------------[Scatter Plot]---------------------
             html.Div([
-                dcc.Graph(id='m2e_scatter',
+                dcc.Graph(id=f'{measurement}-scatter',
                           figure=blank_fig(),
                   ),
                 ], className='twelve columns'),
             # ----------------[Histogram]---------------------
             html.Div([
-                dcc.Graph(id='m2e_hist',
+                dcc.Graph(id=f'{measurement}-hist',
                           figure=blank_fig(),
                   ),
                 ], className='six columns'),
             ]
+    else:
+        
+        children = [html.Div('Undefined measurement')]   
     return children
 #-------------[Create Layout Template]-------------------------
 def layout_template(measurement):
     layout = html.Div([
         # TODO: This should probably be local or session
         # Element to store json representations of data
-        dcc.Store(id='json-data',
+        dcc.Store(id=f'{measurement}-json-data',
                   storage_type='memory',
                   ),
         html.Div(
             mcv_headers(measurement),
-            id='headers',),
+            id=f'{measurement}-headers',),
         #--------------[Upload Data]------------------------------
         dcc.Upload(
-            id='upload-data',
+            id=f'{measurement}-upload-data',
             children=html.Div([
                 'Drag and drop or ',
                 html.A('Select Files')
@@ -201,19 +257,19 @@ def layout_template(measurement):
                 },
             multiple=True
             ),
-        html.Div(id='output-data-upload'),
+        html.Div(id=f'{measurement}-output-data-upload'),
         html.Div('False',
-                 id='initial-data-passed',
+                 id=f'{measurement}-initial-data-passed',
                  style={'display': 'none'}),
         html.Hr(),
         html.Div([
             html.Div(
-                id='measurement-results',
+                id=f'{measurement}-measurement-results',
                 className='eight columns',
                 ),
             html.Div(
-                measurement_digits('none'),
-                id='measurement-formatting',
+                measurement_digits(display='none', measurement=measurement),
+                id=f'{measurement}-measurement-formatting',
                 className='four columns',
                 ),
             ]),
@@ -228,7 +284,7 @@ def layout_template(measurement):
         # ----------------[Dropdowns]------------------
         html.Div(
             dropdown_filters(measurement),
-            id='filters-dropdown',
+            id=f'{measurement}-filters-dropdown',
             style={
                 'marginTop': '10px',
                 },
@@ -236,12 +292,12 @@ def layout_template(measurement):
         # --------------------[Radio Button Filtering]--------------------------
         html.Div(
             radio_filters(measurement),
-            id='filters-buttons',
+            id=f'{measurement}-filters-buttons',
             ),
         # -------------------------[Plots]----------------------------------------
         html.Div(
             measurement_plots(measurement),
-            id='plots',
+            id=f'{measurement}-plots',
             ),
         # ----------------------[Bottom Navigation]-------------------------
         html.Br(),

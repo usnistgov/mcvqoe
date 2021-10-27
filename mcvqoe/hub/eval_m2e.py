@@ -8,23 +8,17 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 
-import base64
-
 import json
-import io
-import tempfile 
-
-from mcvqoe.hub.eval_app import app
-# from .eval_app import app
-# from mcvqoe.hub.eval_shared import style_data_filename,format_data_filename, mcv_header
-import mcvqoe.hub.eval_shared as eval_shared
-import mcvqoe.mouth2ear as mouth2ear
 import numpy as np
 import os
 import pandas as pd
-import plotly.graph_objects as go
+import tempfile 
 
-import time
+from mcvqoe.hub.eval_app import app
+
+import mcvqoe.hub.eval_shared as eval_shared
+import mcvqoe.mouth2ear as mouth2ear
+
 
 #-----------------------[Begin layout]---------------------------
 # TODO: Say something about common thinning fctor if data can't be thined
@@ -32,47 +26,6 @@ import time
 
 layout = eval_shared.layout_template('m2e')
 
-def parse_contents(contents, filename):
-    """
-    Parse contents of uploaded data
-
-    Parameters
-    ----------
-    contents : TYPE
-        DESCRIPTION.
-    filename : TYPE
-        DESCRIPTION.
-    date : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    children : TYPE
-        HTML representations of filename or error string.
-    df : pd.DataFrame
-        Data stored as dataframe.
-
-    """
-    content_type, content_string = contents.split(',')
-    # print(f'contents: {contents}')
-    # print(f'content_type: {content_type}')
-    decoded = base64.b64decode(content_string)
-    fname, ext = os.path.splitext(filename)
-    try:
-        if ext == '.csv':
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8'))
-                )
-                
-    except Exception as e:
-        print(e)
-        children =  html.Div([
-            'There was an error processing this file'
-            ])
-        return children, None
-    children = eval_shared.format_data_filename(filename)
-    
-    return children, df
 
 def load_json_data(jsonified_data):
     """
@@ -136,13 +89,13 @@ def format_m2e_results(m2e_eval, digits=6):
 
 # --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
-    Output('output-data-upload', 'children'),
-    Output('json-data', 'data'),
-    Output('initial-data-passed', 'children'),
-    Input('upload-data', 'contents'),
-    Input('upload-data', 'filename'),
-    State('initial-data-passed', 'children'),
-    State('json-data', 'data'),
+    Output('m2e-output-data-upload', 'children'),
+    Output('m2e-json-data', 'data'),
+    Output('m2e-initial-data-passed', 'children'),
+    Input('m2e-upload-data', 'contents'),
+    Input('m2e-upload-data', 'filename'),
+    State('m2e-initial-data-passed', 'children'),
+    State('m2e-json-data', 'data'),
     )
 def update_output(list_of_contents, list_of_names,
                   initial_data_flag, initial_data):
@@ -181,7 +134,7 @@ def update_output(list_of_contents, list_of_names,
             children = []
             dfs = []
             for c, n in zip(list_of_contents, list_of_names):
-                child, df = parse_contents(c, n)
+                child, df = eval_shared.parse_contents(c, n)
                 children.append(child)
                 dfs.append(df)
             with tempfile.TemporaryDirectory() as tmpdirname:
@@ -201,18 +154,18 @@ def update_output(list_of_contents, list_of_names,
     return children, final_json, initial_data_flag
 
 @app.callback(
-    Output('measurement-results', 'children'),
-    Output('measurement-formatting', 'children'),
-    Output('m2e_scatter', 'figure'),
-    Output('m2e_hist', 'figure'),
-    Output('talker-select', 'options'),
-    Output('session-select', 'options'),
-    Input('json-data', 'data'),
-    Input('thin-select', 'value'),
-    Input('talker-select', 'value'),
-    Input('session-select', 'value'),
-    Input('x-axis', 'value'),
-    Input('measurement-digits', 'value'),
+    Output('m2e-measurement-results', 'children'),
+    Output('m2e-measurement-formatting', 'children'),
+    Output('m2e-scatter', 'figure'),
+    Output('m2e-hist', 'figure'),
+    Output('m2e-talker-select', 'options'),
+    Output('m2e-session-select', 'options'),
+    Input('m2e-json-data', 'data'),
+    Input('m2e-thin-select', 'value'),
+    Input('m2e-talker-select', 'value'),
+    Input('m2e-session-select', 'value'),
+    Input('m2e-x-axis', 'value'),
+    Input('m2e-measurement-digits', 'value'),
     )
 def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_digits):
     """
@@ -241,7 +194,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
     if jsonified_data is not None:
     
         m2e_eval = load_json_data(jsonified_data)
-        
+        print(f'm2e_eval: {m2e_eval.mean}')
         thinned = thin == 'True'
         if x == 'index':
             x = None
@@ -269,8 +222,21 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
         session_options = [{'label': i, 'value': i} for i in sessions]
         
         res = format_m2e_results(m2e_eval, meas_digits)
-        res_formatting = eval_shared.measurement_digits('grid', meas_digits)
-        return_vals = (
+        res_formatting = eval_shared.measurement_digits('grid', meas_digits,
+                                                        measurement='m2e')
+        
+    else:
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        res = html.Div('Mouth-to-ear latency object could not be processed.')
+        res_formatting = eval_shared.measurement_digits('none',
+                                                        measurement='m2e')
+        fig_scatter = eval_shared.blank_fig()
+        fig_histogram = eval_shared.blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+    return_vals = (
             res,
             res_formatting,
             fig_scatter,
@@ -278,18 +244,8 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
             talker_options,
             session_options
             )
-        return return_vals
-    else:
-        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
-        return_vals = (
-            html.Div('Mouth-to-ear latency object could not be processed.'),
-            eval_shared.measurement_digits('none'),
-            eval_shared.blank_fig(),
-            eval_shared.blank_fig(),
-            none_dropdown,
-            none_dropdown
-            )
-        return return_vals
+    return return_vals
+        
 
 
         

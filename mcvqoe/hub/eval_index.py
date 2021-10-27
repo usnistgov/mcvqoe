@@ -19,6 +19,8 @@ from flask import request
 
 from mcvqoe.hub.eval_app import app
 from mcvqoe.hub.eval_shared import style_data_filename
+
+import mcvqoe.hub.eval_intell as intell
 import mcvqoe.hub.eval_measurement_select as measurement_select
 import mcvqoe.hub.eval_m2e as m2e
 import mcvqoe.hub.eval_psud as psud
@@ -72,21 +74,22 @@ def display_page(pathname):
         if final_json is not None:
             for child in layout.children:
                 if hasattr(child, 'id'):
-                    if child.id == 'json-data':
+                    if child.id == 'm2e-json-data':
                         child.data = final_json
-                    elif child.id == 'initial-data-passed':
+                    elif child.id == 'm2e-initial-data-passed':
                         child.children = 'True'
         else:
             for child in layout.children:
                 if hasattr(child, 'id'):
                     # Act like no data loaded yet
-                    if child.id == 'initial-data-passed':
+                    if child.id == 'm2e-initial-data-passed':
                         child.children = 'False'
                 
+    elif test_type == '/intell':
+        layout = intell.layout
     elif test_type == '/measurement_select' or test_type == '/':
         layout = measurement_select.layout
     elif test_type == '/shutdown':
-        # TODO: Figure out if we can show people something acknowledging they quit
         shutdown()
         layout=html.H3('Successfully shutdown MCV QoE Data App')
     else:
@@ -96,7 +99,6 @@ def display_page(pathname):
 
 
 def main():
-    global app
     parser = argparse.ArgumentParser(
         description=__doc__
         )
