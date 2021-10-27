@@ -39,37 +39,49 @@ def format_data_filename(filename):
 #-------------------[Results Styles]-------------------------------------
 style_results = {
     'backgroundColor': plotly_default_color,
-    'width': '50%',
+    'width': '100%',
     'borderWidth': '1px',
     'borderStyle': 'solid',
     'borderRadius': '5px',
     'textAlign': 'left',
-    'margin': '10px'
+    'margin': '10px',
+    'padding': '10px',
     }
 style_measurement_format = {
     'fontSize': 12,
     'backgroundColor': plotly_default_color,
-    'width': '15%',
+    'width': '50%',
     'borderWidth': '1px',
+    'borderStyle': 'solid',
     'borderRadius': '5px',
-    'margin': '10px',
+    'marginTop': '10px',
+    'marginRight': '10px',
+    'padding': '10px',
     }
-def measurement_digits():
-    children = [
-        html.Label('Number of Digits in Results:'),
+digit_range = [1, 6]
+digit_default = 4
+def measurement_digits(display, digits=digit_default):
+    style = style_measurement_format
+    
+    style['display'] = display
+    
+    children = html.Div([
+        html.Label(f'Number of Digits in Results ({digit_range[0]} - {digit_range[1]}):'),
         dcc.Input(id='measurement-digits',
-                  value=6,
+                  value=digits,
                   type='number',
                   min=1,
                   max=10,
                   style={
                       'backgroundColor': '#f0f2f5',
-                      'width': '100%',
+                      # 'width': '100%',
                       }
                   ),
-        ]
+        ],
+        style=style_measurement_format,
+        )
     return children
-def pretty_numbers(x, digits=6):
+def pretty_numbers(x, digits=digit_default):
     if isinstance(x, list):
         pretty_vals = []
         for xv in x:
@@ -194,17 +206,32 @@ def layout_template(measurement):
                  id='initial-data-passed',
                  style={'display': 'none'}),
         html.Hr(),
-        html.Div(id='measurement-results'),
-        html.Div(
-            measurement_digits(),
-            id='measurement-formatting',
-            style=style_measurement_format,
-            ),
-        html.Br(),
+        html.Div([
+            html.Div(
+                id='measurement-results',
+                className='eight columns',
+                ),
+            html.Div(
+                measurement_digits('none'),
+                id='measurement-formatting',
+                className='four columns',
+                ),
+            ]),
+        html.H3('Plotting Dashboard',
+                # style={
+                #     'topMargin': '10px',
+                #     },
+                className='twelve columns'),
+        # html.Br(),
+        # html.Br(),
+        # html.Br(),
         # ----------------[Dropdowns]------------------
         html.Div(
             dropdown_filters(measurement),
-            id='filters-dropdown'
+            id='filters-dropdown',
+            style={
+                'marginTop': '10px',
+                },
             ),
         # --------------------[Radio Button Filtering]--------------------------
         html.Div(

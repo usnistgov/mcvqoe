@@ -129,7 +129,9 @@ def format_m2e_results(m2e_eval, digits=6):
         html.H6('95% Confidence Interval'),
         html.Div(f'{pretty_ci} seconds')
         ],
-        style=eval_shared.style_results)
+        style=eval_shared.style_results,
+        # className='six columns',
+        )
     return children
 
 # --------------[Callback functions (order matters here!)]--------------------
@@ -200,6 +202,7 @@ def update_output(list_of_contents, list_of_names,
 
 @app.callback(
     Output('measurement-results', 'children'),
+    Output('measurement-formatting', 'children'),
     Output('m2e_scatter', 'figure'),
     Output('m2e_hist', 'figure'),
     Output('talker-select', 'options'),
@@ -266,9 +269,10 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
         session_options = [{'label': i, 'value': i} for i in sessions]
         
         res = format_m2e_results(m2e_eval, meas_digits)
-        
+        res_formatting = eval_shared.measurement_digits('grid', meas_digits)
         return_vals = (
             res,
+            res_formatting,
             fig_scatter,
             fig_histogram,
             talker_options,
@@ -279,6 +283,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
         return_vals = (
             html.Div('Mouth-to-ear latency object could not be processed.'),
+            eval_shared.measurement_digits('none'),
             eval_shared.blank_fig(),
             eval_shared.blank_fig(),
             none_dropdown,
