@@ -10,10 +10,16 @@ from dash.dependencies import Input, Output, State
 
 import base64
 import io
+import json
 import numpy as np
 import os
 import pandas as pd
 import plotly.graph_objects as go
+import tempfile 
+
+
+import mcvqoe.mouth2ear as mouth2ear
+import mcvqoe.intelligibility as intell
 
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#E5ECF6'
@@ -74,6 +80,42 @@ def parse_contents(contents, filename):
     children = format_data_filename(filename)
     
     return children, df
+
+def load_json_data(jsonified_data, measurement):
+    """
+    Load json data as mouth2ear.evaluate object
+
+    Parameters
+    ----------
+    jsonified_data : str
+        Jsonified dict of jsonified dataframes.
+
+    Returns
+    -------
+    m2e_eval : mcvqoe.mouth2ear.evaluate
+        Evaluate object of all stored data.
+
+    """
+    # Parse dict of dataframes
+    test_dict = json.loads(jsonified_data)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Initialize tmpdir
+        os.makedirs(os.path.join(tmpdirname, 'csv'))
+        outpaths = []
+        for test_name in test_dict:
+            # Read json of dict element as a dataframe
+            test_df = pd.read_json(test_dict[test_name])
+            tmpname = os.path.join(tmpdirname, 'csv', test_name)
+            # Store temporary file
+            test_df.to_csv(tmpname, index=False)
+            outpaths.append(tmpname)
+        if measurement == 'm2e':
+            # Load temporary files
+            eval_obj = mouth2ear.evaluate(outpaths)
+        elif measurement == 'intell':
+            eval_obj = intell.evaluate(outpaths)
+        
+        return eval_obj
 # --------------[Data Filename Formattting]-----------------------
 style_data_filename = {
             'fontSize': 12,
@@ -144,7 +186,7 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement == 'm2e':
+    if measurement == 'm2e' or measurement == 'intell':
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -192,6 +234,23 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'intell':
+        children = [
+            # TODO: Generalize this
+            html.Div([
+                html.Label('X-axis'),
+                dcc.RadioItems(
+                    id=f'{measurement}-x-axis',
+                    options = [{'label': 'Trial', 'value': 'index'},
+                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                               ],
+                    value='index',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -208,7 +267,7 @@ def blank_fig():
     return fig
 
 def measurement_plots(measurement):
-    if measurement == 'm2e':
+    if measurement == 'm2e' or measurement == 'intell':
         children = [
             # ------------[Scatter Plot]---------------------
             html.Div([

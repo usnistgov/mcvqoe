@@ -17,7 +17,7 @@ import tempfile
 from mcvqoe.hub.eval_app import app
 
 import mcvqoe.hub.eval_shared as eval_shared
-import mcvqoe.mouth2ear as mouth2ear
+
 
 
 #-----------------------[Begin layout]---------------------------
@@ -26,38 +26,6 @@ import mcvqoe.mouth2ear as mouth2ear
 
 layout = eval_shared.layout_template('m2e')
 
-
-def load_json_data(jsonified_data):
-    """
-    Load json data as mouth2ear.evaluate object
-
-    Parameters
-    ----------
-    jsonified_data : str
-        Jsonified dict of jsonified dataframes.
-
-    Returns
-    -------
-    m2e_eval : mcvqoe.mouth2ear.evaluate
-        Evaluate object of all stored data.
-
-    """
-    # Parse dict of dataframes
-    test_dict = json.loads(jsonified_data)
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        # Initialize tmpdir
-        os.makedirs(os.path.join(tmpdirname, 'csv'))
-        outpaths = []
-        for test_name in test_dict:
-            # Read json of dict element as a dataframe
-            test_df = pd.read_json(test_dict[test_name])
-            tmpname = os.path.join(tmpdirname, 'csv', test_name)
-            # Store temporary file
-            test_df.to_csv(tmpname, index=False)
-            outpaths.append(tmpname)
-        # Load temporary files
-        m2e_eval = mouth2ear.evaluate(outpaths)
-        return m2e_eval
     
 def format_m2e_results(m2e_eval, digits=6):
     """
@@ -119,8 +87,7 @@ def update_output(list_of_contents, list_of_names,
         DESCRIPTION.
 
     """
-    # print('sleeping in update_output')
-    # print(initial_data_flag)
+    
     if initial_data_flag == 'True':
         final_json = initial_data
         test_dict = json.loads(final_json)
@@ -148,8 +115,6 @@ def update_output(list_of_contents, list_of_names,
         else:
             children = None
             final_json = None
-        # print(final_json)
-    # print(children)
     initial_data_flag = html.Div('False')
     return children, final_json, initial_data_flag
 
@@ -193,8 +158,8 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
     
     if jsonified_data is not None:
     
-        m2e_eval = load_json_data(jsonified_data)
-        print(f'm2e_eval: {m2e_eval.mean}')
+        m2e_eval = eval_shared.load_json_data(jsonified_data, 'm2e')
+        
         thinned = thin == 'True'
         if x == 'index':
             x = None
