@@ -106,7 +106,7 @@ def load_json_data(jsonified_data):
         m2e_eval = mouth2ear.evaluate(outpaths)
         return m2e_eval
     
-def format_m2e_results(m2e_eval):
+def format_m2e_results(m2e_eval, digits=6):
     """
     Format results from mouth2ear.evaluate object to be in nice HTML.
 
@@ -121,21 +121,15 @@ def format_m2e_results(m2e_eval):
         DESCRIPTION.
 
     """
+    pretty_mean = eval_shared.pretty_numbers(m2e_eval.mean, digits)
+    pretty_ci = eval_shared.pretty_numbers(m2e_eval.ci, digits)
     children = html.Div([
         html.H6('Mean mouth-to-ear latency'),
-        html.Div(f'{m2e_eval.mean} seconds'),
+        html.Div(f'{pretty_mean} seconds'),
         html.H6('95% Confidence Interval'),
-        html.Div(f'{m2e_eval.ci} seconds')
+        html.Div(f'{pretty_ci} seconds')
         ],
-        style={
-            'backgroundColor': '#E5ECF6',
-            'width': '50%',
-            'borderWidth': '1px',
-            'borderStyle': 'sokid',
-            'borderRadius': '5px',
-            'textAlign': 'left',
-            'margin': '10px'
-            })
+        style=eval_shared.style_results)
     return children
 
 # --------------[Callback functions (order matters here!)]--------------------
@@ -215,8 +209,9 @@ def update_output(list_of_contents, list_of_names,
     Input('talker-select', 'value'),
     Input('session-select', 'value'),
     Input('x-axis', 'value'),
+    Input('measurement-digits', 'value'),
     )
-def update_plots(jsonified_data, thin, talker_select, session_select, x):
+def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_digits):
     """
     Update all plots
 
@@ -270,7 +265,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x):
         sessions = m2e_eval.test_names
         session_options = [{'label': i, 'value': i} for i in sessions]
         
-        res = format_m2e_results(m2e_eval)
+        res = format_m2e_results(m2e_eval, meas_digits)
         
         return_vals = (
             res,

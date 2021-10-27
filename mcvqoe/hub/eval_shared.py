@@ -8,7 +8,12 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 
+import numpy as np
 import plotly.graph_objects as go
+
+# --------------[General Style]--------------------------------------------
+plotly_default_color = '#E5ECF6'
+
 # --------------[Top of Page information]-----------------------
 
 def mcv_headers(measurement):
@@ -31,6 +36,47 @@ def format_data_filename(filename):
         ],
         style=style_data_filename)
     return children
+#-------------------[Results Styles]-------------------------------------
+style_results = {
+    'backgroundColor': plotly_default_color,
+    'width': '50%',
+    'borderWidth': '1px',
+    'borderStyle': 'solid',
+    'borderRadius': '5px',
+    'textAlign': 'left',
+    'margin': '10px'
+    }
+style_measurement_format = {
+    'fontSize': 12,
+    'backgroundColor': plotly_default_color,
+    'width': '15%',
+    'borderWidth': '1px',
+    'borderRadius': '5px',
+    'margin': '10px',
+    }
+def measurement_digits():
+    children = [
+        html.Label('Number of Digits in Results:'),
+        dcc.Input(id='measurement-digits',
+                  value=6,
+                  type='number',
+                  min=1,
+                  max=10,
+                  style={
+                      'backgroundColor': '#f0f2f5',
+                      'width': '100%',
+                      }
+                  ),
+        ]
+    return children
+def pretty_numbers(x, digits=6):
+    if isinstance(x, list):
+        pretty_vals = []
+        for xv in x:
+            pretty_vals.append(pretty_numbers(xv))
+    else:
+        pretty_vals = np.round(x, digits)
+    return pretty_vals
 #-------------------[Filter Styles]----------------------------------------
 radio_button_style = {'width': '15%', 'display': 'inline-block'}
 radio_labels_style = {'display': 'inline-block'}
@@ -149,6 +195,11 @@ def layout_template(measurement):
                  style={'display': 'none'}),
         html.Hr(),
         html.Div(id='measurement-results'),
+        html.Div(
+            measurement_digits(),
+            id='measurement-formatting',
+            style=style_measurement_format,
+            ),
         html.Br(),
         # ----------------[Dropdowns]------------------
         html.Div(
