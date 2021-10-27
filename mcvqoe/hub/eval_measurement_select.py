@@ -15,23 +15,12 @@ layout = html.Div([
     html.H1('MCV QoE Measurements Processing'),
     
     html.H3('Loading Page'),
-    
-    dcc.Dropdown(
-        id='measurement-select-dropdown',
-        options=[
-            {'label': f'{i}', 'value': i} for i in [
-                'Mouth2Ear', 'Access-Time', 'PSuD', 'Intelligibility'
-                ]
-            ]
-        ),
-    html.Div(id='measurement-select-display'),
+
     dcc.Link('Go to PSuD', href='/psud'),
     html.Br(),
     dcc.Link('Go to M2E', href='/m2e'),
+    html.Br(),
+    dcc.Link('Go to Intell', href='/intell'),
+    html.Br(),
+    dcc.Link('Shutdown', href='shutdown'),
     ])
-
-@app.callback(
-    dash.dependencies.Output('measurement-select-display', 'children'),
-    dash.dependencies.Input('measurement-select-dropdown', 'value'))
-def display_value(value):
-    return f'You have selected {value}'
