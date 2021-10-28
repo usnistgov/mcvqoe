@@ -2413,7 +2413,7 @@ class PostProcessingFrame(ttk.Frame):
             test_type = 'access'
         elif selected_test == 'PSuDFrame':
             test_type = 'psud'
-        elif selected_test == 'IntellFrame':
+        elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
         else:
             # TODO: Do something here?

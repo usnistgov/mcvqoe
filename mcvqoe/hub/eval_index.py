@@ -94,6 +94,7 @@ def display_page(pathname):
                 
     elif test_type == '/intell':
         layout = intell.layout
+        update_page_data(layout, final_json, measurement)
     elif test_type == '/measurement_select' or test_type == '/':
         layout = measurement_select.layout
     elif test_type == '/shutdown':
