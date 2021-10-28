@@ -267,7 +267,7 @@ def blank_fig():
     return fig
 
 def measurement_plots(measurement):
-    if measurement == 'm2e' or measurement == 'intell':
+    if measurement == 'm2e':
         children = [
             # ------------[Scatter Plot]---------------------
             html.Div([
@@ -278,6 +278,21 @@ def measurement_plots(measurement):
             # ----------------[Histogram]---------------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                  ),
+                ], className='six columns'),
+            ]
+    elif measurement == 'intell':
+        children = [
+            # ------------[Scatter Plot]---------------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                  ),
+                ], className='twelve columns'),
+            # ----------------[Histogram]---------------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-scatter',
                           figure=blank_fig(),
                   ),
                 ], className='six columns'),

@@ -14,6 +14,7 @@ import json
 import numpy as np
 import os
 import pandas as pd
+import re
 import tempfile 
 
 from mcvqoe.hub.eval_app import app
@@ -176,14 +177,21 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
         #     talkers=talker_select,
         #     test_name=session_select,
         #     )
-        # fig_histogram = intell_eval.histogram(
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
+        fig_histogram = intell_eval.histogram(
+            talkers=talker_select,
+            test_name=session_select,
+            )
         fig_scatter = eval_shared.blank_fig()
-        fig_histogram = eval_shared.blank_fig()
+        # fig_histogram = eval_shared.blank_fig()
         
-        talkers = np.unique(intell_eval.data['Filename'])
+        filenames = intell_eval.data['Filename']
+        pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
+        talkers = set()
+        for fname in filenames:
+            res = pattern.search(fname)
+            if res is not None:
+                talkers.add(res.groups()[0])
+        talkers = sorted(talkers)
         talker_options = [{'label': i, 'value': i} for i in talkers]
         
         sessions = intell_eval.test_names
