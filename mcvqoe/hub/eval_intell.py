@@ -27,16 +27,16 @@ import mcvqoe.psud as psud
 # TODO: Say something about common thinning fctor if data can't be thined
 
 measurement = 'intell'
-layout = eval_shared.layout_template('intell')
+layout = eval_shared.layout_template(f'{measurement}')
 
 # --------------[Functions]----------------------------------
 def format_intell_results(intell_eval, digits=6):
     """
-    Format results from mouth2ear.evaluate object to be in nice HTML.
+    Format results from intelligibility.evaluate object to be in nice HTML.
 
     Parameters
     ----------
-    intell_eval : mcvqoe.mouth2ear.evaluate
+    intell_eval : mcvqoe.intelligibility.evaluate
         DESCRIPTION.
 
     Returns
@@ -48,10 +48,10 @@ def format_intell_results(intell_eval, digits=6):
     pretty_mean = eval_shared.pretty_numbers(intell_eval.mean, digits)
     pretty_ci = eval_shared.pretty_numbers(intell_eval.ci, digits)
     children = html.Div([
-        html.H6('Mean mouth-to-ear latency'),
-        html.Div(f'{pretty_mean} seconds'),
+        html.H6('Mean intelligibility (scale of 0-1)'),
+        html.Div(f'{pretty_mean}'),
         html.H6('95% Confidence Interval'),
-        html.Div(f'{pretty_ci} seconds')
+        html.Div(f'{pretty_ci}')
         ],
         style=eval_shared.style_results,
         # className='six columns',
@@ -60,13 +60,13 @@ def format_intell_results(intell_eval, digits=6):
 
 # --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
-    Output('intell-output-data-upload', 'children'),
-    Output('intell-json-data', 'data'),
-    Output('intell-initial-data-passed', 'children'),
-    Input('intell-upload-data', 'contents'),
-    Input('intell-upload-data', 'filename'),
-    State('intell-initial-data-passed', 'children'),
-    State('intell-json-data', 'data'),
+    Output(f'{measurement}-output-data-upload', 'children'),
+    Output(f'{measurement}-json-data', 'data'),
+    Output(f'{measurement}-initial-data-passed', 'children'),
+    Input(f'{measurement}-upload-data', 'contents'),
+    Input(f'{measurement}-upload-data', 'filename'),
+    State(f'{measurement}-initial-data-passed', 'children'),
+    State(f'{measurement}-json-data', 'data'),
     )
 def update_output(list_of_contents, list_of_names,
                   initial_data_flag, initial_data):
@@ -122,17 +122,17 @@ def update_output(list_of_contents, list_of_names,
     return children, final_json, initial_data_flag
 
 @app.callback(
-    Output('intell-measurement-results', 'children'),
-    Output('intell-measurement-formatting', 'children'),
-    Output('intell-scatter', 'figure'),
-    Output('intell-hist', 'figure'),
-    Output('intell-talker-select', 'options'),
-    Output('intell-session-select', 'options'),
-    Input('intell-json-data', 'data'),
-    Input('intell-talker-select', 'value'),
-    Input('intell-session-select', 'value'),
-    Input('intell-x-axis', 'value'),
-    Input('intell-measurement-digits', 'value'),
+    Output(f'{measurement}-measurement-results', 'children'),
+    Output(f'{measurement}-measurement-formatting', 'children'),
+    Output(f'{measurement}-scatter', 'figure'),
+    Output(f'{measurement}-hist', 'figure'),
+    Output(f'{measurement}-talker-select', 'options'),
+    Output(f'{measurement}-session-select', 'options'),
+    Input(f'{measurement}-json-data', 'data'),
+    Input(f'{measurement}-talker-select', 'value'),
+    Input(f'{measurement}-session-select', 'value'),
+    Input(f'{measurement}-x-axis', 'value'),
+    Input(f'{measurement}-measurement-digits', 'value'),
     )
 def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
     """
@@ -160,7 +160,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
     
     if jsonified_data is not None:
     
-        intell_eval = eval_shared.load_json_data(jsonified_data, 'intell')
+        intell_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
         
         # thinned = thin == 'True'
         if x == 'index':
@@ -196,7 +196,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
     else:
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
         # return_vals = (
-        res = html.Div('Mouth-to-ear latency object could not be processed.')
+        res = html.Div('Intelligibility object could not be processed.')
         res_formatting = eval_shared.measurement_digits('none',
                                                         measurement=measurement)
         fig_scatter = eval_shared.blank_fig()

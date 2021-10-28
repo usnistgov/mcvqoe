@@ -23,8 +23,8 @@ import mcvqoe.hub.eval_shared as eval_shared
 #-----------------------[Begin layout]---------------------------
 # TODO: Say something about common thinning fctor if data can't be thined
 
-
-layout = eval_shared.layout_template('m2e')
+measurement = 'm2e'
+layout = eval_shared.layout_template(measurement)
 
     
 def format_m2e_results(m2e_eval, digits=6):
@@ -57,13 +57,13 @@ def format_m2e_results(m2e_eval, digits=6):
 
 # --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
-    Output('m2e-output-data-upload', 'children'),
-    Output('m2e-json-data', 'data'),
-    Output('m2e-initial-data-passed', 'children'),
-    Input('m2e-upload-data', 'contents'),
-    Input('m2e-upload-data', 'filename'),
-    State('m2e-initial-data-passed', 'children'),
-    State('m2e-json-data', 'data'),
+    Output(f'{measurement}-output-data-upload', 'children'),
+    Output(f'{measurement}-json-data', 'data'),
+    Output(f'{measurement}-initial-data-passed', 'children'),
+    Input(f'{measurement}-upload-data', 'contents'),
+    Input(f'{measurement}-upload-data', 'filename'),
+    State(f'{measurement}-initial-data-passed', 'children'),
+    State(f'{measurement}-json-data', 'data'),
     )
 def update_output(list_of_contents, list_of_names,
                   initial_data_flag, initial_data):
@@ -119,18 +119,18 @@ def update_output(list_of_contents, list_of_names,
     return children, final_json, initial_data_flag
 
 @app.callback(
-    Output('m2e-measurement-results', 'children'),
-    Output('m2e-measurement-formatting', 'children'),
-    Output('m2e-scatter', 'figure'),
-    Output('m2e-hist', 'figure'),
-    Output('m2e-talker-select', 'options'),
-    Output('m2e-session-select', 'options'),
-    Input('m2e-json-data', 'data'),
-    Input('m2e-thin-select', 'value'),
-    Input('m2e-talker-select', 'value'),
-    Input('m2e-session-select', 'value'),
-    Input('m2e-x-axis', 'value'),
-    Input('m2e-measurement-digits', 'value'),
+    Output(f'{measurement}-measurement-results', 'children'),
+    Output(f'{measurement}-measurement-formatting', 'children'),
+    Output(f'{measurement}-scatter', 'figure'),
+    Output(f'{measurement}-hist', 'figure'),
+    Output(f'{measurement}-talker-select', 'options'),
+    Output(f'{measurement}-session-select', 'options'),
+    Input(f'{measurement}-json-data', 'data'),
+    Input(f'{measurement}-thin-select', 'value'),
+    Input(f'{measurement}-talker-select', 'value'),
+    Input(f'{measurement}-session-select', 'value'),
+    Input(f'{measurement}-x-axis', 'value'),
+    Input(f'{measurement}-measurement-digits', 'value'),
     )
 def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_digits):
     """
@@ -158,7 +158,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
     
     if jsonified_data is not None:
     
-        m2e_eval = eval_shared.load_json_data(jsonified_data, 'm2e')
+        m2e_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
         
         thinned = thin == 'True'
         if x == 'index':
@@ -188,14 +188,14 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
         
         res = format_m2e_results(m2e_eval, meas_digits)
         res_formatting = eval_shared.measurement_digits('grid', meas_digits,
-                                                        measurement='m2e')
+                                                        measurement=measurement)
         
     else:
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
         # return_vals = (
         res = html.Div('Mouth-to-ear latency object could not be processed.')
         res_formatting = eval_shared.measurement_digits('none',
-                                                        measurement='m2e')
+                                                        measurement=measurement)
         fig_scatter = eval_shared.blank_fig()
         fig_histogram = eval_shared.blank_fig()
         talker_options = none_dropdown
