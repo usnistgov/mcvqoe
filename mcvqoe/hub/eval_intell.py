@@ -61,68 +61,6 @@ def format_intell_results(intell_eval, digits=6):
 
 # --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
-    Output(f'{measurement}-output-data-upload', 'children'),
-    Output(f'{measurement}-json-data', 'data'),
-    Output(f'{measurement}-initial-data-passed', 'children'),
-    Input(f'{measurement}-upload-data', 'contents'),
-    Input(f'{measurement}-upload-data', 'filename'),
-    State(f'{measurement}-initial-data-passed', 'children'),
-    State(f'{measurement}-json-data', 'data'),
-    )
-def update_output(list_of_contents, list_of_names,
-                  initial_data_flag, initial_data):
-    """
-    Process uploaded data and store csv files as json
-
-    Parameters
-    ----------
-    list_of_contents : TYPE
-        DESCRIPTION.
-    list_of_names : TYPE
-        DESCRIPTION.
-    list_of_dates : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    children : TYPE
-        DESCRIPTION.
-    final_json : TYPE
-        DESCRIPTION.
-
-    """
-    if initial_data_flag == 'True':
-        final_json = initial_data
-        test_dict = json.loads(final_json)
-        children = []
-        for filename in test_dict:
-            children.append(eval_shared.format_data_filename(filename))
-        # children = html.Div('I need to do this part')
-    else:
-        # time.sleep(3)
-        if list_of_contents is not None:
-            children = []
-            dfs = []
-            for c, n in zip(list_of_contents, list_of_names):
-                child, df = eval_shared.parse_contents(c, n)
-                children.append(child)
-                dfs.append(df)
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                    os.makedirs(os.path.join(tmpdirname, 'csv'))
-                    
-                    out_json = {}
-                    for filename, df in zip(list_of_names, dfs):
-                        out_json[filename] = df.to_json()
-                        
-            final_json = json.dumps(out_json)
-        else:
-            children = None
-            final_json = None
-    
-    initial_data_flag = html.Div('False')
-    return children, final_json, initial_data_flag
-
-@app.callback(
     Output(f'{measurement}-measurement-results', 'children'),
     Output(f'{measurement}-measurement-formatting', 'children'),
     Output(f'{measurement}-scatter', 'figure'),

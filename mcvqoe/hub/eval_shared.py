@@ -17,10 +17,16 @@ import pandas as pd
 import plotly.graph_objects as go
 import tempfile 
 
+from mcvqoe.hub.eval_app import app
 
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
-
+# --------------[Measurement Globals]-----------------------------------
+measurements = [
+    'm2e',
+    'intell',
+    # TODO: Add rest of measurements
+    ]
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#E5ECF6'
 
@@ -116,6 +122,68 @@ def load_json_data(jsonified_data, measurement):
             eval_obj = intell.evaluate(outpaths)
         
         return eval_obj
+for measurement in measurements:
+    @app.callback(
+        Output(f'{measurement}-output-data-upload', 'children'),
+        Output(f'{measurement}-json-data', 'data'),
+        Output(f'{measurement}-initial-data-passed', 'children'),
+        Input(f'{measurement}-upload-data', 'contents'),
+        Input(f'{measurement}-upload-data', 'filename'),
+        State(f'{measurement}-initial-data-passed', 'children'),
+        State(f'{measurement}-json-data', 'data'),
+        )
+    def update_output(list_of_contents, list_of_names,
+                      initial_data_flag, initial_data):
+        """
+        Process uploaded data and store csv files as json
+    
+        Parameters
+        ----------
+        list_of_contents : TYPE
+            DESCRIPTION.
+        list_of_names : TYPE
+            DESCRIPTION.
+        list_of_dates : TYPE
+            DESCRIPTION.
+    
+        Returns
+        -------
+        children : TYPE
+            DESCRIPTION.
+        final_json : TYPE
+            DESCRIPTION.
+    
+        """
+        if initial_data_flag == 'True':
+            final_json = initial_data
+            test_dict = json.loads(final_json)
+            children = []
+            for filename in test_dict:
+                children.append(format_data_filename(filename))
+            # children = html.Div('I need to do this part')
+        else:
+            # time.sleep(3)
+            if list_of_contents is not None:
+                children = []
+                dfs = []
+                for c, n in zip(list_of_contents, list_of_names):
+                    child, df = parse_contents(c, n)
+                    children.append(child)
+                    dfs.append(df)
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                        os.makedirs(os.path.join(tmpdirname, 'csv'))
+                        
+                        out_json = {}
+                        for filename, df in zip(list_of_names, dfs):
+                            out_json[filename] = df.to_json()
+                            
+                final_json = json.dumps(out_json)
+            else:
+                children = None
+                final_json = None
+        
+        initial_data_flag = html.Div('False')
+        return children, final_json, initial_data_flag
 # --------------[Data Filename Formattting]-----------------------
 style_data_filename = {
             'fontSize': 12,
