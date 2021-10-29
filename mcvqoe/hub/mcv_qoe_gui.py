@@ -2409,7 +2409,7 @@ class PostProcessingFrame(ttk.Frame):
         selected_test = self.master.selected_test.get()
         if selected_test == 'M2eFrame':
             test_type = 'm2e'
-        elif selected_test == 'AccessFrame':
+        elif selected_test == 'AccssDFrame':
             test_type = 'access'
         elif selected_test == 'PSuDFrame':
             test_type = 'psud'
@@ -2429,7 +2429,6 @@ class PostProcessingFrame(ttk.Frame):
             '--port', '8050',
             ]
         data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
-        # TODO: Rework everything to send data via url so no unnecessary shutdown/reopen
         if not hasattr(self.master, 'eval_server'):
             # webbrowser.open('http://127.0.0.1:8050/shutdown')
             self.master.eval_server = sp.Popen(gui_call,
@@ -2723,7 +2722,10 @@ def run(root_cfg):
             
             # run the test
             result = my_obj.run(**recovery_kw)
-            ppf.last_test = my_obj.data_filename
+            if sel_tst == 'AccssDFrame':
+                ppf.last_test = my_obj.data_filenames    
+            else:
+                ppf.last_test = my_obj.data_filename
             # prevent freezing if user is trying desperately to close window
             if loader.tk_main.win._is_force_closing:
                 return

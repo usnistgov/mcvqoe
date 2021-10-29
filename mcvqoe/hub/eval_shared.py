@@ -39,6 +39,8 @@ def mcv_headers(measurement):
         full_meas = 'Probability of successful delivery'
     elif measurement == 'intell':
         full_meas = 'Speech intelligibility'
+    elif measurement == 'access':
+        full_meas = 'Access delay'
     else:
         full_meas = 'Undefined measurement'
             

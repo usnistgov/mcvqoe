@@ -24,6 +24,7 @@ import mcvqoe.hub.eval_intell as intell
 import mcvqoe.hub.eval_measurement_select as measurement_select
 import mcvqoe.hub.eval_m2e as m2e
 import mcvqoe.hub.eval_psud as psud
+import mcvqoe.hub.eval_access as access
 # from .eval_app import app
 # from .apps import measurement_select, psud, m2e
 
@@ -44,7 +45,11 @@ def format_data(fpaths):
     
     for fpath in fpaths:
         fname = os.path.basename(fpath)
-        df = pd.read_csv(fpath)
+        try:
+            df = pd.read_csv(fpath)
+        except pd.errors.ParserError:
+            # If parsing failed, access data, skip 3 rows
+            df = pd.read_csv(fpath, skiprows=3)
         out_json[fname] = df.to_json()
         
     
@@ -94,6 +99,9 @@ def display_page(pathname):
                 
     elif test_type == '/intell':
         layout = intell.layout
+        update_page_data(layout, final_json, measurement)
+    elif test_type == '/access':
+        layout = access.layout
         update_page_data(layout, final_json, measurement)
     elif test_type == '/measurement_select' or test_type == '/':
         layout = measurement_select.layout
