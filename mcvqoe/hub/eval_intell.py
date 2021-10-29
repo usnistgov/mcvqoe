@@ -172,17 +172,17 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
             session_select = None
         
         # TODO: Implement these
-        # fig_scatter = intell_eval.plot(
-        #     x=x,
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
+        fig_scatter = intell_eval.plot(
+            x=x,
+            talkers=talker_select,
+            test_name=session_select,
+            )
         fig_histogram = intell_eval.histogram(
             talkers=talker_select,
             test_name=session_select,
             )
-        fig_scatter = eval_shared.blank_fig()
-        # fig_histogram = eval_shared.blank_fig()
+        
+        
         
         filenames = intell_eval.data['Filename']
         pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')

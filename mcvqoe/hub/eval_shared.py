@@ -295,7 +295,7 @@ def measurement_plots(measurement):
                 dcc.Graph(id=f'{measurement}-scatter',
                           figure=blank_fig(),
                   ),
-                ], className='six columns'),
+                ], className='twelve columns'),
             ]
     else:
         
