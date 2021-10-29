@@ -1295,35 +1295,30 @@ output directly fed into the input, as shown below.
 """).pack(fill=tk.X, padx=10, pady=10)
 
 
-
-        canvas = tk.Canvas(self)
         # open image
-        width = 600
-        height = 500
+        max_width = 600
+        max_height = 500
+
+        canvas = tk.Canvas(self,width=max_width, height=max_height)
         
         with importlib.resources.path('mcvqoe.hub','dev_dly_char_example.png') as name:
             img = Image.open(name)
-        img = img.resize(
-            (width, height),
-            Image.ANTIALIAS
-        )
+
+        img.thumbnail((max_width,max_height),resample=Image.LANCZOS, reducing_gap=None)
+
         canvas.crestimg = ImageTk.PhotoImage(img)
         canvas.create_image(
-            width // 2, height // 2 + 10,
+            max_width//2, max_height//2 + 10,
             image=canvas.crestimg
         )
-        
+
         canvas.pack()
-        
-        
+
         ttk.Label(self, text='Once finished, enter the device delay below')
-        
-        
+
         ttk.Button(self, text='Continue', command = self.continue_btn
                    ).pack()
-        
-        
-        
+
         self.finished = False
                    
     
