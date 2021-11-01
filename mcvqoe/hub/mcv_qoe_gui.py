@@ -2437,24 +2437,49 @@ class PostProcessingFrame(ttk.Frame):
             '--port', '8050',
             ]
         data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
+        
+        
+
         if not hasattr(self.master, 'eval_server'):
             # webbrowser.open('http://127.0.0.1:8050/shutdown')
+            eval_config = {
+                'stderr' : sp.PIPE,
+                'stdout' : sp.PIPE,
+                'stdin'  : sp.DEVNULL,
+                'bufsize': 1,
+                'universal_newlines': True
+            }
+    
+            #only for windows, prevent windows from appearing
+            if os.name == 'nt':
+                startupinfo = sp.STARTUPINFO()
+                startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+                eval_config['startupinfo'] = startupinfo
+            
             self.master.eval_server = sp.Popen(gui_call,
-                                        stdout=sp.PIPE,
-                                        bufsize=1,
-                                        universal_newlines=True)
+                                               **eval_config
+                                               )
         
-        
+            open_flag = False
             for line in self.master.eval_server.stdout:
                 print(line, end='') # process line here
         
                 if 'Dash is running' in line:
                     print('Starting server')
-                    
+                    open_flag = True
                     webbrowser.open(data_url)
                     break
+            if not open_flag:
+                last_line = ''
+                for line in self.master.eval_server.stderr:
+                    print(line, end='')
+                    # Ensure last line is not empty
+                    if line.strip():
+                        last_line = line
+                raise RuntimeError(last_line.strip())
+                
         else:
-            print('server already up so I am opening thing')
+            # TODO: Consider checking server status here in case errored out at some point
             webbrowser.open(data_url)
     
     def open_folder(self, e=None):
