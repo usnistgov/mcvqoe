@@ -28,7 +28,12 @@ setuptools.setup(
         'mcvqoe-psud',
         'mcvqoe-intelligibility',
         'mcvqoe-accesstime',
-        'mcvqoe-mouth2ear'
+        'mcvqoe-mouth2ear',
+        'numpy',
+        'pandas',
+        'dash',
+        'flask',
+        'plotly',
     ],
     extras_require={
         'plots': ['PyQt5'],
