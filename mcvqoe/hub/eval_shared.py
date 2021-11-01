@@ -28,8 +28,21 @@ measurements = [
     # TODO: Add rest of measurements
     ]
 # --------------[General Style]--------------------------------------------
-plotly_default_color = '#E5ECF6'
-
+plotly_default_color = '#edeef0'
+style_links = {
+    'width': '240px',
+    # 'height': '60px',
+    'display': 'block',
+    # 'textAlign': 'center',
+    'overflow-wrap': 'break-work',
+    'lineHeight': '60px',
+    'borderWidth': '1px',
+    'borderStyle': 'solid',
+    'borderRadius': '5px',
+    'margin': '10px',
+    'padding': '10px',
+    'backgroundColor': '#E5ECF6',
+        }
 # --------------[Top of Page information]-----------------------
 
 def mcv_headers(measurement):
@@ -124,6 +137,7 @@ def load_json_data(jsonified_data, measurement):
             eval_obj = intell.evaluate(outpaths)
         
         return eval_obj
+
 for measurement in measurements:
     @app.callback(
         Output(f'{measurement}-output-data-upload', 'children'),
@@ -221,6 +235,7 @@ style_measurement_format = {
     }
 digit_range = [1, 6]
 digit_default = 4
+
 def measurement_digits(display, digits=digit_default, measurement=''):
     style = style_measurement_format
     
@@ -242,6 +257,7 @@ def measurement_digits(display, digits=digit_default, measurement=''):
         style=style_measurement_format,
         )
     return children
+
 def pretty_numbers(x, digits=digit_default):
     if isinstance(x, list):
         pretty_vals = []
@@ -447,7 +463,12 @@ def layout_template(measurement):
         html.Br(),
         html.Div([
             html.Hr(),
-            dcc.Link('Load new data', href='/measurement_select')
-            ], className='twelve columns'),
+            dcc.Link('Return to measurement selection', href='/measurement_select',
+                     style=style_links,
+                )
+            ],
+            className='twelve columns',
+            
+            ),
         ])
     return layout
