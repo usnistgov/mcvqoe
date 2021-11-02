@@ -2755,13 +2755,15 @@ def run(root_cfg):
             
             # run the test
             result = my_obj.run(**recovery_kw)
-            if sel_tst == 'AccssDFrame':
-                ppf.last_test = my_obj.data_filenames    
-            else:
-                ppf.last_test = my_obj.data_filename
+            
             # prevent freezing if user is trying desperately to close window
             if loader.tk_main.win._is_force_closing:
                 return
+        # Store last test name into post processing frame
+        if sel_tst == 'AccssDFrame':
+            ppf.last_test = my_obj.data_filenames    
+        else:
+            ppf.last_test = my_obj.data_filename
 
         #------------------- Show post-processing data ------------------------
         """
@@ -2819,6 +2821,14 @@ def run(root_cfg):
                             '"recovery file" entry in the configuration.')
         
     except Exception as e:
+        # Attempt to assign to last_test for potential plotting later
+        if hasattr(my_obj, 'data_filename'):
+            ppf.last_test = my_obj.data_filename
+        elif hasattr(my_obj, 'data_filenames'):
+            ppf.last_test = my_obj.data_filenames
+        else:
+            ppf.last_test = 'test_does_not_exist'
+            
         if loader.tk_main.last_error is not e:
             show_error(e)
         
