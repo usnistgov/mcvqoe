@@ -21,10 +21,12 @@ from mcvqoe.hub.eval_app import app
 
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
+import mcvqoe.psud as psud
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
     'intell',
+    'psud',
     # TODO: Add rest of measurements
     ]
 # --------------[General Style]--------------------------------------------
@@ -119,24 +121,30 @@ def load_json_data(jsonified_data, measurement):
     """
     # Parse dict of dataframes
     test_dict = json.loads(jsonified_data)
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        # Initialize tmpdir
-        os.makedirs(os.path.join(tmpdirname, 'csv'))
-        outpaths = []
-        for test_name in test_dict:
-            # Read json of dict element as a dataframe
-            test_df = pd.read_json(test_dict[test_name])
-            tmpname = os.path.join(tmpdirname, 'csv', test_name)
-            # Store temporary file
-            test_df.to_csv(tmpname, index=False)
-            outpaths.append(tmpname)
-        if measurement == 'm2e':
-            # Load temporary files
-            eval_obj = mouth2ear.evaluate(outpaths)
-        elif measurement == 'intell':
-            eval_obj = intell.evaluate(outpaths)
+    if measurement == 'psud':
+        eval_obj = psud.evaluate(json_data=jsonified_data)
+    else:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # Initialize tmpdir
+            os.makedirs(os.path.join(tmpdirname, 'csv'))
+            outpaths = []
+            for test_name in test_dict:
+                # Read json of dict element as a dataframe
+                test_df = pd.read_json(test_dict[test_name])
+                tmpname = os.path.join(tmpdirname, 'csv', test_name)
+                # Store temporary file
+                test_df.to_csv(tmpname, index=False)
+                outpaths.append(tmpname)
+            if measurement == 'm2e':
+                # Load temporary files
+                eval_obj = mouth2ear.evaluate(outpaths)
+            elif measurement == 'intell':
+                eval_obj = intell.evaluate(outpaths)
+            elif measurement == 'psud':
+                print(f'PSuD outpaths: {outpaths}')
+                eval_obj = psud.evaluate(outpaths)
         
-        return eval_obj
+    return eval_obj
 
 for measurement in measurements:
     @app.callback(
@@ -174,11 +182,16 @@ for measurement in measurements:
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
-            for filename in test_dict:
-                children.append(format_data_filename(filename))
-            # children = html.Div('I need to do this part')
+            if 'cutpoints' in test_dict:
+                # Hand cutpoints
+                print('I will handle cutpoints!')
+            else:
+                # Only dealing with measurement csvs
+                for filename in test_dict:
+                    children.append(format_data_filename(filename))
         else:
             # time.sleep(3)
+            # TODO: Figure out what to do with cutpoints here...
             if list_of_contents is not None:
                 children = []
                 dfs = []
@@ -272,7 +285,7 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement == 'm2e' or measurement == 'intell':
+    if measurement == 'm2e' or measurement == 'intell' or measurement == 'psud':
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -320,7 +333,7 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
-    elif measurement == 'intell':
+    elif measurement == 'intell' or measurement == 'psud':
         children = [
             # TODO: Generalize this
             html.Div([
@@ -368,7 +381,7 @@ def measurement_plots(measurement):
                   ),
                 ], className='six columns'),
             ]
-    elif measurement == 'intell':
+    elif measurement == 'intell' or measurement == 'psud':
         children = [
             # ------------[Scatter Plot]---------------------
             html.Div([

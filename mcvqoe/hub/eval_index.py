@@ -8,8 +8,10 @@ import argparse
 import base64
 import json
 import os
+import re
 import urllib
 
+import numpy as np
 import pandas as pd
 
 from dash import dcc
@@ -40,9 +42,9 @@ def shutdown():
         raise RuntimeError('Not running with the Werkzeug Server')
     func()
 
-def format_data(fpaths):
+def format_data(fpaths, cutpoint):
     out_json = {}
-    
+        
     for fpath in fpaths:
         fname = os.path.basename(fpath)
         try:
@@ -50,10 +52,38 @@ def format_data(fpaths):
         except pd.errors.ParserError:
             # If parsing failed, access data, skip 3 rows
             df = pd.read_csv(fpath, skiprows=3)
-        out_json[fname] = df.to_json()
+        # Find cutpoints here...
+        if cutpoint:
+            print('About to try to deal with lots of cutpoints...')
+            data_dir = os.path.dirname(os.path.dirname(fpath))
+            session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
+            session_search = session_pattern.search(fpath)
+            if session_search is not None:
+                session_id = session_search.groups()[0]
+            else:
+                # TODO: Be smarter than this
+                raise RuntimeError('No valid session id found in uploaded data')
+            wav_dir = os.path.join(data_dir, 'wav', session_id)
+            
+            cps = dict()
+            for file in np.unique(df['Filename']):
+                cp_name = f'Tx_{file}.csv'
+                cp_path = os.path.join(wav_dir, cp_name)
+                cp = pd.read_csv(cp_path)
+                cps[file] = cp.to_json()
+            out_json[fname] = {
+                'measurement': df.to_json(),
+                'cutpoints': cps,
+                }
+        else:
+            out_json[fname] = df.to_json()
         
     
     final_json = json.dumps(out_json)
+    # # TODO: Delete this
+    # print(os.path.abspath(''))
+    # with open('data.json', 'w', encoding='utf-8') as f:
+    #     json.dump(out_json, f, ensure_ascii=False, indent=4)
     return final_json
 
 def update_page_data(layout, final_json, measurement):
@@ -80,18 +110,24 @@ def display_page(pathname):
     
     pathparts = pathname.split(';')
     test_type = pathparts[0]
+    measurement = test_type[1:]
+    
     if len(pathparts) > 1:
         # We have data to load
         data_files_url = pathparts[1:]
         data_files = [urllib.request.url2pathname(x) for x in data_files_url]
-        final_json = format_data(data_files)
+        if measurement == 'psud' or measurement == 'access':
+            cutpoints = True
+        else:
+            cutpoints = False
+        final_json = format_data(data_files, cutpoints)
     else:
         final_json = None
 
-    measurement = test_type[1:]
+    
     if test_type == '/psud':
         layout = psud.layout
-        
+        update_page_data(layout, final_json, measurement)
     elif test_type =='/m2e':
         layout = m2e.layout
         # Update relevant layout children
