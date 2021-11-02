@@ -7,9 +7,10 @@ Created on Tue Oct 12 12:26:08 2021
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
-
+from dash import dash_table
 import base64
 import io
+import itertools
 import json
 import numpy as np
 import os
@@ -51,14 +52,43 @@ def format_psud_results(psud_eval, digits=6):
         DESCRIPTION.
 
     """
-    psud_v, psud_ci = psud_eval.eval(0.5, 3)
-    pretty_mean = eval_shared.pretty_numbers(psud_v, digits)
-    pretty_ci = eval_shared.pretty_numbers(psud_ci, digits)
+    # TODO: Make these controllable at top
+    intell_threshes = [0.5, 0.7]
+    message_lengths = [1, 3, 5, 10]
+    methods = ['EWC', 'AMI']
+    
+    rmethods = []
+    rthreshes = []
+    rmlens = []
+    rpsud = []
+    results = []
+    for method, thresh, msg_len, in itertools.product(methods, intell_threshes, message_lengths):
+        val, ci = psud_eval.eval(thresh, msg_len, method=method)
+        methods.append(method)
+        res = {
+            'Method': method,
+            'Intelligibility Threshold': thresh,
+            'Message Length (s)': msg_len,
+            'PSuD': eval_shared.pretty_numbers(val, digits),
+            'Confidence Lower Bound': eval_shared.pretty_numbers(ci[0], digits),
+            'Confidence Upper Bound': eval_shared.pretty_numbers(ci[1], digits),
+            }
+        results.append(res)
+        
+    # df_res = pd.DataFrame(results)
+        
+    # psud_v, psud_ci = psud_eval.eval(0.5, 3)
+    # pretty_mean = eval_shared.pretty_numbers(psud_v, digits)
+    # pretty_ci = eval_shared.pretty_numbers(psud_ci, digits)
     children = html.Div([
-        html.H6('Probability of successful delivery (scale of 0-1)'),
-        html.Div(f'{pretty_mean}'),
-        html.H6('95% Confidence Interval'),
-        html.Div(f'{pretty_ci}')
+        dash_table.DataTable(
+            columns=[{'name': i, 'id': i} for i in results[0].keys()],
+            data=results,
+            )
+        # html.H6('Probability of successful delivery (scale of 0-1)'),
+        # html.Div(f'{pretty_mean}'),
+        # html.H6('95% Confidence Interval'),
+        # html.Div(f'{pretty_ci}')
         ],
         style=eval_shared.style_results,
         # className='six columns',
