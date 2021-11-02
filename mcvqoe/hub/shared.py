@@ -96,8 +96,8 @@ class ScrollableFrame(ttk.Frame):
 
 
         
-
 class TestCfgFrame(ttk.LabelFrame):
+
     """
     Base class for frames to configure and run a measurement.
     
@@ -1353,35 +1353,30 @@ output directly fed into the input, as shown below.
 """).pack(fill=tk.X, padx=10, pady=10)
 
 
-
-        canvas = tk.Canvas(self)
         # open image
-        width = 600
-        height = 500
+        max_width = 600
+        max_height = 500
+
+        canvas = tk.Canvas(self,width=max_width, height=max_height)
         
         with importlib.resources.path('mcvqoe.hub','dev_dly_char_example.png') as name:
             img = Image.open(name)
-        img = img.resize(
-            (width, height),
-            Image.ANTIALIAS
-        )
+
+        img.thumbnail((max_width,max_height),resample=Image.LANCZOS, reducing_gap=None)
+
         canvas.crestimg = ImageTk.PhotoImage(img)
         canvas.create_image(
-            width // 2, height // 2 + 10,
+            max_width//2, max_height//2 + 10,
             image=canvas.crestimg
         )
-        
+
         canvas.pack()
-        
-        
+
         ttk.Label(self, text='Once finished, enter the device delay below')
-        
-        
+
         ttk.Button(self, text='Continue', command = self.continue_btn
                    ).pack()
-        
-        
-        
+
         self.finished = False
                    
     
@@ -1408,6 +1403,7 @@ class _HdwPrototype:
     blocksize=512
     buffersize=20
     overplay=1.0
+    timecode_type='IRIGB_timecode'
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
@@ -1421,6 +1417,7 @@ class HdwSettings(AdvancedConfigGUI):
             AudioSettings,
             overplay,
             radioport,
+            timecode_type,
             _restore_defaults,
             )
             
@@ -1429,6 +1426,13 @@ class radioport(LabeledControl):
     port where a radio interface is detected"""
     
     text = 'Radio Port:'
+    
+class timecode_type(LabeledControl):
+    """type of timecode to use for two location tests"""
+
+    text = 'Timecode Type:'
+    MCtrl = ttk.Combobox
+    MCtrlkwargs = {'values' : ('IRIGB_timecode','soft_timecode')}
 
 class AudioSettings(SubCfgFrame):
     
@@ -1496,9 +1500,10 @@ class SimSettings(AdvancedConfigGUI):
             
             m2e_latency,
             access_delay,
+            device_delay,
             rec_snr,
             PTT_sig_freq,
-            PTT_sig_aplitude,
+            PTT_sig_amplitude,
             
             ImpairmentsSelect,
             _restore_defaults,
@@ -1602,7 +1607,13 @@ class access_delay(LabeledControl):
     text = 'Access Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
+
+class device_delay(LabeledControl):
+    """Simulated device delay in seconds."""
     
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
     
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
@@ -1617,7 +1628,7 @@ class PTT_sig_freq(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
     
-class PTT_sig_aplitude(LabeledControl):
+class PTT_sig_amplitude(LabeledControl):
     """Amplitude of the PTT signal from the play_record method."""
     text = 'PTT Signal Amplitude:'
     MCtrl = ttk.Spinbox

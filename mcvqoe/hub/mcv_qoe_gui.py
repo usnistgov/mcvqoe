@@ -33,6 +33,8 @@ from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from .shared import add_mcv_icon
+#import for save locations
+from .common import save_dir, old_save_dir
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
@@ -44,13 +46,18 @@ import _thread
 import json
 import pickle
 import os
+import shutil
 from os import path, listdir
 import gc
 import subprocess as sp
 import traceback
 import numpy as np
+import urllib.request
+import webbrowser
 
 from pkg_resources import resource_filename
+
+
 
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
@@ -244,8 +251,14 @@ class MCVQoEGui(tk.Tk):
         """
         state = ('!disabled', 'disabled')[disabled]
         
+        disable_classes = (
+            ttk.Button,
+            ttk.Radiobutton,
+            ttk.Label,
+            ttk.OptionMenu,
+            )
         for n_, w in self.LeftFrame.MenuFrame.TestTypeFrame.children.items():
-            if isinstance(w, (ttk.Button, ttk.Radiobutton, ttk.Label)):
+            if isinstance(w, disable_classes):
                 w.configure(state=state)
 
     def _rm_waits_in_sim(self):
@@ -594,7 +607,9 @@ class MCVQoEGui(tk.Tk):
             # gui as well. This is intended, so that the user can force
             # quit the frozen application
         
-        
+        if hasattr(self, 'eval_server'):
+            # Kill the server
+            webbrowser.open('http://127.0.0.1:8050/shutdown')
         # destroy the window and stop the gui-thread's event loop.
         self.destroy()
 
@@ -1139,7 +1154,8 @@ class MCVQoEGui(tk.Tk):
         elif step == 'post-process':
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
-            next_btn = lambda : self.set_step('empty')
+            # next_btn = lambda : self.set_step('empty')
+            next_btn = lambda : self.on_finish()
             back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
             
@@ -1155,6 +1171,11 @@ class MCVQoEGui(tk.Tk):
         
         # disable or enable leftmost buttons depending on if they are functional
         self._disable_left_frame(step not in ('empty', 'config'))
+    
+    def on_finish(self):
+        # Note: can kill evaluate server here if we want
+        self.set_step('empty')
+        
     
     @in_thread('GuiThread', wait=False)
     def clear_old_entries(self):
@@ -2019,8 +2040,10 @@ class TestProgressFrame(tk.LabelFrame):
             'check-resume' : ('Resuming test...',
                 f'Trial {current_trial+1} of {num_trials}\n{msg}'),
             
-            'status' : ('', msg)
+            'status' : ('', msg),
             
+            'compress' : ('Compressing audio data...',
+                          f'Compressing file {current_trial+1} of {num_trials}'),
             }
 
         if prog_type in messages:
@@ -2035,7 +2058,13 @@ class TestProgressFrame(tk.LabelFrame):
             self.bar.start()
             self.time_estimate_.set('')
 
-        elif prog_type in ('pre', 'proc', 'test'):
+        if prog_type in ('proc', 'compress'):
+            #test is done, clear out old info
+            self.clip_name_.set('')
+            self.file_.set('')
+            self.delay_.set('')
+
+        elif prog_type in ('pre', 'proc', 'test', 'compress'):
             # show current progress on a determinate progress bar
             self.bar.stop()
             self.bar.configure(value=current_trial, maximum = num_trials,
@@ -2149,6 +2178,11 @@ class TestProgressFrame(tk.LabelFrame):
         
         return False
     
+    def remove_warning(self, w):
+        '''
+        Remove `w` from the list of warnings.
+        '''
+        self.warnings.remove(w)
     
     def _trim_text(self, text):
         """remove characters from text to fit the width of the window"""
@@ -2233,20 +2267,22 @@ class _StopWatch:
         time_left = time_left / 60
         
         if time_left < 60:
+            time_unit = 'minute'
             time_left = round(time_left)
-            if time_left == 0:
-                time_left = 'Less than 1'
-                time_unit = 'minute'
-            elif time_left == 1:
-                time_unit = 'minute'
-            else:
-                time_unit = 'minutes'
         elif time_left < 60 * 24:
             time_left = round(time_left // 60)
-            time_unit = 'hours'
+            time_unit = 'hour'
         else:
             time_left = round(time_left // 60 // 24)
-            time_unit = 'days'
+            time_unit = 'day'
+
+        #check if we have more than one left
+        if time_left > 1:
+            #pluralize
+            time_unit = time_unit + 's'
+        #check for zero
+        if time_left == 0:
+            time_left = 'Less than 1'
     
         return (time_left, time_unit)
 
@@ -2270,10 +2306,11 @@ class WarningBox(tk.Frame):
     """
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
-        
-        add_mcv_icon(self)
 
-        tk.Button(self, text='x', command=self.destroy, background=color).pack(
+        tk.Button(self, text='x', command=self.close, background=color).pack(
+            side=tk.RIGHT, padx=10, pady=10)
+
+        tk.Button(self, text='suppress', command=self.suppress, background=color).pack(
             side=tk.RIGHT, padx=10, pady=10)
         
         ttk.Label(self, text=text, background=color).pack(
@@ -2287,6 +2324,23 @@ class WarningBox(tk.Frame):
     def pack(self, *args, **kwargs):
         
         super().pack(*args, side=tk.BOTTOM, fill=tk.X, **kwargs)
+
+    def suppress(self):
+        '''
+        Destroy widget, but leave warning in list.
+        '''
+        self.destroy()
+
+    def close(self):
+        '''
+        Destroy widget, and remove from warnings list.
+        '''
+
+        #destroy widget
+        self.destroy()
+        #remove from warning list
+        self.master.remove_warning(self)
+
 
 class PostProcessingFrame(ttk.Frame):
     """
@@ -2304,6 +2358,10 @@ class PostProcessingFrame(ttk.Frame):
         ttk.Button(self,
                    text='Open Output Folder',
                    command = self.open_folder
+                   ).pack(padx=10, pady=10, fill=tk.X)
+        ttk.Button(self,
+                   text="Show Plots",
+                   command = self.plot,
                    ).pack(padx=10, pady=10, fill=tk.X)
         
         self.elements = []
@@ -2353,6 +2411,76 @@ class PostProcessingFrame(ttk.Frame):
         
         self.canvasses = []
         self.elements = []
+    
+    @in_thread('MainThread', wait=False)
+    def plot(self):
+        selected_test = self.master.selected_test.get()
+        if selected_test == 'M2eFrame':
+            test_type = 'm2e'
+        elif selected_test == 'AccssDFrame':
+            test_type = 'access'
+        elif selected_test == 'PSuDFrame':
+            test_type = 'psud'
+        elif selected_test == 'IgtibyFrame':
+            test_type = 'intell'
+        else:
+            # TODO: Do something here?
+            print('uh oh')
+            test_type = ''
+        test_files = self.last_test
+        if isinstance(test_files, str):
+            test_files = [test_files]
+        url_files = [urllib.request.pathname2url(x) for x in test_files]
+        url_file_str = ';'.join(url_files)
+        gui_call = [
+            'mcvqoe-eval',
+            '--port', '8050',
+            ]
+        data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
+        
+        
+
+        if not hasattr(self.master, 'eval_server'):
+            # webbrowser.open('http://127.0.0.1:8050/shutdown')
+            eval_config = {
+                'stderr' : sp.PIPE,
+                'stdout' : sp.PIPE,
+                'stdin'  : sp.DEVNULL,
+                'bufsize': 1,
+                'universal_newlines': True
+            }
+    
+            #only for windows, prevent windows from appearing
+            if os.name == 'nt':
+                startupinfo = sp.STARTUPINFO()
+                startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+                eval_config['startupinfo'] = startupinfo
+            
+            self.master.eval_server = sp.Popen(gui_call,
+                                               **eval_config
+                                               )
+        
+            open_flag = False
+            for line in self.master.eval_server.stdout:
+                print(line, end='') # process line here
+        
+                if 'Dash is running' in line:
+                    print('Starting server')
+                    open_flag = True
+                    webbrowser.open(data_url)
+                    break
+            if not open_flag:
+                last_line = ''
+                for line in self.master.eval_server.stderr:
+                    print(line, end='')
+                    # Ensure last line is not empty
+                    if line.strip():
+                        last_line = line
+                raise RuntimeError(last_line.strip())
+                
+        else:
+            # TODO: Consider checking server status here in case errored out at some point
+            webbrowser.open(data_url)
     
     def open_folder(self, e=None):
         """open the outdir folder in os file explorer"""
@@ -2622,6 +2750,7 @@ def run(root_cfg):
             # prevent freezing if user is trying desperately to close window
             if loader.tk_main.win._is_force_closing:
                 return
+        
 
         #------------------- Show post-processing data ------------------------
         """
@@ -2638,28 +2767,17 @@ def run(root_cfg):
         # M2e: mean, std, and plots
         elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
+            
             mean, std = my_obj.get_mean_and_std()
+            
+            # TODO: Kill the gui call when finish button pressed
             
             ppf.add_element("Mean: %.5fs" % mean)
             ppf.add_element("StD: %.2fus" % std)
             
             # plots will leak memory if this is false.
-            if loader.use_alternate_plot_rendering:
-                
-                #create "show plots" button
-                class ShowPlots(ttk.Button):
-                    def __init__(self, master):
-                        super().__init__(master,
-                            text='Show Plots',
-                            command=self.plot)
-                    
-                    @in_thread('MainThread', wait=False)
-                    def plot(self):my_obj.plot()
-                
-                ppf.add_element(ShowPlots)
-            else:
-                ppf.add_element('To show plots, please install PyQt5')
-
+            # if loader.use_alternate_plot_rendering:
+            
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
@@ -2690,6 +2808,7 @@ def run(root_cfg):
                             '"recovery file" entry in the configuration.')
         
     except Exception as e:
+            
         if loader.tk_main.last_error is not e:
             show_error(e)
         
@@ -2698,6 +2817,15 @@ def run(root_cfg):
                             '"recovery file" entry in the configuration.')
 
 
+    # ----------------------Store test names for plotting----------------
+    # Store last test name into post processing frame
+    if sel_tst == 'AccssDFrame' and hasattr(my_obj,'data_filenames'):
+        ppf.last_test = my_obj.data_filenames    
+    elif hasattr(my_obj, 'data_filename'):
+        ppf.last_test = my_obj.data_filename
+    else:
+        ppf.last_test = 'no_test_file_generated'
+    
     # ---------------------- Last things to do --------------------------------
     
     if sel_tst == accesstime:
@@ -3081,7 +3209,7 @@ def get_interfaces(root_cfg):
         
         channels = {
             'playback_chans' : {"tx_voice": 0},
-            'rec_chans' : {"IRIGB_timecode": 1},
+            'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
             }
         
     elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
@@ -3093,7 +3221,7 @@ def get_interfaces(root_cfg):
         
         channels = {
             'playback_chans' : {},
-            'rec_chans' : {"rx_voice": 0, "IRIGB_timecode": 1},
+            'rec_chans' : {"rx_voice": 0, root_cfg['HdwSettings']['timecode_type']: 1},
             }
         ri_needed = False
         
@@ -3106,8 +3234,7 @@ def get_interfaces(root_cfg):
             'playback_chans' : {'tx_voice':0},
             'rec_chans' : {'rx_voice':0},
             }
-    
-    
+
     # in case of simulation test
     if is_sim:
         
@@ -3402,9 +3529,10 @@ def load_defaults():
             'channel_rate',
             'm2e_latency',
             'access_delay',
+            'device_delay',
             'rec_snr',
             'PTT_sig_freq',
-            'PTT_sig_aplitude',
+            'PTT_sig_amplitude',
             
             '_enable_PBI',
             'pre_vs_post',
@@ -3424,6 +3552,7 @@ def load_defaults():
             'dev_dly',
             'blocksize',
             'buffersize',
+            'timecode_type',
             ],
     }
 
@@ -3457,7 +3586,7 @@ def load_defaults():
 
     # set the default outdir directories
     dir_names = {
-        dev_dly_char: 'Device_Delay_Characterization',
+        dev_dly_char: 'Mouth_2_Ear',
         m2e: 'Mouth_2_Ear',
         accesstime: 'Access_Time',
         psud: 'PSuD',
@@ -3465,9 +3594,7 @@ def load_defaults():
         }
     for name_, cfg in DEFAULTS.items():
         if 'outdir' in cfg:
-            cfg['outdir'] = path.join(path.expanduser("~"),
-                                      'MCV-QoE',
-                                      dir_names[name_])
+            cfg['outdir'] = path.join(save_dir, dir_names[name_])
 
         # formats audio_files and audio_path to make them more readable
         if 'audio_files' in cfg and 'audio_path' in cfg:
@@ -3515,6 +3642,7 @@ def load_defaults():
 
     # the following should be a float
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+    DEFAULTS['SimSettings']['device_delay'] = float(DEFAULTS['SimSettings']['device_delay'])
 
     # the following do not have a default value
     DEFAULTS['SimSettings']['PreImpairment'] = 'None'
@@ -3532,6 +3660,20 @@ def load_defaults():
 
 def main():
 
+    #check if old folder exists and copy
+    if path.exists(old_save_dir):
+        #print message
+        print(f'Moving data from \'{old_save_dir}\' to \'{save_dir}\'')
+        try:
+            #check that new dir does not exist
+            if path.exists(save_dir):
+                raise RuntimeError(f'Both \'{old_save_dir}\' and \'{save_dir}\' exist!')
+            #copy files to new location
+            os.renames(old_save_dir,save_dir)
+        except:
+            show_error(err_func=tk.messagebox.showerror)
+            raise SystemExit(1)
+
     #import measurement things
     loader.measure_imports()
 
@@ -3541,7 +3683,7 @@ def main():
     try:
         loader.tk_main.win.init_as_mainwindow()
     except e:
-        show_error()
+        show_error(err_func=tk.messagebox.showerror)
         raise SystemExit(1)
     
     loader.tk_main.main_loop()
