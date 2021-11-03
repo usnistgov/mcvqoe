@@ -267,8 +267,8 @@ def measurement_results_filters(measurement):
                 dcc.Dropdown(
                     id=f'{measurement}-method',
                     options=[
-                        {'label': 'Every Word Critical', 'value': 'EWC'},
-                        {'label': 'Average Message Intelligibility', 'value': 'AMI'},
+                        {'label': 'Every Word Critical (EWC)', 'value': 'EWC'},
+                        {'label': 'Average Message Intelligibility (AMI)', 'value': 'AMI'},
                         ],
                     multi=True,
                     value=['EWC', 'AMI'],
@@ -333,7 +333,7 @@ def pretty_numbers(x, digits=digit_default):
     if isinstance(x, list):
         pretty_vals = []
         for xv in x:
-            pretty_vals.append(pretty_numbers(xv))
+            pretty_vals.append(pretty_numbers(xv, digits=digits))
     else:
         pretty_vals = np.round(x, digits)
     return pretty_vals
