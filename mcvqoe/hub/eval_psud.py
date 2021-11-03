@@ -37,7 +37,12 @@ layout = eval_shared.layout_template(measurement)
     # Intelligibility threshold
     # Display results in a table
 # --------------[Functions]----------------------------------
-def format_psud_results(psud_eval, digits=6):
+def format_psud_results(psud_eval,
+                        thresholds,
+                        message_lengths,
+                        methods,
+                        digits=6,
+                        ):
     """
     Format results from psud.evaluate object to be in nice HTML.
 
@@ -53,16 +58,12 @@ def format_psud_results(psud_eval, digits=6):
 
     """
     # TODO: Make these controllable at top
-    intell_threshes = [0.5, 0.7]
-    message_lengths = [1, 3, 5, 10]
-    methods = ['EWC', 'AMI']
-    
-    rmethods = []
-    rthreshes = []
-    rmlens = []
-    rpsud = []
+    # thresholds = [0.5, 0.7]
+    # message_lengths = [1, 3, 5, 10]
+    # methods = ['EWC', 'AMI']
+
     results = []
-    for method, thresh, msg_len, in itertools.product(methods, intell_threshes, message_lengths):
+    for method, thresh, msg_len, in itertools.product(methods, thresholds, message_lengths):
         val, ci = psud_eval.eval(thresh, msg_len, method=method)
         methods.append(method)
         res = {
@@ -108,8 +109,12 @@ def format_psud_results(psud_eval, digits=6):
     Input(f'{measurement}-session-select', 'value'),
     Input(f'{measurement}-x-axis', 'value'),
     Input(f'{measurement}-measurement-digits', 'value'),
+    Input(f'{measurement}-method', 'value'),
+    Input(f'{measurement}-intelligibility-threshold', 'value'),
+    Input(f'{measurement}-message-length', 'value'),
     )
-def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
+def update_plots(jsonified_data, talker_select, session_select, x,
+                 meas_digits, method, threshold, message_length):
     """
     Update all plots
 
@@ -132,7 +137,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
         DESCRIPTION.
 
     """
-
+    
     if jsonified_data is not None:
         psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
         
@@ -170,11 +175,21 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
         talker_options = [{'label': i, 'value': i} for i in talkers]
         
         sessions = psud_eval.test_names
-        session_options = [{'label': i, 'value': i} for i in sessions]
+        session_options = [{'label': i, 'value': i} for i in sessions]            
         
-        res = format_psud_results(psud_eval, meas_digits)
-        res_formatting = eval_shared.measurement_digits('grid', meas_digits,
-                                                        measurement=measurement)
+        if method != [] and threshold != [] and message_length != []:
+            res = format_psud_results(psud_eval,
+                                      digits=meas_digits,
+                                      methods=method,
+                                      thresholds=threshold,
+                                      message_lengths=message_length,
+                                      )
+            res_formatting = eval_shared.measurement_digits('grid', meas_digits,
+                                                            measurement=measurement)
+        else:
+            res = html.Div('Invalid filters selected')
+            res_formatting = eval_shared.measurement_digits('none',
+                                                            measurement=measurement)
         
     else:
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]

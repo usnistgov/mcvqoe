@@ -246,6 +246,64 @@ style_measurement_format = {
     'marginRight': '10px',
     'padding': '10px',
     }
+
+style_result_filters_dropdown = {
+    'width': '30%',
+    'display': 'inline-block'
+    }
+def measurement_results_filters(measurement):
+    if measurement == 'psud':
+        raw_intell_options = np.arange(0.5, 1.01, 0.1)
+        intell_options = [{'label': np.round(x, 1), 'value': np.round(x, 1)} for x in raw_intell_options]
+        default_intell_options=[0.5, 0.7]
+        
+        raw_msg_len_options = np.arange(1, 11, 1)
+        msg_len_options = [{'label': x, 'value': x} for x in raw_msg_len_options]
+        default_msg_len = [1, 3, 5, 10]
+        
+        children = html.Div([
+            html.Div([
+                html.Label('Method'),
+                dcc.Dropdown(
+                    id=f'{measurement}-method',
+                    options=[
+                        {'label': 'Every Word Critical', 'value': 'EWC'},
+                        {'label': 'Average Message Intelligibility', 'value': 'AMI'},
+                        ],
+                    multi=True,
+                    value=['EWC', 'AMI'],
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                ),
+            html.Div([
+                html.Label('Intelligibility Threshold'),
+                dcc.Dropdown(
+                    id=f'{measurement}-intelligibility-threshold',
+                    options=intell_options,
+                    multi=True,
+                    value=default_intell_options,
+                    
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                ),
+            html.Div([
+                html.Label('Message Length'),
+                dcc.Dropdown(
+                    id=f'{measurement}-message-length',
+                    options=msg_len_options,
+                    multi=True,
+                    value=default_msg_len,
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                )
+            ])
+    else:
+        children = None
+    return children
+
 digit_range = [1, 6]
 digit_default = 4
 
@@ -435,6 +493,11 @@ def layout_template(measurement):
                  id=f'{measurement}-initial-data-passed',
                  style={'display': 'none'}),
         html.Hr(),
+        html.Div(
+            measurement_results_filters(measurement),
+            id=f'{measurement}-results-filters', # Unused for m2e and intell, only for psud and access
+            className='twelve columns',
+            ),
         html.Div([
             html.Div(
                 id=f'{measurement}-measurement-results',

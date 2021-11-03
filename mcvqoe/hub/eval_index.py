@@ -54,7 +54,6 @@ def format_data(fpaths, cutpoint):
             df = pd.read_csv(fpath, skiprows=3)
         # Find cutpoints here...
         if cutpoint:
-            print('About to try to deal with lots of cutpoints...')
             data_dir = os.path.dirname(os.path.dirname(fpath))
             session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
             session_search = session_pattern.search(fpath)
