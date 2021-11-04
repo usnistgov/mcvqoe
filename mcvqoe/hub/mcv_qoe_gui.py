@@ -1400,20 +1400,6 @@ class ImportLoader():
                         value = importlib.import_module(source)
                     setattr(self, name, value)
 
-            prog('Finalizing...')
-            import matplotlib
-            #alternate rendering for pyplot to avoid conflicts with tkinter
-            loader.use_alternate_plot_rendering = True
-            try:
-                #TODO : figure out why this doesn't seem to work now???
-                #also TODO : fix this abomination of using two GUI toolkits
-                import PyQt5
-                matplotlib.use('Qt5Agg')
-            except Exception as e:
-                print(f'Error while switching to Qt5Agg backend : \'{e}\' plotting not enabled')
-                #there was a problem, don't do plots
-                self.use_alternate_plot_rendering = False
-
         except Exception as e:
             show_error(e)
             if self.tk_main is not None:
@@ -2783,9 +2769,6 @@ def run(root_cfg):
             
             ppf.add_element("Mean: %.5fs" % mean)
             ppf.add_element("StD: %.2fus" % std)
-            
-            # plots will leak memory if this is false.
-            # if loader.use_alternate_plot_rendering:
             
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
