@@ -38,12 +38,14 @@ from .common import save_dir, old_save_dir
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
+from tempfile import TemporaryDirectory
 
 import sounddevice as sd
 import sys
 import time
 import _thread
 import json
+import math
 import pickle
 import os
 import shutil
@@ -157,7 +159,10 @@ class MCVQoEGui(tk.Tk):
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
-        
+
+        # variable to determine if audio should be checked
+        self.level_check_var = tk.IntVar(value=1)
+
         # variable to determine selected audio interface
         self.audio_device = tk.StringVar(value='')
 
@@ -841,7 +846,8 @@ class MCVQoEGui(tk.Tk):
             'selected_test': self.selected_test.get(),
             'SimSettings'  : self.simulation_settings.get(),
             'HdwSettings'  : self.hardware_settings.get(),
-            'audio_device': self.audio_device.get()
+            'audio_device': self.audio_device.get(),
+            'audio_test_warn' : self.level_check_var.get(),
         }
 
         for framename, frame in self.frames.items():
@@ -1682,8 +1688,16 @@ class TestTypeFrame(tk.Frame):
         
         #auto-update button text based on is_simulation
         is_sim.trace_add('write', self.update_settings_btn)
-        
+
+        # ---------------------[ Level Check Check button ]---------------------
+
+        self.level_check = ttk.Checkbutton(self, text='Test Audio Warn',
+                                variable=main_.level_check_var).pack(fill=tk.X)
+
         # ------[ Audio Interface Dropdown ]-------
+
+        ttk.Separator(self).pack(fill=tk.X, pady=15)
+
         ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
         
         # Find umc device if it exists
@@ -1710,7 +1724,7 @@ class TestTypeFrame(tk.Frame):
         self.audio_select.pack(fill=tk.X)
         self.refresh_audio_devices()
         
-        ttk.Separator(self).pack(fill=tk.X, pady=20)
+        ttk.Separator(self).pack(fill=tk.X, pady=15)
 
         # Choose Test
         ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
@@ -2558,16 +2572,55 @@ def test_audio(root_cfg, on_finish=None):
         else:
             # use default file for single_play()
             fp = None
-        with radio_interface as ri:
+        with radio_interface as ri, TemporaryDirectory() as audio_dir:
             
+            #args for PTT_play.single_play
+            ptt_play_args = {}
             # check if there is a ptt_wait to use, otherwise use default
-            ptt_wait_arg = {}
             if 'ptt_wait' in cfg and not root_cfg['is_simulation']:
-                ptt_wait_arg['ptt_wait'] = cfg['ptt_wait']
+                ptt_play_args['ptt_wait'] = cfg['ptt_wait']
+
+            #check if we should look at audio after it's played
+            if root_cfg['audio_test_warn']:
+                #add argument for file to save audio to
+                ptt_play_args['save_name'] = os.path.join(audio_dir, 'tst.wav')
 
             #play the audio through the system
             loader.hardware.PTT_play.single_play(ri, ap, fp,
-                    playback=root_cfg['is_simulation'], **ptt_wait_arg)
+                    playback=root_cfg['is_simulation'], **ptt_play_args)
+
+            if root_cfg['audio_test_warn']:
+                fs, audio = loader.mcvqoe_base.audio_read(ptt_play_args['save_name'])
+
+                #get max level
+                audio_max = max(abs(audio))
+
+                #get in db
+                max_dbfs = round(20 * math.log10(audio_max), 2)
+
+                #volume thresholds for warning
+                #these were found by looking at good data
+                vol_high = -1
+                #vol_low  = -10
+                #TODO : check levels of default clips. Was getting warned at -10
+                vol_low  = -15
+
+                if max_dbfs > vol_high:
+                    #recommended adjustment amount
+                    adj = math.ceil(max_dbfs - vol_high)
+                    #audio is getting close to clipping, volume too loud
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Loud audio detected.\n' +
+                            f'Audio peak = {max_dbfs} dB of Full scale.\n' +
+                            f'Please decrese input audio volume by at least {adj} dB.')
+                if max_dbfs < vol_low:
+                    #recommended adjustment amount
+                    adj = math.ceil(vol_low - max_dbfs)
+                    #audio is a getting a little quiet
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Quiet audio detected.\n' +
+                            f'Audio peak = {max_dbfs} dB of Full scale.\n' +
+                            f'Please raise input audio volume by at least {adj} dB.')
 
     except Exception as error:
         show_error(error)
