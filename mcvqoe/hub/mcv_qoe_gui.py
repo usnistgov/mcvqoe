@@ -562,16 +562,7 @@ class MCVQoEGui(tk.Tk):
 
         """
         
-        # if this is the first time the user pressed close
-        
-        if not self._is_closing:
-            if self.ask_save():
-                # canceled by user
-                return
-            if self.step == 'in-progress' and self.abort():
-                # abort was canceled by user
-                return
-        else:
+        if self._is_closing:
             # if the user already pressed close
             self._is_force_closing = True
             
@@ -659,9 +650,6 @@ class MCVQoEGui(tk.Tk):
             if the operation was cancelled by the user
 
         """
-        if self.ask_save():
-            # cancelled
-            return True
         
         for fname, f in self.frames.items():
             f.btnvars.set(DEFAULTS[fname])
@@ -679,10 +667,6 @@ class MCVQoEGui(tk.Tk):
         
         if self.step not in ('empty', 'config'):
             raise RuntimeError("Can't load while measurement is running.")
-        
-        if self.ask_save():
-            # cancelled
-            return
 
         fpath = fdl.askopenfilename(
             filetypes=[('json files', '*.json')],
@@ -783,32 +767,6 @@ class MCVQoEGui(tk.Tk):
             
         self.set_saved_state(True)
         return False
-
-    def ask_save(self) -> bool:
-        """Prompts the user to save the config, if it is not already saved.
-        
-        If this returns True, then the action that prompted this function call
-        (such as an abort) should be cancelled.
-
-
-        Returns
-        -------
-        cancel : bool
-            True if the user pressed 'cancel', indicating that the action
-            should be cancelled.
-
-        """
-        if self.is_saved:
-            # no need to ask!
-            return False
-
-        out = msb.askyesnocancel(title='Warning',
-                                 message='Would you like to save unsaved changes?')
-        if out:
-            return self.save()
-        else:
-            # true if user cancelled
-            return out is None
 
     def set_saved_state(self, is_saved: bool = True):
         """changes whether or not the program considers the config unmodified
