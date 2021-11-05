@@ -3043,9 +3043,30 @@ def param_modify(root_cfg):
         for key in ('ptt_wait', 'ptt_gap'):
             if key in cfg:
                 cfg[key] = 0
-        
-        
-        
+
+class RandomDelay:
+    '''
+    Class used to variable delay times.
+    
+    This class is used to provide better logging
+    '''
+    def __init__(self, distribution, *args, **kwargs):
+        self.distribution = distribution
+        self.kwargs =  kwargs
+        self.args   =  args
+        self._rng = np.random.default_rng()
+    def __repr__(self):
+        #get a list of strings for args
+        arg_strs   = [repr(v) for v in self.args]
+        #get a list of strings for kwargs
+        kwarg_strs = [f'{k}={repr(v)}' for k, v in self.kwargs.items()]
+        #add them to the distribution argument and join with commas
+        f_args  = ', '.join([repr(self.distribution)] + kwarg_strs + arg_strs)
+        #add class name
+        return f'{type(self).__name__}('+ f_args +')'
+    def __call__(self):
+        f_rand = getattr(self._rng, self.distribution)
+        return f_rand(*self.args, **self.kwargs)
         
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
@@ -3099,45 +3120,36 @@ def get_interfaces(root_cfg):
         else:
             sim_cfg['m2e_latency'] = float(
                     sim_cfg['m2e_latency'])
-    elif sim_cfg['m2e_latency_type'] == 'Gaussian':
-        #m2e is using a Gaussian distribution
+    else:
+        #m2e is using random values
 
+        #TODO : get different values for different distributions
         m2e_val  = float(sim_cfg['m2e_latency'])
         m2e_sigma  = float(sim_cfg['m2e_latency_sigma'])
-        rng = np.random.default_rng()
-        #this seems slightly silly here as opposed to a lambda, but avoids
-        #errors on closing with delete and " main thread is not in main loop"
-        def Gaussian_m2e():
-             return rng.normal(m2e_val, m2e_sigma)
 
-        #set to function
-        sim_cfg['m2e_latency'] = Gaussian_m2e
-    else:
-        raise ValueError(f'Unknown m2e type \'{sim_cfg["m2e_latency_type"]}\'')
+        #set to random delay
+        sim_cfg['m2e_latency'] = RandomDelay(
+                                             sim_cfg['m2e_latency_type'].lower(),
+                                             loc=m2e_val,
+                                             scale=m2e_sigma
+                                             )
 
     # check access delay type
     if sim_cfg['access_delay_type'] == 'constant':
         sim_cfg['access_delay'] = float(sim_cfg['access_delay'])
-    elif sim_cfg['access_delay_type'] == 'Gaussian':
-        #m2e is using a Gaussian distribution
+    else:
+        #access delay is using random values
 
+        #TODO : get different values for different distributions
         acc_val  = float(sim_cfg['access_delay'])
         acc_sigma  = float(sim_cfg['access_delay'])
-        #TESTING : print some things
-        print(f'Access delay : {acc_val} sigma : {acc_sigma}')
-        rng = np.random.default_rng()
-        #this seems slightly silly here as opposed to a lambda, but avoids
-        #errors on closing with delete and " main thread is not in main loop"
-        def Gaussian_access_delay():
-            dly = rng.normal(acc_val, acc_sigma)
-            #TESTING : print some things
-            print(f'Access delay : {dly} sec')
-            return dly
 
-        #set to function
-        sim_cfg['access_delay'] = Gaussian_access_delay
-    else:
-        raise ValueError(f'Unknown access delay type \'{sim_cfg["access_delay_type"]}\'')
+        #set to random delay
+        sim_cfg['access_delay'] = RandomDelay(
+                                              sim_cfg['access_delay_type'].lower(),
+                                              loc=m2e_val,
+                                              scale=m2e_sigma
+                                              )
 
     #------------------------- set channels -----------------------------------
     

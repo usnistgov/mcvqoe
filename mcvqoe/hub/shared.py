@@ -1562,7 +1562,7 @@ class DistributionType(LabeledControl):
 
     def update(self, *args, **kwargs):
 
-        for t in ('constant', 'Gaussian'):
+        for t in ('constant', 'Normal'):
             #add a drop down list option
             self.menu.add_command(label=t,
                         command=tk._setit(self.btnvar, t))
@@ -1648,7 +1648,7 @@ class m2e_latency_range(RangeDisplay):
             self.update_rng(f'{m2e_val}')
             #disable sigma
             self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='disabled')
-        elif m2e_type == 'Gaussian':
+        elif m2e_type == 'Normal':
 
             self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='!disabled')
 
@@ -1746,7 +1746,7 @@ class access_delay_range(RangeDisplay):
                 self.update_rng(f'{acc_val}')
                 #disable sigma
                 self.master.controls['access_delay_sigma'].m_ctrl.configure(state='disabled')
-            elif acc_type == 'Gaussian':
+            elif acc_type == 'Normal':
 
                 self.master.controls['access_delay_sigma'].m_ctrl.configure(state='!disabled')
 
