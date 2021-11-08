@@ -2578,7 +2578,8 @@ def test_audio(root_cfg, on_finish=None):
                     tk.messagebox.showwarning(title='Audio Level Issue',
                     message= 'Quiet audio detected.\n' +
                             f'Audio peak = {max_dbfs} dB of Full scale.\n' +
-                            f'Please raise input audio volume by at least {adj} dB.')
+                             'Please first confirm that the system is functioning.\n' +
+                            f'Then, if the system is functioning, raise input audio volume by at least {adj} dB.')
 
     except Exception as error:
         show_error(error)
