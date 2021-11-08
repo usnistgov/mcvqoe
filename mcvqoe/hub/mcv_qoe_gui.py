@@ -2553,8 +2553,12 @@ def test_audio(root_cfg, on_finish=None):
                 #get max level
                 audio_max = max(abs(audio))
 
-                #get in db
-                max_dbfs = round(20 * math.log10(audio_max), 2)
+                try:
+                    #get in db
+                    max_dbfs = round(20 * math.log10(audio_max), 2)
+                except ValueError:
+                    #Usually from taking the log of a non-positive number
+                    max_dbfs = -math.inf
 
                 #volume thresholds for warning
                 #these were found by looking at good data
@@ -2571,7 +2575,13 @@ def test_audio(root_cfg, on_finish=None):
                     message= 'Loud audio detected.\n' +
                             f'Audio peak = {max_dbfs} dB of Full scale.\n' +
                             f'Please decrese input audio volume by at least {adj} dB.')
-                if max_dbfs < vol_low:
+                elif not math.isfinite(max_dbfs):
+                    #really low levels, probably not getting audio
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Audio not detected.\n' +
+                            'Please confirm that the system is functioning.'
+                            )
+                elif max_dbfs < vol_low:
                     #recommended adjustment amount
                     adj = math.ceil(vol_low - max_dbfs)
                     #audio is a getting a little quiet
