@@ -150,13 +150,13 @@ def update_plots(jsonified_data, talker_select, session_select, x,
             session_select = None
         
         # TODO: Implement these
-        fig_scatter = eval_shared.blank_fig()
+        # fig_scatter = eval_shared.blank_fig()
         fig_histogram = eval_shared.blank_fig()
-        # fig_scatter = psud_eval.plot(
-        #     x=x,
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
+        fig_scatter = psud_eval.plot_intelligibility(
+            x=x,
+            talkers=talker_select,
+            test_name=session_select,
+            )
         # fig_histogram = psud_eval.histogram(
         #     talkers=talker_select,
         #     test_name=session_select,
@@ -165,7 +165,7 @@ def update_plots(jsonified_data, talker_select, session_select, x,
         
         
         filenames = psud_eval.data['Filename']
-        pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
+        pattern = pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
         talkers = set()
         for fname in filenames:
             res = pattern.search(fname)
