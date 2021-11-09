@@ -65,7 +65,6 @@ def format_psud_results(psud_eval,
     results = []
     for method, thresh, msg_len, in itertools.product(methods, thresholds, message_lengths):
         val, ci = psud_eval.eval(thresh, msg_len, method=method)
-        methods.append(method)
         res = {
             'Method': method,
             'Intelligibility Threshold': thresh,
@@ -85,6 +84,8 @@ def format_psud_results(psud_eval,
         dash_table.DataTable(
             columns=[{'name': i, 'id': i} for i in results[0].keys()],
             data=results,
+            page_action='native',
+            page_size=12,
             )
         # html.H6('Probability of successful delivery (scale of 0-1)'),
         # html.Div(f'{pretty_mean}'),
@@ -100,6 +101,7 @@ def format_psud_results(psud_eval,
 @app.callback(
     Output(f'{measurement}-measurement-results', 'children'),
     Output(f'{measurement}-measurement-formatting', 'children'),
+    Output(f'{measurement}-plot', 'figure'),
     Output(f'{measurement}-scatter', 'figure'),
     Output(f'{measurement}-hist', 'figure'),
     Output(f'{measurement}-talker-select', 'options'),
@@ -108,12 +110,13 @@ def format_psud_results(psud_eval,
     Input(f'{measurement}-talker-select', 'value'),
     Input(f'{measurement}-session-select', 'value'),
     Input(f'{measurement}-x-axis', 'value'),
+    Input(f'{measurement}-intell-type', 'value'),
     Input(f'{measurement}-measurement-digits', 'value'),
     Input(f'{measurement}-method', 'value'),
     Input(f'{measurement}-intelligibility-threshold', 'value'),
     Input(f'{measurement}-message-length', 'value'),
     )
-def update_plots(jsonified_data, talker_select, session_select, x,
+def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
                  meas_digits, method, threshold, message_length):
     """
     Update all plots
@@ -140,7 +143,6 @@ def update_plots(jsonified_data, talker_select, session_select, x,
     
     if jsonified_data is not None:
         psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-        
         # thinned = thin == 'True'
         if x == 'index':
             x = None
@@ -152,11 +154,16 @@ def update_plots(jsonified_data, talker_select, session_select, x,
         # TODO: Implement these
         # fig_scatter = eval_shared.blank_fig()
         fig_histogram = eval_shared.blank_fig()
+        fig_plot = psud_eval.plot(methods=method,
+                                       thresholds=threshold,
+                                       )
         fig_scatter = psud_eval.plot_intelligibility(
             x=x,
+            data=intell_type,
             talkers=talker_select,
             test_name=session_select,
             )
+        fig_histogram = psud_eval.histogram()
         # fig_histogram = psud_eval.histogram(
         #     talkers=talker_select,
         #     test_name=session_select,
@@ -165,7 +172,7 @@ def update_plots(jsonified_data, talker_select, session_select, x,
         
         
         filenames = psud_eval.data['Filename']
-        pattern = pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
+        pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
         talkers = set()
         for fname in filenames:
             res = pattern.search(fname)
@@ -197,6 +204,7 @@ def update_plots(jsonified_data, talker_select, session_select, x,
         res = html.Div('PSuD object could not be processed.')
         res_formatting = eval_shared.measurement_digits('none',
                                                         measurement=measurement)
+        fig_plot = eval_shared.blank_fig()
         fig_scatter = eval_shared.blank_fig()
         fig_histogram = eval_shared.blank_fig()
         talker_options = none_dropdown
@@ -205,6 +213,7 @@ def update_plots(jsonified_data, talker_select, session_select, x,
     return_vals = (
             res,
             res_formatting,
+            fig_plot,
             fig_scatter,
             fig_histogram,
             talker_options,

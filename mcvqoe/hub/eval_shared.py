@@ -255,7 +255,7 @@ def measurement_results_filters(measurement):
     if measurement == 'psud':
         raw_intell_options = np.arange(0.5, 1.01, 0.1)
         intell_options = [{'label': np.round(x, 1), 'value': np.round(x, 1)} for x in raw_intell_options]
-        default_intell_options=[0.5, 0.7]
+        default_intell_options=[0.5,]
         
         raw_msg_len_options = np.arange(1, 11, 1)
         msg_len_options = [{'label': x, 'value': x} for x in raw_msg_len_options]
@@ -391,9 +391,40 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
-    elif measurement == 'intell' or measurement == 'psud':
+    elif measurement == 'intell':
         children = [
             # TODO: Generalize this
+            html.Div([
+                html.Label('X-axis'),
+                dcc.RadioItems(
+                    id=f'{measurement}-x-axis',
+                    options = [{'label': 'Trial', 'value': 'index'},
+                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                               ],
+                    value='index',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
+    elif measurement == 'psud':
+        children = [
+            # TODO: Generalize this
+            html.Div([
+                html.Label('Intelligibility'),
+                dcc.RadioItems(
+                    id=f'{measurement}-intell-type',
+                    options = [
+                        {'label': 'Message', 'value': 'message'},
+                        {'label': 'Word', 'value': 'word'},
+                        ],
+                    value='message',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style,
+                ),
             html.Div([
                 html.Label('X-axis'),
                 dcc.RadioItems(
@@ -439,7 +470,7 @@ def measurement_plots(measurement):
                   ),
                 ], className='six columns'),
             ]
-    elif measurement == 'intell' or measurement == 'psud':
+    elif measurement == 'intell':
         children = [
             # ------------[Scatter Plot]---------------------
             html.Div([
@@ -452,6 +483,27 @@ def measurement_plots(measurement):
                 dcc.Graph(id=f'{measurement}-scatter',
                           figure=blank_fig(),
                   ),
+                ], className='twelve columns'),
+            ]
+    elif measurement == 'psud':
+        children = [
+            # --------------[PSuD vs msg length Plot] ---------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-plot',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # --------------[Intell Scatter Plot]------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-scatter',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # ----------------[Test chain histogram]-------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                          ),
                 ], className='twelve columns'),
             ]
     else:
