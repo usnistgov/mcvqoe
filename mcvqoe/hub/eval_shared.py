@@ -15,9 +15,11 @@ import numpy as np
 import os
 import pandas as pd
 import plotly.graph_objects as go
+import re
 import tempfile 
 
 from mcvqoe.hub.eval_app import app
+from mcvqoe.hub.common import save_dir as default_data_dir
 
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
@@ -146,6 +148,89 @@ def load_json_data(jsonified_data, measurement):
         
     return eval_obj
 
+def find_cutpoints(fname, df, measurement):
+    '''
+    Try to find cutpoints based on fname.
+    
+    Looks for cutpoints in:
+        * mcvqoe.hub.common.save_dir as default_data_dir
+        * sees if it can find matching cutpoints from measurement default/included audio
+    If cannot find it in either needs to do something smart to inform user of limitation
+      * Say open data from measurement gui/make sure that they have stuff stored appropriately (Reference?)
+    '''
+    
+    data_dir = os.path.join(default_data_dir, measurement, 'data')
+    print(f'fname: {fname}\ndata_dir: {data_dir}')
+    # Identify session identification string
+    session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
+    session_search = session_pattern.search(fname)
+    if session_search is not None:
+        session_id = session_search.groups()[0]
+    else:
+        # TODO: Be smarter than this
+        raise RuntimeError('No valid session id found in uploaded data')
+   
+    # Construct wav folder path based off capture id
+    wav_dir = os.path.join(data_dir, 'wav', session_id)
+    
+    # Determine if wav directory exists
+    if os.path.exists(wav_dir):        
+        # Initialize cutpoints dictionary
+        cps = dict()
+        # TODO: This logic only works for PSuD, extract from access data file
+        for file in np.unique(df['Filename']):
+            # Construct path to cutpoint file
+            cp_name = f'Tx_{file}.csv'
+            cp_path = os.path.join(wav_dir, cp_name)
+            
+            # Load cutpoints
+            cp = pd.read_csv(cp_path)
+            
+            # Store as json in dict
+            cps[file] = cp.to_json()
+    else:
+        # Try to find the cutpoints from the defaults included in the package
+        if measurement == 'psud':
+            print('Trying to find default cps')
+            # Get default audio sets and audio path
+            [default_audio_sets, default_audio_path] = psud.measure.included_audio_sets()
+            # Initialize cutpoints dictionary
+            cps = dict()
+            
+            # Search string extract set number from filenames
+            set_search = re.compile(r'(?:[FM]\d_n\d+_s)(\d+)(?:_c\d+)')
+            for file in np.unique(df['Filename']):
+                # Search for set
+                search_res = set_search.search(file)
+                if search_res is not None:
+                    aset = 'set' + search_res.groups()[0]
+                    # Make sure it is in default audio sets
+                    if aset in default_audio_sets:
+                        # Construct path to cutpoint file
+                        cp_name = f'{file}.csv'
+                        cp_path = os.path.join(default_audio_path, aset, cp_name)
+                        
+                        # Load cutpoints
+                        cp = pd.read_csv(cp_path)
+                        
+                        # Store in json dict
+                        cps[file] = cp.to_json()
+                    else:
+                        # TODO: Figure out how to flag this for users
+                        raise RuntimeError('Cannot find cutpoints, say something to user')
+                else:
+                    # TODO: Figure out how to flag this for users
+                    raise RuntimeError('Cannot find cutpoints, say something to user')
+                
+        # Store all measurement data and cutpoints for this session file
+    
+    out_json = {
+        'measurement': df.to_json(),
+        'cutpoints': cps,
+        }
+    return out_json
+
+
 for measurement in measurements:
     @app.callback(
         Output(f'{measurement}-output-data-upload', 'children'),
@@ -182,30 +267,34 @@ for measurement in measurements:
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
-            if 'cutpoints' in test_dict:
-                # Hand cutpoints
-                print('I will handle cutpoints!')
-            else:
-                # Only dealing with measurement csvs
-                for filename in test_dict:
-                    children.append(format_data_filename(filename))
+            
+            for filename in test_dict:
+                children.append(format_data_filename(filename))
         else:
-            # time.sleep(3)
             # TODO: Figure out what to do with cutpoints here...
             if list_of_contents is not None:
                 children = []
                 dfs = []
+                # TODO: Figure out a better variable name/place to store this
+                idk = dict()
                 for c, n in zip(list_of_contents, list_of_names):
                     child, df = parse_contents(c, n)
                     children.append(child)
                     dfs.append(df)
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                        os.makedirs(os.path.join(tmpdirname, 'csv'))
+                    
+                    if measurement == 'psud':
                         
-                        out_json = {}
-                        for filename, df in zip(list_of_names, dfs):
-                            out_json[filename] = df.to_json()
-                            
+                        print('I will handle cutpoints here...')
+                        idk[n] = find_cutpoints(n, df, measurement)
+                        # TODO: Think working up to here...
+                    elif measurement == 'access':
+                        # TODO: Do something here
+                        print('I need to handle cutpoints here...')
+                        
+                out_json = {}
+                for filename, df in zip(list_of_names, dfs):
+                    out_json[filename] = df.to_json()
+                    
                 final_json = json.dumps(out_json)
             else:
                 children = None
