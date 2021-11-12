@@ -143,7 +143,6 @@ def load_json_data(jsonified_data, measurement):
             elif measurement == 'intell':
                 eval_obj = intell.evaluate(outpaths)
             elif measurement == 'psud':
-                print(f'PSuD outpaths: {outpaths}')
                 eval_obj = psud.evaluate(outpaths)
         
     return eval_obj
@@ -160,7 +159,6 @@ def find_cutpoints(fname, df, measurement):
     '''
     
     data_dir = os.path.join(default_data_dir, measurement, 'data')
-    print(f'fname: {fname}\ndata_dir: {data_dir}')
     # Identify session identification string
     session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
     session_search = session_pattern.search(fname)
@@ -242,7 +240,7 @@ for measurement in measurements:
         State(f'{measurement}-json-data', 'data'),
         )
     def update_output(list_of_contents, list_of_names,
-                      initial_data_flag, initial_data):
+                      initial_data_flag, initial_data, measurement=measurement):
         """
         Process uploaded data and store csv files as json
     
@@ -276,24 +274,26 @@ for measurement in measurements:
                 children = []
                 dfs = []
                 # TODO: Figure out a better variable name/place to store this
-                idk = dict()
-                for c, n in zip(list_of_contents, list_of_names):
-                    child, df = parse_contents(c, n)
+                
+                out_json = {}
+                for c, filename in zip(list_of_contents, list_of_names):
+                    child, df = parse_contents(c, filename)
                     children.append(child)
                     dfs.append(df)
                     
                     if measurement == 'psud':
                         
-                        print('I will handle cutpoints here...')
-                        idk[n] = find_cutpoints(n, df, measurement)
+                        out_json[filename] = find_cutpoints(filename, df, measurement)
                         # TODO: Think working up to here...
                     elif measurement == 'access':
                         # TODO: Do something here
-                        print('I need to handle cutpoints here...')
+                        print('I need to handle ACCESS cutpoints here...')
+                    else:
+                        out_json[filename] =  df.to_json()
                         
-                out_json = {}
-                for filename, df in zip(list_of_names, dfs):
-                    out_json[filename] = df.to_json()
+                
+                # for filename, df in zip(list_of_names, dfs):
+                #     out_json[filename] = df.to_json()
                     
                 final_json = json.dumps(out_json)
             else:
@@ -400,7 +400,6 @@ def measurement_digits(display, digits=digit_default, measurement=''):
     style = style_measurement_format
     
     style['display'] = display
-    # print(f'In measurement_digits: measurement-{measurement}, style[display]: {style["display"]}')
     children = html.Div([
         html.Label(f'Number of Digits in Results ({digit_range[0]} - {digit_range[1]}):'),
         dcc.Input(id=f'{measurement}-measurement-digits',
