@@ -3305,7 +3305,8 @@ def get_interfaces(root_cfg):
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
-            ri = loader.hardware.RadioInterface(radioport)
+            ri = loader.hardware.RadioInterface(radioport,
+                                        default_radio = hdw_cfg['default_radio'])
         
         audio_device = root_cfg['audio_device']
         ap = loader.hardware.AudioPlayer(device_str=audio_device,
@@ -3570,6 +3571,7 @@ def load_defaults():
             
             'overplay',
             'radioport',
+            'default_radio',
             'dev_dly',
             'blocksize',
             'buffersize',
