@@ -1342,6 +1342,7 @@ class _HdwPrototype:
     
     """
     radioport = ''
+    default_radio = 1
     blocksize=512
     buffersize=20
     overplay=1.0
@@ -1359,6 +1360,7 @@ class HdwSettings(AdvancedConfigGUI):
             AudioSettings,
             overplay,
             radioport,
+            default_radio,
             timecode_type,
             _restore_defaults,
             )
@@ -1368,6 +1370,13 @@ class radioport(LabeledControl):
     port where a radio interface is detected"""
     
     text = 'Radio Port:'
+
+class default_radio(LabeledControl):
+    """PTT output number to use for test."""
+
+    text='PTT Number:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2}
     
 class timecode_type(LabeledControl):
     """type of timecode to use for two location tests"""

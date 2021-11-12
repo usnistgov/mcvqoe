@@ -38,12 +38,14 @@ from .common import save_dir, old_save_dir
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
 import mcvqoe.hub.loadandsave as loadandsave
+from tempfile import TemporaryDirectory
 
 import sounddevice as sd
 import sys
 import time
 import _thread
 import json
+import math
 import pickle
 import os
 import shutil
@@ -157,7 +159,10 @@ class MCVQoEGui(tk.Tk):
         # tcl variables to determine what test to run and show config for
         self.is_simulation = tk.BooleanVar(value=False)
         self.selected_test = tk.StringVar(value='EmptyFrame')
-        
+
+        # variable to determine if audio should be checked
+        self.level_check_var = tk.IntVar(value=1)
+
         # variable to determine selected audio interface
         self.audio_device = tk.StringVar(value='')
 
@@ -557,16 +562,7 @@ class MCVQoEGui(tk.Tk):
 
         """
         
-        # if this is the first time the user pressed close
-        
-        if not self._is_closing:
-            if self.ask_save():
-                # canceled by user
-                return
-            if self.step == 'in-progress' and self.abort():
-                # abort was canceled by user
-                return
-        else:
+        if self._is_closing:
             # if the user already pressed close
             self._is_force_closing = True
             
@@ -654,9 +650,6 @@ class MCVQoEGui(tk.Tk):
             if the operation was cancelled by the user
 
         """
-        if self.ask_save():
-            # cancelled
-            return True
         
         for fname, f in self.frames.items():
             f.btnvars.set(DEFAULTS[fname])
@@ -674,10 +667,6 @@ class MCVQoEGui(tk.Tk):
         
         if self.step not in ('empty', 'config'):
             raise RuntimeError("Can't load while measurement is running.")
-        
-        if self.ask_save():
-            # cancelled
-            return
 
         fpath = fdl.askopenfilename(
             filetypes=[('json files', '*.json')],
@@ -779,32 +768,6 @@ class MCVQoEGui(tk.Tk):
         self.set_saved_state(True)
         return False
 
-    def ask_save(self) -> bool:
-        """Prompts the user to save the config, if it is not already saved.
-        
-        If this returns True, then the action that prompted this function call
-        (such as an abort) should be cancelled.
-
-
-        Returns
-        -------
-        cancel : bool
-            True if the user pressed 'cancel', indicating that the action
-            should be cancelled.
-
-        """
-        if self.is_saved:
-            # no need to ask!
-            return False
-
-        out = msb.askyesnocancel(title='Warning',
-                                 message='Would you like to save unsaved changes?')
-        if out:
-            return self.save()
-        else:
-            # true if user cancelled
-            return out is None
-
     def set_saved_state(self, is_saved: bool = True):
         """changes whether or not the program considers the config unmodified
 
@@ -841,7 +804,8 @@ class MCVQoEGui(tk.Tk):
             'selected_test': self.selected_test.get(),
             'SimSettings'  : self.simulation_settings.get(),
             'HdwSettings'  : self.hardware_settings.get(),
-            'audio_device': self.audio_device.get()
+            'audio_device': self.audio_device.get(),
+            'audio_test_warn' : self.level_check_var.get(),
         }
 
         for framename, frame in self.frames.items():
@@ -1400,20 +1364,6 @@ class ImportLoader():
                         value = importlib.import_module(source)
                     setattr(self, name, value)
 
-            prog('Finalizing...')
-            import matplotlib
-            #alternate rendering for pyplot to avoid conflicts with tkinter
-            loader.use_alternate_plot_rendering = True
-            try:
-                #TODO : figure out why this doesn't seem to work now???
-                #also TODO : fix this abomination of using two GUI toolkits
-                import PyQt5
-                matplotlib.use('Qt5Agg')
-            except Exception as e:
-                print(f'Error while switching to Qt5Agg backend : \'{e}\' plotting not enabled')
-                #there was a problem, don't do plots
-                self.use_alternate_plot_rendering = False
-
         except Exception as e:
             show_error(e)
             if self.tk_main is not None:
@@ -1696,8 +1646,16 @@ class TestTypeFrame(tk.Frame):
         
         #auto-update button text based on is_simulation
         is_sim.trace_add('write', self.update_settings_btn)
-        
+
+        # ---------------------[ Level Check Check button ]---------------------
+
+        self.level_check = ttk.Checkbutton(self, text='Test Audio Warn',
+                                variable=main_.level_check_var).pack(fill=tk.X)
+
         # ------[ Audio Interface Dropdown ]-------
+
+        ttk.Separator(self).pack(fill=tk.X, pady=15)
+
         ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
         
         # Find umc device if it exists
@@ -1724,7 +1682,7 @@ class TestTypeFrame(tk.Frame):
         self.audio_select.pack(fill=tk.X)
         self.refresh_audio_devices()
         
-        ttk.Separator(self).pack(fill=tk.X, pady=20)
+        ttk.Separator(self).pack(fill=tk.X, pady=15)
 
         # Choose Test
         ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
@@ -2572,16 +2530,66 @@ def test_audio(root_cfg, on_finish=None):
         else:
             # use default file for single_play()
             fp = None
-        with radio_interface as ri:
+        with radio_interface as ri, TemporaryDirectory() as audio_dir:
             
+            #args for PTT_play.single_play
+            ptt_play_args = {}
             # check if there is a ptt_wait to use, otherwise use default
-            ptt_wait_arg = {}
             if 'ptt_wait' in cfg and not root_cfg['is_simulation']:
-                ptt_wait_arg['ptt_wait'] = cfg['ptt_wait']
+                ptt_play_args['ptt_wait'] = cfg['ptt_wait']
+
+            #check if we should look at audio after it's played
+            if root_cfg['audio_test_warn']:
+                #add argument for file to save audio to
+                ptt_play_args['save_name'] = os.path.join(audio_dir, 'tst.wav')
 
             #play the audio through the system
             loader.hardware.PTT_play.single_play(ri, ap, fp,
-                    playback=root_cfg['is_simulation'], **ptt_wait_arg)
+                    playback=root_cfg['is_simulation'], **ptt_play_args)
+
+            if root_cfg['audio_test_warn']:
+                fs, audio = loader.mcvqoe_base.audio_read(ptt_play_args['save_name'])
+
+                #get max level
+                audio_max = max(abs(audio))
+
+                try:
+                    #get in db
+                    max_dbfs = round(20 * math.log10(audio_max), 2)
+                except ValueError:
+                    #Usually from taking the log of a non-positive number
+                    max_dbfs = -math.inf
+
+                #volume thresholds for warning
+                #these were found by looking at good data
+                vol_high = -1
+                #vol_low  = -10
+                #TODO : check levels of default clips. Was getting warned at -10
+                vol_low  = -15
+
+                if max_dbfs > vol_high:
+                    #recommended adjustment amount
+                    adj = math.ceil(max_dbfs - vol_high)
+                    #audio is getting close to clipping, volume too loud
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Loud audio detected.\n' +
+                            f'Audio peak = {max_dbfs} dB of Full scale.\n' +
+                            f'Please decrese input audio volume by at least {adj} dB.')
+                elif not math.isfinite(max_dbfs):
+                    #really low levels, probably not getting audio
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Audio not detected.\n' +
+                            'Please confirm that the system is functioning.'
+                            )
+                elif max_dbfs < vol_low:
+                    #recommended adjustment amount
+                    adj = math.ceil(vol_low - max_dbfs)
+                    #audio is a getting a little quiet
+                    tk.messagebox.showwarning(title='Audio Level Issue',
+                    message= 'Quiet audio detected.\n' +
+                            f'Audio peak = {max_dbfs} dB of Full scale.\n' +
+                             'Please first confirm that the system is functioning.\n' +
+                            f'Then, if the system is functioning, raise input audio volume by at least {adj} dB.')
 
     except Exception as error:
         show_error(error)
@@ -2783,9 +2791,6 @@ def run(root_cfg):
             
             ppf.add_element("Mean: %.5fs" % mean)
             ppf.add_element("StD: %.2fus" % std)
-            
-            # plots will leak memory if this is false.
-            # if loader.use_alternate_plot_rendering:
             
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
@@ -3300,7 +3305,8 @@ def get_interfaces(root_cfg):
             # a real radiointerface is not needed
             ri = _FakeRadioInterface()
         else:
-            ri = loader.hardware.RadioInterface(radioport)
+            ri = loader.hardware.RadioInterface(radioport,
+                                        default_radio = hdw_cfg['default_radio'])
         
         audio_device = root_cfg['audio_device']
         ap = loader.hardware.AudioPlayer(device_str=audio_device,
@@ -3565,6 +3571,7 @@ def load_defaults():
             
             'overplay',
             'radioport',
+            'default_radio',
             'dev_dly',
             'blocksize',
             'buffersize',
