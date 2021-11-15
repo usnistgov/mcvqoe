@@ -2547,7 +2547,8 @@ def test_audio(root_cfg, on_finish=None):
             loader.hardware.PTT_play.single_play(ri, ap, fp,
                     playback=root_cfg['is_simulation'], **ptt_play_args)
 
-            if root_cfg['audio_test_warn']:
+            #check if we should do test audio warnings and that we recorded voice
+            if root_cfg['audio_test_warn'] and 'rx_voice' in ap.rec_chans:
                 fs, audio = loader.mcvqoe_base.audio_read(ptt_play_args['save_name'])
 
                 if len(audio.shape) == 2:
