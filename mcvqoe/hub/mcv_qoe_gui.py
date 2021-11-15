@@ -2550,12 +2550,22 @@ def test_audio(root_cfg, on_finish=None):
             if root_cfg['audio_test_warn']:
                 fs, audio = loader.mcvqoe_base.audio_read(ptt_play_args['save_name'])
 
+                if len(audio.shape) == 2:
+                    voice_idx = tuple(ap.rec_chans.keys()).index('rx_voice')
+
+                    voice_audio = audio[:,voice_idx]
+                elif len(audio.shape) == 1:
+                    #only one channel, so just take audio
+                    voice_audio = audio
+                else:
+                    raise RuntimeError(f'Unexpected shape ({audio.shape}) for audio')
+
                 #get max level
-                audio_max = max(abs(audio))
+                voice_max = max(abs(voice_audio))
 
                 try:
                     #get in db
-                    max_dbfs = round(20 * math.log10(audio_max), 2)
+                    max_dbfs = round(20 * math.log10(voice_max), 2)
                 except ValueError:
                     #Usually from taking the log of a non-positive number
                     max_dbfs = -math.inf
