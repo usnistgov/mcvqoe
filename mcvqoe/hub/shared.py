@@ -1757,14 +1757,15 @@ class ImpairmentSettings(SubCfgFrame):
             controls.append(descC)
             
             for name,info in params.items():
-                if info.choice_type in ('range', 'positive'):
-                    #create type name from class and parameter name
-                    type_name = f'{cls_name}_{name}'
+                #create type name from class and parameter name
+                type_name = f'{cls_name}_{name}'
 
-                    # check if a value exists
-                    if type_name not in self.master.btnvars:
-                        #add default
-                        self.master.btnvars.add_entry(type_name,info.value_type(info.default))
+                # check if a value exists
+                if type_name not in self.master.btnvars:
+                    #add default
+                    self.master.btnvars.add_entry(type_name,info.value_type(info.default))
+
+                if info.choice_type in ('range', 'positive'):
 
                     class_vals = {
                                     'min_' : info.min_val,
@@ -1778,6 +1779,31 @@ class ImpairmentSettings(SubCfgFrame):
                     
                     #create a control class
                     cc = type(type_name,(LabeledNumber,),class_vals)
+                    #add to list of controls
+                    controls.append(cc)
+                elif info.choice_type == 'file':
+
+                    #function to run when browse is clicked
+                    def brows_files(self):
+                        fp = fdl.askopenfilename(parent=self.master,
+                                filetypes=info.filetypes)
+                        if fp:
+                            # normalize paths (prevents mixing of / and \ on windows)
+                            fp = path.normpath(fp)
+
+                            self.btnvar.set(fp)
+
+                    class_vals = {
+                                    'on_button' : brows_files,
+                                    'button_text' : 'Browse...',
+                                    'text' : info.description,
+                                 }
+
+                    if hasattr(info,'description'):
+                        class_vals['__doc__'] = info.description
+
+                    #create a control class
+                    cc = type(type_name,(EntryWithButton,),class_vals)
                     #add to list of controls
                     controls.append(cc)
                 else:
