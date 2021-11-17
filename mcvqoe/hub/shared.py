@@ -1796,7 +1796,7 @@ class ImpairmentSettings(SubCfgFrame):
                     class_vals = {
                                     'on_button' : brows_files,
                                     'button_text' : 'Browse...',
-                                    'text' : info.description,
+                                    'text' : name,
                                  }
 
                     if hasattr(info,'description'):
