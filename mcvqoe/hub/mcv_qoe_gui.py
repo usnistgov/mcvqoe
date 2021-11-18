@@ -2585,13 +2585,15 @@ class ProcessDataFrame(ttk.LabelFrame):
     
     def start_server(self):
         data_url = self.data_url()
-        if hasattr(self.master, 'eval_server'):
+
+        if not hasattr(self.master, 'eval_server'):
             self.master.eval_server = start_evaluation_server(self.gui_call,
                                                               data_url)
         else:
             # TODO: Consider checking server status here in case errored out at some point
             webbrowser.open(data_url)
-            
+
+@in_thread('MainThread', wait=False)         
 def start_evaluation_server(gui_call, data_url):
     
     eval_config = {
