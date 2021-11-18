@@ -97,8 +97,8 @@ class _enable_Fixed_Volumes(LabeledCheckbox):
     between minimum volume and maximum volume is for evaluation.
     
     If disabled, evaluation volumes are determined algorithmically during a test.
-    However evaluation volumes will only be consider between the minimum and 
-    maximum volumes set here.
+    Initial volumes for consideration will be between the minimum and maximum 
+    volumes set here.
     """
     text = 'Use fixed volume levels'
 
