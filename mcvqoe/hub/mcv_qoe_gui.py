@@ -54,6 +54,7 @@ import gc
 import subprocess as sp
 import traceback
 import numpy as np
+import requests
 import urllib.request
 import webbrowser
 import re
@@ -606,7 +607,7 @@ class MCVQoEGui(tk.Tk):
         
         if hasattr(self, 'eval_server'):
             # Kill the server
-            webbrowser.open('http://127.0.0.1:8050/shutdown')
+            requests.get('http://127.0.0.1:8050/shutdown_request')
         # destroy the window and stop the gui-thread's event loop.
         self.destroy()
 

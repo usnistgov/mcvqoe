@@ -19,7 +19,7 @@ from dash import html
 from dash.dependencies import Input, Output
 from flask import request
 
-from mcvqoe.hub.eval_app import app
+from mcvqoe.hub.eval_app import app, server
 from mcvqoe.hub.eval_shared import style_data_filename
 
 import mcvqoe.hub.eval_intell as intell
@@ -34,7 +34,12 @@ app.layout = html.Div([
     html.Div(id='page-content'),
     ])
 
-
+@server.route('/shutdown_request', methods=["GET"])
+def shutdown_request():
+    shutdown()
+    # As far as I can tell doesn't matter what this returns, just needs to return something that is not None
+    return 'shutting down'
+    
 def shutdown():
     """
     Shutdown the server so users do not have to hit CTRL+C in terminal
@@ -188,7 +193,7 @@ def display_page(pathname):
     elif test_type == '/shutdown':
         shutdown()
         layout=html.H3('Successfully shutdown MCV QoE Data App')
-    
+        
     else:
         layout = '404'
     return layout
