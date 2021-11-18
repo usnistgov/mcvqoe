@@ -93,8 +93,8 @@ class Volumes(SubCfgFrame):
 class _enable_Fixed_Volumes(LabeledCheckbox):
     """
     Use fixed volumes defined by minimum, maximum, and number of volumes below.
-    If enabled, an array with number of volume uniformly spaced volumes 
-    between minimum volume and maximum volume is for evaluation.
+    If enabled, an array with the input amount of uniformly spaced volumes 
+    between the minimum and maximum quantity will be used for evaluation.
     
     If disabled, evaluation volumes are determined algorithmically during a test.
     Initial volumes for consideration will be between the minimum and maximum 
