@@ -13,6 +13,7 @@ import _tkinter
 import atexit
 from .tk_threading import InvalidParameter
 
+import numpy as np
 
 class TkVarDict(dict):
 
@@ -33,7 +34,8 @@ class TkVarDict(dict):
                 var_type = tk.BooleanVar
             elif type(value) == str:
                 var_type = tk.StringVar
-            elif type(value) == float:
+            
+            elif np.issubdtype(type(value), np.floating):
                 var_type = tk.DoubleVar
             elif type(value) == int:
                 var_type = tk.IntVar
@@ -44,7 +46,7 @@ class TkVarDict(dict):
             else:
                 print(key, 'has an invalid value. Ignoring.')
                 return
-
+        
         self[key] = var_type(value=value)
         self[key].trace_add('write', self._on_change_pre)
 
