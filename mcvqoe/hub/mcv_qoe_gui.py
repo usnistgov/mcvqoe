@@ -334,6 +334,7 @@ class MCVQoEGui(tk.Tk):
             loader.AccssDFrame,
             loader.PSuDFrame,
             loader.IgtibyFrame,
+            loader.TVOFrame,
         ]
         
         # frames from the above can be copied in here to give them scrollbar
@@ -344,11 +345,12 @@ class MCVQoEGui(tk.Tk):
         for F in frame_types:
             
             # construct tcl variables for parameters and populate with default values
+            
             btnvars = loadandsave.TkVarDict(**DEFAULTS[F.__name__])
             
             # determine master based on whether it should have a scrollbar
             master = (self, self.RightFrame)[F in frame_types_with_scrollbar]
-            
+
             # initializes the frame, with its key being its own classname
             f = F(master=master, btnvars=btnvars)
             
@@ -812,7 +814,6 @@ class MCVQoEGui(tk.Tk):
 
         for framename, frame in self.frames.items():
             obj[framename] = frame.btnvars.get()
-        
         
         
         return obj
@@ -1308,6 +1309,7 @@ accesstime = 'AccssDFrame'
 psud = 'PSuDFrame'
 intelligibility = 'IgtibyFrame'
 process = 'ProcessDataFrame'
+tvo = 'TVOFrame'
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -1347,6 +1349,11 @@ class ImportLoader():
                                  'intelligibility_gui' : 'mcvqoe.hub.intelligibility_gui',
                                  'IgtibyFrame' : ('mcvqoe.hub.intelligibility_gui','IgtibyFrame'),
                                 },
+            'TVO' :{
+                'tvo_gui': 'mcvqoe.hub.tvo_gui',
+                'TVOFrame': ('mcvqoe.hub.tvo_gui', 'TVOFrame'),
+                },
+            
             'Plotting' : {
                             'Figure' : ('matplotlib.figure','Figure'),
                             'FigureCanvasTkAgg' : ('matplotlib.backends.backend_tkagg','FigureCanvasTkAgg'),
@@ -1409,6 +1416,7 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
             'Access time'   : loader.accesstime_gui.adly.version,
             'PSuD'          : loader.psud_gui.psud.version,
             'Intelligibility': loader.intelligibility_gui.igtiby.version,
+            'TVO': loader.tvo_gui.tvo.version,
             
             'MCV QoE Base Library': loader.mcvqoe_base.version,
             'ABC MRT'             : loader.abcmrt.version,
@@ -1694,6 +1702,9 @@ class TestTypeFrame(tk.Frame):
 
         # Choose Test
         ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
+        
+        ttk.Radiobutton(self, text='TVO',
+                        variable=sel_txt, value=tvo).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='M2E Latency',
                         variable=sel_txt, value=m2e).pack(fill=tk.X)
@@ -2833,6 +2844,7 @@ def run(root_cfg):
         accesstime: loader.accesstime_gui.Access_fromGui,
         psud : loader.psud_gui.PSuD_fromGui,
         intelligibility: loader.intelligibility_gui.Igtiby_from_Gui,
+        tvo: loader.tvo_gui.TVO_fromGui,
             }
 
     # extract test configuration:
@@ -3339,7 +3351,18 @@ def param_modify(root_cfg):
                     message='Must be greater than 15 if auto-stop is enabled')
     
     
-    
+    if '_min_volume' in cfg:
+        if cfg['_enable_Fixed_Volumes']:
+            min_vol = cfg['_min_volume']
+            max_vol = cfg['_max_volume']
+            num_vols = cfg['num_volumes']
+            step = (max_vol - min_vol)/(num_vols - 1)
+            cfg['volumes'] = np.arange(min_vol,
+                                       max_vol+step,
+                                       step)
+        else:
+            cfg['lim'] = [cfg['_min_volume'], cfg['_max_volume']]
+        
     
     if is_sim:
         
@@ -3741,6 +3764,27 @@ def load_defaults():
             'save_tx_audio',
             'save_audio',
         ],
+        
+        tvo: [
+            'audio_files',
+            'audio_path',
+            # TODO: add dev_volume,
+            # dev_volume,
+            'outdir',
+            'save_tx_audio',
+            'save_audio',
+            'ptt_wait',
+            'ptt_gap',
+            'ptt_rep',
+            'dev_volume',
+            'smax',
+            'tol',
+            '_enable_Fixed_Volumes',
+            '_min_volume',
+            '_max_volume',
+            '_num_volumes',
+            'lim',
+            ],
             
         'SimSettings': [
             'overplay',
@@ -3788,6 +3832,7 @@ def load_defaults():
         accesstime: loader.accesstime_gui.adly.measure(),
         psud : loader.psud_gui.psud.measure(),
         intelligibility: loader.intelligibility_gui.igtiby.measure(),
+        tvo: loader.tvo_gui.tvo.measure(),
         'SimSettings': shared._SimPrototype(),
         'HdwSettings': shared._HdwPrototype(),
         'ProcessSettings': shared.ProcessSettings(),
@@ -3816,7 +3861,8 @@ def load_defaults():
         m2e: 'Mouth_2_Ear',
         accesstime: 'Access_Time',
         psud: 'PSuD',
-        intelligibility: 'Intelligibility'
+        intelligibility: 'Intelligibility',
+        tvo: 'Transmit_Volume_Optimization',
         }
     for name_, cfg in DEFAULTS.items():
         if 'outdir' in cfg:
@@ -3885,6 +3931,14 @@ def load_defaults():
     
     # Set Intelligibility wrapper class defaults
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
+    
+    DEFAULTS[tvo]['_enable_Fixed_Volumes'] = False
+    DEFAULTS[tvo]['_min_volume'] = np.min(DEFAULTS[tvo]['lim'])
+    DEFAULTS[tvo]['_max_volume'] = np.max(DEFAULTS[tvo]['lim'])
+    DEFAULTS[tvo]['_num_volumes'] = 10
+    
+    # Delete lim so it doesn't mess other stuff up
+    DEFAULTS[tvo].pop('lim', None)
     
     DEFAULTS[process]['data_files'] = ''
     DEFAULTS[process]['data_path'] = save_dir
