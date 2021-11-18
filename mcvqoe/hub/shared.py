@@ -1719,3 +1719,75 @@ def format_audio_files(path_= '', files=[]):
     newfiles = [path.relpath(f, newpath) for f in files]
     
     return newpath, newfiles
+
+class ProcessSettings():
+    def get_controls(self):
+        return (
+            data_files,
+            data_path,
+            )
+    
+class data_path(EntryWithButton):
+    """The default source folder containing all measurements."""
+    
+    
+    text = 'Data Folder:'
+    
+    button_text = 'Browse Folder'
+    
+    
+    def on_button(self):
+        
+        initpath = self.btnvar.get()
+        if not initpath or not path.isdir(initpath):
+            
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.data_path']
+        
+        
+        fp = fdl.askdirectory(initialdir = initpath)
+        if fp:
+            
+            fp = path.normpath(fp)
+            
+            path_, files = format_audio_files(path_=fp)
+            
+            self.master.btnvars['data_path'].set(files)
+            
+            self.btnvar.set(path_)
+            
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.data_path',
+                path_,
+                )
+class data_files(EntryWithButton):
+    
+    text = 'Data Files:'
+    button_text = 'Browse Files'
+    
+    def on_button(self):
+        initpath = self.master.btnvars['data_path'].get()
+        if not initpath or not path.isdir(initpath):
+            
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.data_path']
+        
+        
+        fp = fdl.askopenfilenames(parent=self.master,
+                initialdir=initpath,
+                filetypes=[('CSV files', '*.csv')])
+        if fp:
+            # normalize paths (prevents mixing of / and \ on windows)
+            fp = [path.normpath(f) for f in fp]
+            
+            path_, files = format_audio_files('', fp)
+            self.btnvar.set(files)
+            self.master.btnvars['data_path'].set(path_)
+            
+            # cache folder
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.data_path',
+                 path_,
+                 )

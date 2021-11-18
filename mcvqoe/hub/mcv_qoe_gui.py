@@ -56,7 +56,7 @@ import traceback
 import numpy as np
 import urllib.request
 import webbrowser
-
+import re
 from pkg_resources import resource_filename
 
 
@@ -325,6 +325,7 @@ class MCVQoEGui(tk.Tk):
             PostTestGuiFrame,
             TestProgressFrame,
             PostProcessingFrame,
+            ProcessDataFrame,
             
             loader.DevDlyCharFrame,
             
@@ -1061,7 +1062,7 @@ class MCVQoEGui(tk.Tk):
     def _set_step(self, step, extra=None):
         
         back_btn_txt = 'Back'
-        
+        selected_test = self.selected_test.get()
         if step == 'empty':
             # blank window
             self.selected_test.set('EmptyFrame')
@@ -1069,14 +1070,20 @@ class MCVQoEGui(tk.Tk):
             next_btn = None #disabled
             back_btn = None
         
-        elif step == 'config':
+        elif step == 'config' and selected_test != 'ProcessDataFrame':
             # test configuration
             self.show_frame(self.selected_test.get())
             next_btn_txt = 'Next'
             next_btn = self.run
             back_btn = lambda : self.set_step('empty')
         
-        
+        elif step == 'config' and selected_test == 'ProcessDataFrame':
+            self.show_frame(self.selected_test.get())
+            next_btn_txt = 'Finish'
+            next_btn = lambda: self.on_finish()
+            back_btn = lambda: self.set_step('empty')
+            
+            
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1299,7 +1306,7 @@ m2e = 'M2eFrame'
 accesstime = 'AccssDFrame'
 psud = 'PSuDFrame'
 intelligibility = 'IgtibyFrame'
-
+process = 'ProcessDataFrame'
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -1699,9 +1706,15 @@ class TestTypeFrame(tk.Frame):
         ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value=intelligibility).pack(fill=tk.X)
         
+        # Process Data button
+        ttk.Separator(self).pack(fill=tk.X, pady=15)
+        
+        ttk.Label(self, text='Other Options:').pack(fill=tk.X)
+        
+        ttk.Radiobutton(self, text='Process Data',
+                   variable=sel_txt, value=process).pack(fill=tk.X)
         
         # version information
-        
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
             side=tk.BOTTOM, fill=tk.X)
     
@@ -2399,42 +2412,43 @@ class PostProcessingFrame(ttk.Frame):
         
 
         if not hasattr(self.master, 'eval_server'):
-            # webbrowser.open('http://127.0.0.1:8050/shutdown')
-            eval_config = {
-                'stderr' : sp.PIPE,
-                'stdout' : sp.PIPE,
-                'stdin'  : sp.DEVNULL,
-                'bufsize': 1,
-                'universal_newlines': True
-            }
+            self.master.eval_server = start_evaluation_server(gui_call, data_url)
+            # # webbrowser.open('http://127.0.0.1:8050/shutdown')
+            # eval_config = {
+            #     'stderr' : sp.PIPE,
+            #     'stdout' : sp.PIPE,
+            #     'stdin'  : sp.DEVNULL,
+            #     'bufsize': 1,
+            #     'universal_newlines': True
+            # }
     
-            #only for windows, prevent windows from appearing
-            if os.name == 'nt':
-                startupinfo = sp.STARTUPINFO()
-                startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
-                eval_config['startupinfo'] = startupinfo
+            # #only for windows, prevent windows from appearing
+            # if os.name == 'nt':
+            #     startupinfo = sp.STARTUPINFO()
+            #     startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+            #     eval_config['startupinfo'] = startupinfo
             
-            self.master.eval_server = sp.Popen(gui_call,
-                                               **eval_config
-                                               )
+            # self.master.eval_server = sp.Popen(gui_call,
+            #                                    **eval_config
+            #                                    )
         
-            open_flag = False
-            for line in self.master.eval_server.stdout:
-                print(line, end='') # process line here
+            # open_flag = False
+            # for line in self.master.eval_server.stdout:
+            #     print(line, end='') # process line here
         
-                if 'Dash is running' in line:
-                    print('Starting server')
-                    open_flag = True
-                    webbrowser.open(data_url)
-                    break
-            if not open_flag:
-                last_line = ''
-                for line in self.master.eval_server.stderr:
-                    print(line, end='')
-                    # Ensure last line is not empty
-                    if line.strip():
-                        last_line = line
-                raise RuntimeError(last_line.strip())
+            #     if 'Dash is running' in line:
+            #         print('Starting server')
+            #         open_flag = True
+            #         webbrowser.open(data_url)
+            #         break
+            # if not open_flag:
+            #     last_line = ''
+            #     for line in self.master.eval_server.stderr:
+            #         print(line, end='')
+            #         # Ensure last line is not empty
+            #         if line.strip():
+            #             last_line = line
+            #     raise RuntimeError(last_line.strip())
                 
         else:
             # TODO: Consider checking server status here in case errored out at some point
@@ -2451,6 +2465,175 @@ class PostProcessingFrame(ttk.Frame):
             except (FileNotFoundError, OSError):
                 pass
         
+class ProcessDataFrame(ttk.LabelFrame):
+    """Frame for finding data to process and starting evaluation server"""
+    gui_call = [
+            'mcvqoe-eval',
+            '--port', '8050',
+            ]
+    def __init__(self, master, btnvars, **kwargs):
+        
+        kwargs['text'] = 'Process Data'
+        
+        # kwargs['text'] = self.text
+        super().__init__(**kwargs)
+        
+        
+        #option functions will get and store their values in here
+        self.btnvars = btnvars
+        
+        # ttk.Label(self, text='Process Data').pack(padx=10, pady=10, fill=tk.X)
+        
+        #sets what controls will be in this frame
+        controls = self.get_controls()
+        
+        #initializes controls
+        self.controls = {}
+        for row in range(len(controls)):
+            c = controls[row](master=self, row=row)
+            
+            self.controls[c.__class__.__name__] = c
+        row = len(controls) + 1
+        ttk.Button(self,
+                   text="Show Plots",
+                   command = self.plot,
+                   ).grid(row=row, column=3)
+        row += 1
+        self.help_message = tk.StringVar()
+        self.help_message.set('')
+        tk.Message(self,
+                  textvariable=self.help_message,
+                  ).grid(row=row, column=2)
+        row += 1
+        # self.controls['Plot button'] = plot_button
+        
+        ttk.Button(self,
+                   text='Evaluation homepage',
+                   command=self.start_server,
+                   ).grid(row=row, column=3)
+        row += 1
+    def get_controls(self):
+        return (
+            shared.data_files,
+            shared.data_path,
+            )
+    
+    def plot(self):
+        
+        message=''
+        data_files_raw = self.btnvars['data_files'].get()
+        if data_files_raw == '':
+            message += 'No files selected\n'
+        
+        # Strip away weird extra characters from file selection
+        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}.csv)')
+        search = capture_search.search(data_files_raw)
+        if search is not None:
+            data_files = search.group().split("', '")
+        else:
+            data_files = []
+            start_server = False
+            message += 'No valid files selected'
+        
+        data_path = self.btnvars['data_path'].get()
+        selected_test = os.path.basename(os.path.dirname(os.path.dirname(data_path)))
+        
+        start_server = True
+        if selected_test == 'Mouth_2_Ear':
+            test_type = 'm2e'
+        elif selected_test == 'Access_Time':
+            test_type = 'access'
+        elif selected_test == 'PSuD':
+            test_type = 'psud'
+        elif selected_test == 'Intelligibility':
+            test_type = 'intell'
+        else:
+            # TODO: Do something here?
+            test_type = ''
+            message += f'Invalid test directory, unrecognized measurement: \'{test_type}\''
+            start_server = False
+        
+        if isinstance(data_files, str):
+            data_files = [data_files]
+        
+        # test_files = [os.path.join(data_path, x) for x in data_files]
+        test_files = []
+        for df in data_files:
+            test_files.append(os.path.join(data_path, df))
+        
+        url_files = [urllib.request.pathname2url(x) for x in test_files]
+        url_file_str = ';'.join(url_files)
+        
+        
+        data_url = self.data_url(test_type, url_file_str)
+        # message += f'Data will be viewable at {data_url}\n'
+        if start_server and not hasattr(self.master, 'eval_server'):
+            self.master.eval_server = start_evaluation_server(self.gui_call,
+                                                              data_url)
+        elif start_server:
+            webbrowser.open(data_url)
+        self.help_message.set(message)
+    
+    def data_url(self, test_type=None, url_file_str=None):
+        if test_type is None:
+            data_url = 'http://127.0.0.1:8050/'
+        elif url_file_str is None:
+            data_url = f'http://127.0.0.1:8050/{test_type}'
+        else:
+            data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
+        return data_url
+    
+    def start_server(self):
+        data_url = self.data_url()
+        if hasattr(self.master, 'eval_server'):
+            self.master.eval_server = start_evaluation_server(self.gui_call,
+                                                              data_url)
+        else:
+            # TODO: Consider checking server status here in case errored out at some point
+            webbrowser.open(data_url)
+            
+def start_evaluation_server(gui_call, data_url):
+    
+    eval_config = {
+        'stderr' : sp.PIPE,
+        'stdout' : sp.PIPE,
+        'stdin'  : sp.DEVNULL,
+        'bufsize': 1,
+        'universal_newlines': True
+    }
+
+    #only for windows, prevent windows from appearing
+    if os.name == 'nt':
+        startupinfo = sp.STARTUPINFO()
+        startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+        eval_config['startupinfo'] = startupinfo
+    
+    eval_server = sp.Popen(gui_call,
+                                       **eval_config
+                                       )
+
+    open_flag = False
+    for line in eval_server.stdout:
+        print(line, end='') # process line here
+
+        if 'Dash is running' in line:
+            print('Starting server')
+            open_flag = True
+            webbrowser.open(data_url)
+            break
+    if not open_flag:
+        last_line = ''
+        for line in eval_server.stderr:
+            print(line, end='')
+            # Ensure last line is not empty
+            if line.strip():
+                last_line = line
+        raise RuntimeError(last_line.strip())
+    
+    return eval_server
+# class ProcessPlotButton():
+#     """I'm not sure what I'm doing here"""
+    
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         
 #------------------------------ Test Audio ------------------------------------
@@ -3577,6 +3760,11 @@ def load_defaults():
             'buffersize',
             'timecode_type',
             ],
+        
+        'ProcessDataFrame': [
+            'data_files',
+            'data_path',
+            ],
     }
 
     # the objects to pull the default values from
@@ -3587,7 +3775,8 @@ def load_defaults():
         psud : loader.psud_gui.psud.measure(),
         intelligibility: loader.intelligibility_gui.igtiby.measure(),
         'SimSettings': shared._SimPrototype(),
-        'HdwSettings': shared._HdwPrototype()
+        'HdwSettings': shared._HdwPrototype(),
+        'ProcessSettings': shared.ProcessSettings(),
         }
 
     # ----------------------load default values from objects-----------------------
@@ -3682,6 +3871,9 @@ def load_defaults():
     
     # Set Intelligibility wrapper class defaults
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
+    
+    DEFAULTS[process]['data_files'] = ''
+    DEFAULTS[process]['data_path'] = save_dir
 
 def main():
 
