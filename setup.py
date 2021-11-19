@@ -34,6 +34,7 @@ setuptools.setup(
         'dash',
         'flask',
         'plotly',
+        'requests',
     ],
     extras_require={
         'plots': ['PyQt5'],
