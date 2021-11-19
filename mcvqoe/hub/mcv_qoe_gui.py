@@ -3894,7 +3894,14 @@ def load_defaults():
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
     
     DEFAULTS[process]['data_files'] = ''
-    DEFAULTS[process]['data_path'] = save_dir
+    
+    data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
+    
+    if data_path is None:
+        # Use default hub
+        DEFAULTS[process]['data_path'] = save_dir
+    else:
+        DEFAULTS[process]['data_path'] = data_path
 
 def main():
 
