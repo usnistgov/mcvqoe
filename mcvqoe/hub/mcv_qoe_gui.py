@@ -606,8 +606,15 @@ class MCVQoEGui(tk.Tk):
             # quit the frozen application
         
         if hasattr(self, 'eval_server'):
-            # Kill the server
-            requests.get('http://127.0.0.1:8050/shutdown_request')
+            try:
+                # Kill the server
+                requests.get('http://127.0.0.1:8050/shutdown_request')
+            except requests.exceptions.ConnectionError:
+                # Server already shutdown
+                pass
+            except Exception as e:
+                show_error(e)
+                pass
         # destroy the window and stop the gui-thread's event loop.
         self.destroy()
 
