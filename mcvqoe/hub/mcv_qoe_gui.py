@@ -1484,7 +1484,9 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         ri, ap = get_interfaces(root_cfg)
 
         #Construct string with radio interface ID
-        msg = f'Radio Interface ID : {ri.get_id()}'
+        msg = 'Radio Interface:\n' + \
+             f'Serial connection using {ri.port_name}\n' + \
+             f'Processor ID : {ri.get_id()}'
 
         #radio interface is no longer needed
         ri =  None
