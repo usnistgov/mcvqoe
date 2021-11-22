@@ -1472,6 +1472,26 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
                         font = section_font
                     ttk.Label(self, text=txt, font=font).grid(column=i, row=index, padx=5, pady=5, sticky=sticky, columnspan=span)
 
+        self.show_ri_button = ttk.Button(master=self, text='Show Radio Interface Info',
+                    command=self.display_ri)
+        self.show_ri_button.grid(column=0, row=index+1, padx=5, pady=5, sticky='', columnspan=2)
+
+    def display_ri(self):
+        #get config to know what to open
+        root_cfg = self.master.get_cnf()
+
+        #get interfaces based on config
+        ri, ap = get_interfaces(root_cfg)
+
+        #Construct string with radio interface ID
+        msg = f'Radio Interface ID : {ri.get_id()}'
+
+        #radio interface is no longer needed
+        ri =  None
+
+        #show message
+        tk.messagebox.showinfo(title='Radio Interface Info', message=msg)
+
 class BottomButtons(tk.Frame):
     """The row of buttons on the bottom right
     """
