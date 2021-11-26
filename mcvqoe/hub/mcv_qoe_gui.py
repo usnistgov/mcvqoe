@@ -21,6 +21,7 @@ if hasattr(ctypes, 'windll'):
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
     
 import importlib.resources
+import mcvqoe.utilities.test_copy
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
@@ -29,6 +30,7 @@ from tkinter import ttk
 import tkinter as tk
 import _tkinter
 
+from mcvqoe.utilities import test_copy
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
@@ -2367,9 +2369,45 @@ class PostProcessingFrame(ttk.Frame):
         
         self.elements = []
         self.canvasses = []
-    
+
+    def add_cpy(self):
+        '''
+        Add test copy button if needed.
+
+        If the button is not needed, remove.
+        '''
+
+        if path.exists(path.join(self.outdir,test_copy.settings_name)):
+            self.add_element(ttk.Button,
+                       text="Copy Test Data",
+                       command = self.copy_tests,
+                       )
+
+    @in_thread('MainThread', wait=False)
+    def copy_tests(self, e=None):
+        """run current testCpy on the current directory."""
+
+        #get the test progress frame, will be used for copy progress
+        tpf = loader.tk_main.win.frames['TestProgressFrame']
+
+        #TODO : initialize frame
+        tpf.gui_progress_update('status', 0,0, msg='Starting Sync')
+
+        #switch to in-progress step)
+        loader.tk_main.win.set_step('in-progress')
+
+        test_copy.copy_test_files(self.outdir)
+
+        #go back to post-processing frame
+        loader.tk_main.win.set_step('post-process')
+
+        #show info that it completed
+        #TODO : show more details about sync
+        tk.messagebox.showinfo('Test Copy', 'Data copied successfully!')
+
+
     @in_thread('GuiThread', wait=False)
-    def add_element(self, element):
+    def add_element(self, element, **kwargs):
         """
         Adds an element to the post-processing frame
         
@@ -2391,7 +2429,7 @@ class PostProcessingFrame(ttk.Frame):
             widget = ttk.Label(self, text=element)
             
         else:
-            widget = element(self)
+            widget = element(self,**kwargs)
 
         widget.pack(fill=tk.X, padx=10, pady=10)
         
@@ -3080,8 +3118,10 @@ def run(root_cfg):
     # put outdir folder into frame
     try: ppf.outdir = my_obj.outdir
     except AttributeError: ppf.outdir = ''
-    
-    
+
+    # add test copy button if needed
+    ppf.add_cpy()
+
     #show post-processing frame
     loader.tk_main.win.set_step('post-process')
     
