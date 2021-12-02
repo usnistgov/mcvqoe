@@ -329,6 +329,8 @@ class MCVQoEGui(tk.Tk):
             TestProgressFrame,
             PostProcessingFrame,
             ProcessDataFrame,
+            SyncProgressFrame,
+            SyncSetupFrame,
 
             loader.DevDlyCharFrame,
 
@@ -1139,6 +1141,19 @@ class MCVQoEGui(tk.Tk):
             next_btn = lambda : self.on_finish()
             back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
+            
+        elif step == 'sync-progress':
+            self.show_frame('SyncProgressFrame')
+            next_btn_txt = 'Finish'
+            next_btn = lambda : self.on_finish()
+            back_btn = lambda : self.set_step('post-process')
+            back_btn_txt = 'Ok'
+        elif step == 'sync-progress':
+            self.show_frame('SyncSetupFrame')
+            next_btn_txt = 'Sync'
+            next_btn = lambda : self.set_step('sync-progres')
+            back_btn = lambda : self.set_step('post-process')
+            back_btn_txt = 'Ok'
 
         else:
             # invalid step
@@ -2212,6 +2227,259 @@ class TestProgressFrame(tk.LabelFrame):
         """
         self._is_paused = True
 
+class SyncSetupFrame(ttk.Labelframe):
+    """Replacement for the TestInfoGui. Collects pre-test notes
+
+    """
+
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Test Information', **kwargs)
+        
+        self.btnvars = btnvars
+
+class ScrollText(shared.ScrollableFrame):
+
+    def __init__(self, master, btnvars, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        
+        #add sunken relief to container to make it more visible
+        self.container.configure(relief=tk.SUNKEN, borderwidth=5)
+        
+        #create text var for scroll able text
+        self.scroll_text = tk.StringVar()
+        
+        #create label for scroll able text
+        self.label = ttk.Label(self, textvariable=self.scroll_text)
+
+        #bind to configure event to update wrap width
+        self.container.bind('<Configure>', self.text_resize)
+        
+        self.label.pack()
+    
+    def text_resize(self, event):
+        
+        #update things so winfo_width returns good values
+        self.container.update_idletasks()
+    
+        border = self.container['borderwidth']
+        #set wrap length based on new width
+        self.label.configure(wraplength=self.canvas.winfo_width()-2*border)
+    
+    def clear(self):
+        self.scroll_text.set('')
+
+    def add_line(self, text):
+        self.scroll_text.set(self.scroll_text.get() + text + '\n')
+        #scroll to bottom
+        self.canvas.yview(tk.MOVETO, 1)        
+        
+class SyncProgressFrame(tk.LabelFrame):
+    """Reports on syncing progress by handling progress_update events.
+
+    """
+
+    def pack(self, *args, **kwargs):
+        super().pack(*args, **kwargs)
+        self.pack_configure(expand=True, fill=tk.BOTH)
+
+    def __init__(self, master, btnvars, *args, **kwargs):
+        # a stopwatch to help estimate time remaining
+        self.stopwatch = _StopWatch()
+        self.stopwatch.start()
+
+        self.pause_after = None
+        self.rec_stop = None
+        self._is_paused = False
+        self.warnings = []
+
+        self.btnvars = btnvars
+
+        super().__init__(master, *args, text='', **kwargs)
+
+        #pause button
+        #ttk.Button(self, text='Pause', command=self.pause).pack(padx=10, pady=10)
+
+        # text above bar
+        self.primary_text = tk.StringVar()
+        ttk.Label(self, textvariable=self.primary_text).pack(padx=10, pady=10, fill='x')
+
+        # the progress bars
+        self.bars = []
+        self.labeles = []
+        self.label_vars = []
+
+        for i in range(3):
+            bar = ttk.Progressbar(self, mode='determinate', maximum=0, value=0)
+            bar.pack(fill=tk.X, padx=10, pady=10)
+
+            #the text below each bar
+            text_var = tk.StringVar()
+        
+            label = ttk.Label(self, textvariable=text_var)
+            label.pack(padx=10, pady=10, fill='x')
+            
+            #add to arrays
+            self.bars.append(bar)
+            self.labeles.append(label)
+            self.label_vars.append(text_var)      
+
+        self.scrolled_text = ScrollText(self, btnvars)
+        self.scrolled_text.pack(fill="both", expand=True)
+        
+    def check_for_abort(self):
+        """Checks to see if the user pressed abort, and if so, aborts.
+
+
+        Raises
+        ------
+        Abort_by_User
+            a BaseException that aborts the measurement.
+
+
+        """
+        if loader.tk_main.win.step == 'aborting':
+            # indicate that the test should not continue
+            raise Abort_by_User()
+    
+    def clear_progress(self):
+        
+        #clear primary text
+        self.primary_text.set('')
+        
+        #clear all bar lables
+        for var in self.label_vars:
+            var.set('')
+        #set all bars to zero
+        for bar in self.bars:
+            bar.configure(value=0, maximum = 0, mode='determinate')
+
+    def set_complete(self):
+        self.primary_text.set('Finished!')
+
+    @in_thread('GuiThread', wait=True, except_=Abort_by_User)
+    def gui_progress_update(self, prog_type, total, current, **kwargs):
+
+        """
+        Progress update function for syncing.
+        
+        The sync progress updates are a bit diffrent than test progress updates
+        and get their owne function.
+        """
+
+        #TESTING : print out things
+        #print('sync progress call :\n'
+        #      '\t' f'type : {prog_type}\n'
+        #      '\t' f'total : {total}\n'
+        #      '\t' f'current : {current}\n'
+        #      '\t' f'kwargs : {kwargs}'
+        #      )
+        
+        #TODO : use this?
+        self.check_for_abort()
+
+        bar_indicies = {
+        'main' : 0,
+        'sub' : 1,
+        'cull' : 2,
+        'log' : 1,
+        'subsub' : 2,
+        'supdate' : 1,
+        'skip' : 1,
+        }
+
+        action_names = {
+        'main' : 'main',
+        'sub' : 'loooking at folder',
+        'cull' : 'removing old files',
+        'log' : 'copying log files',
+        'subsub' : 'copying files',
+        'skip' : 'copying skipped files',
+        }
+            
+
+        split_type = prog_type.split('-')
+
+        major_type = split_type[0]
+
+        if len(split_type) > 1:
+            minor_type = split_type[1]
+        else:
+            #no minor type
+            minor_type = None
+
+        if major_type in bar_indicies:
+            bar_idx = bar_indicies[major_type]
+            if total != 0:
+                self.bars[bar_idx].stop()
+                self.bars[bar_idx].configure(value=current+1, maximum = total,
+                               mode='determinate')
+                if prog_type == 'main-update':
+                    self.label_vars[bar_idx].set(f'{kwargs["step_name"]}, step {current+1} of {total}')
+                elif major_type in action_names:
+                    self.label_vars[bar_idx].set(f'{action_names[major_type]} : {current+1} of {total}')
+                
+                for bar in self.bars[bar_idx+1:]:
+                    bar.stop()
+                    #set all bars after this one to zero
+                    bar.configure(value=0, maximum = 0,
+                               mode='determinate')
+
+        #TESTING : grab things from terminal progress so we can understand what's going on...
+        indent = ''
+        if prog_type == 'main' :
+            self.scrolled_text.add_line(indent+f'processing directory {current} of {total}')
+        if prog_type == 'main-section' :
+            self.scrolled_text.add_line(indent+f'Running section {kwargs["sect"]}')
+        elif prog_type == 'sub' :
+            self.scrolled_text.add_line(indent+f'processing subdirectory {current} of {total}')
+        #common things
+        elif minor_type == 'start':
+            self.scrolled_text.add_line(indent+f'Found {total} files to copy')
+        elif minor_type == 'dir':
+            if major_type == 'log':
+                self.scrolled_text.add_line(indent+f'Finding Log files in \'{kwargs["dir"]}\'')
+            else:
+                self.scrolled_text.add_line(indent+f'Checking directory \'{kwargs["dir"]}\' for new files')
+        elif minor_type == 'skip':
+            if 'dir' in kwargs:
+                self.scrolled_text.add_line(indent + f'No new files found to copy to \'{kwargs["dir"]}\'')
+            else:
+                self.scrolled_text.add_line(indent + 'Up to date')
+        elif minor_type == 'backup':
+            self.scrolled_text.add_line(indent + f'Backing files up from \'{kwargs["dest"]}\' to \'{kwargs["src"]}\'')
+        elif minor_type == 'invalid':
+            self.scrolled_text.add_line(indent + f'Skipping \'{kwargs["dir"]}\' it is not a directory or .zip file')
+        elif minor_type == 'new':
+            self.scrolled_text.add_line(indent+f'Creating folder \'{kwargs["dir"]}\'')
+        elif minor_type == 'temp':
+            self.scrolled_text.add_line(indent+f'Skipping \'{kwargs["file"]}\'')
+        elif minor_type == 'skipdir':
+            self.scrolled_text.add_line(indent+f'Skipping Directory \'{kwargs["dir"]}\'')
+        elif minor_type == 'srcdest':
+            self.scrolled_text.add_line(indent + f'Copying \'{kwargs["src"]}\' to \'{kwargs["dest"]}\'')
+        #cull things
+        elif prog_type == 'cull-deldir':
+            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["dir"]}\'')
+        elif prog_type == 'cull-delfile':
+            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["file"]}\'')
+        elif prog_type == 'cull-baddate' :
+            self.scrolled_text.add_line(indent + f'Unable to parse date in file \'{kwargs["file"]}\'')
+        #skipping things
+        elif prog_type == 'skip-later' :
+            self.scrolled_text.add_line(indent+f'Skipping {kwargs["file"]} for later')
+        elif prog_type == 'skip-start' :
+            #ignore indent here, this will be done at the end
+            self.scrolled_text.add_line(f'Copying skipped {kwargs["ext"]} files')
+
+        return True
+
+    def remove_warning(self, w):
+        '''
+        Remove `w` from the list of warnings.
+        '''
+        self.warnings.remove(w)
+
+
 
 class _StopWatch:
     """A working stopwatch.
@@ -2388,23 +2656,19 @@ class PostProcessingFrame(ttk.Frame):
         """run current testCpy on the current directory."""
 
         #get the test progress frame, will be used for copy progress
-        tpf = loader.tk_main.win.frames['TestProgressFrame']
+        spf = loader.tk_main.win.frames['SyncProgressFrame']
 
-        #TODO : initialize frame
-        tpf.gui_progress_update('status', 0,0, msg='Starting Sync')
+        #clear out old progress info
+        spf.clear_progress()
 
-        #switch to in-progress step)
-        loader.tk_main.win.set_step('in-progress')
+        #switch to sync-progress step
+        loader.tk_main.win.set_step('sync-progress')
 
-        test_copy.copy_test_files(self.outdir)
-
-        #go back to post-processing frame
-        loader.tk_main.win.set_step('post-process')
-
-        #show info that it completed
-        #TODO : show more details about sync
-        tk.messagebox.showinfo('Test Copy', 'Data copied successfully!')
-
+        test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
+        #test_copy.copy_test_files(self.outdir)
+        
+        #indicate we are done
+        spf.set_complete()
 
     @in_thread('GuiThread', wait=False)
     def add_element(self, element, **kwargs):
@@ -3711,7 +3975,7 @@ def load_defaults():
 
     #check if defaults have already been loaded
     if DEFAULTS:
-        print('Defaults have alread been loaded!')
+        print('Defaults have already been loaded!')
         return
 
     # declare values here to pull default values from measure (or interface) class
@@ -3731,6 +3995,15 @@ def load_defaults():
         'TestProgressFrame': [],
 
         'PostProcessingFrame': [],
+
+        'SyncProgressFrame': [],
+        
+        'SyncSetupFrame': [
+            'outdir',
+            'sync_destination',
+            'sync_computer_name',
+            'sync_direct',
+        ],
 
 
         dev_dly_char: [
