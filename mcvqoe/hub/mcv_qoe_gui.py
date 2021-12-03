@@ -2851,9 +2851,11 @@ def test_audio(root_cfg, on_finish=None):
                     #audio is a getting a little quiet
                     tk.messagebox.showwarning(title='Audio Level Issue',
                     message= 'Quiet audio detected.\n' +
-                            f'Audio peak = {max_dbfs} dB of Full scale.\n' +
-                             'Please first confirm that the system is functioning.\n' +
-                            f'Then, if the system is functioning, raise input audio volume by at least {adj} dB.')
+                            f'Audio peak = {max_dbfs} dB of Full scale.\n'
+                             'Ensure all connections and cables are properly '
+                             'attached and the system is functioning.\n'
+                            'Then, if the system is functioning, raise '
+                            f'input audio volume by at least {adj} dB.')
 
     except Exception as error:
         show_error(error)
