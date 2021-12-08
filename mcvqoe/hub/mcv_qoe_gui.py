@@ -2436,38 +2436,38 @@ class ScrollText(shared.ScrollableFrame):
 
     def __init__(self, master, btnvars, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
-        
+
         #add sunken relief to container to make it more visible
         self.container.configure(relief=tk.SUNKEN, borderwidth=5)
-        
+
         #create text var for scroll able text
         self.scroll_text = tk.StringVar()
-        
+
         #create label for scroll able text
         self.label = ttk.Label(self, textvariable=self.scroll_text)
 
         #bind to configure event to update wrap width
         self.container.bind('<Configure>', self.text_resize)
-        
+
         self.label.pack()
-    
+
     def text_resize(self, event):
-        
+
         #update things so winfo_width returns good values
         self.container.update_idletasks()
-    
+
         border = self.container['borderwidth']
         #set wrap length based on new width
         self.label.configure(wraplength=self.canvas.winfo_width()-2*border)
-    
+
     def clear(self):
         self.scroll_text.set('')
 
     def add_line(self, text):
         self.scroll_text.set(self.scroll_text.get() + text + '\n')
         #scroll to bottom
-        self.canvas.yview(tk.MOVETO, 1)        
-        
+        self.canvas.yview(tk.MOVETO, 1)
+
 class SyncProgressFrame(tk.LabelFrame):
     """Reports on syncing progress by handling progress_update events.
 
@@ -2509,18 +2509,18 @@ class SyncProgressFrame(tk.LabelFrame):
 
             #the text below each bar
             text_var = tk.StringVar()
-        
+
             label = ttk.Label(self, textvariable=text_var)
             label.pack(padx=10, pady=10, fill='x')
-            
+
             #add to arrays
             self.bars.append(bar)
             self.labeles.append(label)
-            self.label_vars.append(text_var)      
+            self.label_vars.append(text_var)
 
         self.scrolled_text = ScrollText(self, btnvars)
         self.scrolled_text.pack(fill="both", expand=True)
-        
+
     def check_for_abort(self):
         """Checks to see if the user pressed abort, and if so, aborts.
 
@@ -2535,12 +2535,12 @@ class SyncProgressFrame(tk.LabelFrame):
         if loader.tk_main.win.step == 'aborting':
             # indicate that the test should not continue
             raise Abort_by_User()
-    
+
     def clear_progress(self):
-        
+
         #clear primary text
         self.primary_text.set('')
-        
+
         #clear all bar lables
         for var in self.label_vars:
             var.set('')
@@ -2556,7 +2556,7 @@ class SyncProgressFrame(tk.LabelFrame):
 
         """
         Progress update function for syncing.
-        
+
         The sync progress updates are a bit diffrent than test progress updates
         and get their owne function.
         """
@@ -2568,7 +2568,7 @@ class SyncProgressFrame(tk.LabelFrame):
         #      '\t' f'current : {current}\n'
         #      '\t' f'kwargs : {kwargs}'
         #      )
-        
+
         #TODO : use this?
         self.check_for_abort()
 
@@ -2590,7 +2590,7 @@ class SyncProgressFrame(tk.LabelFrame):
         'subsub' : 'copying files',
         'skip' : 'copying skipped files',
         }
-            
+
 
         split_type = prog_type.split('-')
 
@@ -2612,7 +2612,7 @@ class SyncProgressFrame(tk.LabelFrame):
                     self.label_vars[bar_idx].set(f'{kwargs["step_name"]}, step {current+1} of {total}')
                 elif major_type in action_names:
                     self.label_vars[bar_idx].set(f'{action_names[major_type]} : {current+1} of {total}')
-                
+
                 for bar in self.bars[bar_idx+1:]:
                     bar.stop()
                     #set all bars after this one to zero
@@ -2861,7 +2861,7 @@ class PostProcessingFrame(ttk.Frame):
 
         test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
         #test_copy.copy_test_files(self.outdir)
-        
+
         #indicate we are done
         spf.set_complete()
 
@@ -4419,9 +4419,9 @@ def load_defaults():
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
 
     DEFAULTS[process]['data_files'] = ''
-    
+
     data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
-    
+
     if data_path is None:
         # Use default hub
         DEFAULTS[process]['data_path'] = save_dir
