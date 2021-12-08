@@ -30,7 +30,7 @@ from tkinter import ttk
 import tkinter as tk
 import _tkinter
 
-from mcvqoe.utilities import test_copy
+from mcvqoe.utilities import test_copy, sync
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
@@ -1074,28 +1074,37 @@ class MCVQoEGui(tk.Tk):
     def _set_step(self, step, extra=None):
 
         back_btn_txt = 'Back'
+        disable_config = True
         selected_test = self.selected_test.get()
-        if step == 'empty':
-            # blank window
-            self.selected_test.set('EmptyFrame')
-            next_btn_txt = 'Next'
-            next_btn = None #disabled
-            back_btn = None
+        if step == 'config':
+            disable_config = False
+            #check if a post processing step was selected
+            if selected_test == 'ProcessDataFrame':
+                self.show_frame(self.selected_test.get())
+                next_btn_txt = 'Finish'
+                next_btn = lambda: self.on_finish()
+                back_btn = lambda: self.set_step('empty')
 
-        elif step == 'config' and selected_test != 'ProcessDataFrame':
-            # test configuration
-            self.show_frame(self.selected_test.get())
-            next_btn_txt = 'Next'
-            next_btn = self.run
-            back_btn = lambda : self.set_step('empty')
-
-        elif step == 'config' and selected_test == 'ProcessDataFrame':
-            self.show_frame(self.selected_test.get())
+            elif selected_test == 'SyncSetupFrame':
+                #change step to sync
+                step = 'sync-setup'
+            else:
+                # test configuration
+                self.show_frame(self.selected_test.get())
+                next_btn_txt = 'Next'
+                next_btn = self.run
+                back_btn = lambda : self.set_step('empty')
+        #step can be changed above, start if-else over here
+        if step == 'sync-progress':
+            self.show_frame('SyncProgressFrame')
             next_btn_txt = 'Finish'
-            next_btn = lambda: self.on_finish()
-            back_btn = lambda: self.set_step('empty')
-
-
+            next_btn = lambda : self.on_finish()
+            if extra:
+                back_btn = lambda : self.set_step(extra)
+                back_btn_txt = 'Ok'
+            else:
+                back_btn = None
+                back_btn_txt = None
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1141,20 +1150,26 @@ class MCVQoEGui(tk.Tk):
             next_btn = lambda : self.on_finish()
             back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
-            
-        elif step == 'sync-progress':
-            self.show_frame('SyncProgressFrame')
-            next_btn_txt = 'Finish'
-            next_btn = lambda : self.on_finish()
-            back_btn = lambda : self.set_step('post-process')
-            back_btn_txt = 'Ok'
-        elif step == 'sync-progress':
-            self.show_frame('SyncSetupFrame')
-            next_btn_txt = 'Sync'
-            next_btn = lambda : self.set_step('sync-progres')
-            back_btn = lambda : self.set_step('post-process')
-            back_btn_txt = 'Ok'
 
+        elif step == 'sync-setup':
+            self.show_frame('SyncSetupFrame')
+            next_btn_txt = 'Next'
+            ssf = loader.tk_main.win.frames['SyncSetupFrame']
+            next_btn = ssf.do_sync_action
+            back_btn = lambda : self.set_step('empty')
+            back_btn_txt = 'Back'
+
+        elif step == 'empty':
+            # blank window
+            self.selected_test.set('EmptyFrame')
+            next_btn_txt = 'Next'
+            next_btn = None #disabled
+            back_btn = None
+            disable_config = False
+
+        elif step == 'config':
+            #already handled
+            pass
         else:
             # invalid step
             raise ValueError(f'"{step}" is not a known step')
@@ -1166,7 +1181,7 @@ class MCVQoEGui(tk.Tk):
         self.set_back_btn(back_btn_txt, back_btn)
 
         # disable or enable leftmost buttons depending on if they are functional
-        self._disable_left_frame(step not in ('empty', 'config'))
+        self._disable_left_frame(disable_config)
 
     def on_finish(self):
         # Note: can kill evaluate server here if we want
@@ -1332,6 +1347,7 @@ accesstime = 'AccssDFrame'
 psud = 'PSuDFrame'
 intelligibility = 'IgtibyFrame'
 process = 'ProcessDataFrame'
+sync_data = 'SyncSetupFrame'
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -1738,8 +1754,11 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Separator(self).pack(fill=tk.X, pady=15)
 
+        section_font = tk.font.Font(**shared.FNT.actual())
+        section_font.configure(weight='bold')
+
         # Choose Test
-        ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
+        ttk.Label(self, text='Configure Test:', font=section_font).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='M2E Latency',
                         variable=sel_txt, value=m2e).pack(fill=tk.X)
@@ -1753,13 +1772,13 @@ class TestTypeFrame(tk.Frame):
         ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value=intelligibility).pack(fill=tk.X)
 
-        # Process Data button
-        ttk.Separator(self).pack(fill=tk.X, pady=15)
-
-        ttk.Label(self, text='Other Options:').pack(fill=tk.X)
+        ttk.Label(self, text='Post Test:', font=section_font).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Process Data',
                    variable=sel_txt, value=process).pack(fill=tk.X)
+
+        ttk.Radiobutton(self, text='Sync Data',
+                   variable=sel_txt, value=sync_data).pack(fill=tk.X)
 
         # version information
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
@@ -2232,10 +2251,186 @@ class SyncSetupFrame(ttk.Labelframe):
 
     """
 
+    padx = 10
+    pady = 10
+
     def __init__(self, btnvars, *args, **kwargs):
-        super().__init__(*args, text='Test Information', **kwargs)
-        
+        super().__init__(*args, text='Sync Settings', **kwargs)
+
         self.btnvars = btnvars
+
+        self.fold_label = ttk.Label(self, text='Sync Folder')
+        self.fold_label.grid(column=0, row=0, sticky='NSEW',
+                                padx=self.padx, pady=self.pady)
+
+        self.fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
+        self.fold_entry.grid(column=2, row=0, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+
+        self.fold_button = ttk.Button(self, text='Browse', command=self.get_fold)
+        self.fold_button.grid(column=3, row=0, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+
+        self.op = self.btnvars['SyncOp']
+
+        #label frame for buttons
+        self.action_frame = tk.LabelFrame(self, text='Sync Operation:')
+
+        self.action_frame.grid(column=0, row=1, columnspan=4, sticky='NSW',
+                  padx=self.padx, pady=self.pady)
+
+        self.setup = ttk.Radiobutton(self.action_frame,
+                                     command=self.on_op_change,
+                                     variable=self.op,
+                                     value='setup',
+                                     text='Setup new sync'
+                                     )
+        self.setup.pack(fill=tk.X)
+
+        self.existing = ttk.Radiobutton(self.action_frame,
+                                        command=self.on_op_change,
+                                        variable=self.op,
+                                        value='existing',
+                                        text='Sync a single directory'
+                                        )
+        self.existing.pack(fill=tk.X)
+
+        self.recursive = ttk.Radiobutton(   self.action_frame,
+                                            command=self.on_op_change,
+                                            variable=self.op,
+                                            value='recursive',
+                                            text='Recursively sync'
+                                        )
+        self.recursive.pack(fill=tk.X)
+
+        self.upload = ttk.Radiobutton(   self.action_frame,
+                                    command=self.on_op_change,
+                                    variable=self.op,
+                                    value='upload',
+                                    text='Upload '
+                                )
+        self.upload.pack(fill=tk.X)
+
+
+        #list of widgets in the settings frame
+        self.settings_widgets = []
+
+        label = ttk.Label(self, text='Computer Name')
+        label.grid(column=0, row=2, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(label)
+
+        self.computer_name = ttk.Entry(self, textvariable=self.btnvars['computer_name'])
+        self.computer_name.grid(column=2, row=2, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(self.computer_name)
+
+        label = ttk.Label(self, text='Direct sync')
+        label.grid(column=0, row=3, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(label)
+
+        self.direct = ttk.Checkbutton(self, variable=self.btnvars['direct'])
+        self.direct.grid(column=2, row=3, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(self.direct)
+
+        label = ttk.Label(self, text='Destination')
+        label.grid(column=0, row=4, sticky='NSEW',
+                                padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(label)
+
+        self.dest_entry = ttk.Entry(self, width=30, textvariable=self.btnvars['destination'])
+        self.dest_entry.grid(column=2, row=4, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(self.dest_entry)
+
+        self.dest_button = ttk.Button(self, text='Browse', command=self.get_dest)
+        self.dest_button.grid(column=3, row=4, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.settings_widgets.append(self.dest_button)
+
+
+        self.columnconfigure(2, weight=1)
+
+        #update state of widgets
+        self.on_op_change()
+
+    @in_thread('MainThread', wait=False)
+    def do_sync_action(self, next_step='sync-setup'):
+
+        # get selection
+        selection = self.op.get()
+        #get folder
+        fold = self.btnvars['sync_dir'].get()
+        if selection == 'setup':
+            set_path = path.join(fold, test_copy.settings_name)
+            if path.exists(set_path):
+                raise RuntimeError('Sync settings exist!')
+            if not path.exists(path.join(fold,'tests.log')):
+                raise RuntimeError(f'Log file not found in \'{fold}\'! Do you have the correct directory?')
+            direct = self.btnvars['direct'].get()
+            cname  = self.btnvars['computer_name'].get()
+            if not cname:
+                raise RuntimeError('Computer name must be given')
+
+            #create settings dictionary
+            settings = test_copy.create_new_settings(direct, fold, cname)
+            with open(set_path,'w') as set_file:
+                test_copy.write_settings(settings, set_file)
+            tk.messagebox.showinfo(title='Success!',message='Settings saved!')
+        else:
+            #get the test progress frame, will be used for copy progress
+            spf = loader.tk_main.win.frames['SyncProgressFrame']
+
+            #clear out old progress info
+            spf.clear_progress()
+            #switch to sync-progress step
+            loader.tk_main.win.set_step('sync-progress',extra=next_step)
+
+            if selection == 'existing':
+                set_file = path.join(fold, test_copy.settings_name)
+                if not path.exists(set_file):
+                    raise RuntimeError('Could not find settings file!')
+                test_copy.copy_test_files(fold, progress_update=spf.gui_progress_update)
+            elif selection == 'recursive':
+                num_found, num_success = test_copy.recursive_sync(fold, progress_update=spf.gui_progress_update)
+                if not num_found:
+                    raise RuntimeError('No directories were found to sync')
+                if num_found != num_success:
+                    raise RuntimeError(f'Only {num_success} out of {num_found} directories synced correctly')
+
+                #print message
+                tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
+            elif selection == 'upload':
+                #TODO : make this better
+                config_name = path.join(fold, 'testCpy.cfg')
+                sync.export_sync(config_name, progress_update=spf.gui_progress_update)
+
+    def get_fold(self):
+        initial = self.btnvars['sync_dir'].get()
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial)
+        if fold:
+            fold = path.normpath(fold)
+            self.btnvars['sync_dir'].set(fold)
+
+    def get_dest(self):
+        initial = self.btnvars['destination'].get()
+        if not initial and os.name == 'nt':
+            #no selection made, try to default to "This PC"
+            #see https://stackoverflow.com/a/53569377
+            initial = 'shell:MyComputerFolder'
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial, title='Select the sync destination folder')
+        if fold:
+            fold = path.normpath(fold)
+            self.btnvars['destination'].set(fold)
+
+    def on_op_change(self):
+
+        state = '!disabled' if self.op.get() == 'setup'  else 'disabled'
+
+        for c in self.settings_widgets:
+            c.configure(state=state)
 
 class ScrollText(shared.ScrollableFrame):
 
@@ -2661,8 +2856,8 @@ class PostProcessingFrame(ttk.Frame):
         #clear out old progress info
         spf.clear_progress()
 
-        #switch to sync-progress step
-        loader.tk_main.win.set_step('sync-progress')
+        #switch to sync-progress step, go back to post processing when done
+        loader.tk_main.win.set_step('sync-progress',extra='post-process')
 
         test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
         #test_copy.copy_test_files(self.outdir)
@@ -3997,13 +4192,8 @@ def load_defaults():
         'PostProcessingFrame': [],
 
         'SyncProgressFrame': [],
-        
-        'SyncSetupFrame': [
-            'outdir',
-            'sync_destination',
-            'sync_computer_name',
-            'sync_direct',
-        ],
+
+        'SyncSetupFrame': [],
 
 
         dev_dly_char: [
@@ -4237,6 +4427,14 @@ def load_defaults():
         DEFAULTS[process]['data_path'] = save_dir
     else:
         DEFAULTS[process]['data_path'] = data_path
+
+    #add settings for sync
+
+    DEFAULTS['SyncSetupFrame']['sync_dir'] = save_dir
+    DEFAULTS['SyncSetupFrame']['computer_name']=''
+    DEFAULTS['SyncSetupFrame']['SyncOp']='recursive'
+    DEFAULTS['SyncSetupFrame']['direct']=False
+    DEFAULTS['SyncSetupFrame']['destination']=''
 
 def main():
 
