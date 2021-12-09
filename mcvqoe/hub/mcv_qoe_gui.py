@@ -2258,100 +2258,175 @@ class SyncSetupFrame(ttk.Labelframe):
         super().__init__(*args, text='Sync Settings', **kwargs)
 
         self.btnvars = btnvars
+        
+        #get variable for opperation
+        op_var = self.btnvars['SyncOp']
+        
+        #dict of widgets for each radio button
+        self.widgets = {
+            'setup' : [],
+            'existing' : [],
+            'recursive' : [],
+            'upload'    : [],
+            }
+            
+        
+        #row in frame
+        r=0
 
-        self.fold_label = ttk.Label(self, text='Sync Folder')
-        self.fold_label.grid(column=0, row=0, sticky='NSEW',
-                                padx=self.padx, pady=self.pady)
-
-        self.fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
-        self.fold_entry.grid(column=2, row=0, sticky='NSEW',
-                             padx=self.padx, pady=self.pady)
-
-        self.fold_button = ttk.Button(self, text='Browse', command=self.get_fold)
-        self.fold_button.grid(column=3, row=0, sticky='NSEW',
-                             padx=self.padx, pady=self.pady)
-
-        self.op = self.btnvars['SyncOp']
-
-        #label frame for buttons
-        self.action_frame = tk.LabelFrame(self, text='Sync Operation:')
-
-        self.action_frame.grid(column=0, row=1, columnspan=4, sticky='NSW',
-                  padx=self.padx, pady=self.pady)
-
-        self.setup = ttk.Radiobutton(self.action_frame,
+        # === Setup radio button ===
+        self.setup = ttk.Radiobutton(self,
                                      command=self.on_op_change,
-                                     variable=self.op,
+                                     variable=op_var,
                                      value='setup',
                                      text='Setup new sync'
                                      )
-        self.setup.pack(fill=tk.X)
+        self.setup.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+                    
+        r += 1
+        
+        # === sync folder ===
+        label = ttk.Label(self, text='Sync Folder')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(fold_entry)
 
-        self.existing = ttk.Radiobutton(self.action_frame,
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('sync_dir'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(fold_button)
+        r += 1
+        
+        # === computer name ===
+        label = ttk.Label(self, text='Computer Name')
+        label.grid(column=0, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.computer_name = ttk.Entry(self, textvariable=self.btnvars['computer_name'])
+        self.computer_name.grid(column=2, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.computer_name)
+        r += 1
+
+        # === direct checkbox ==
+        label = ttk.Label(self, text='Direct sync')
+        label.grid(column=0, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.direct = ttk.Checkbutton(self, variable=self.btnvars['direct'])
+        self.direct.grid(column=2, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.direct)
+        r += 1
+
+        # === Destination directory ===
+        label = ttk.Label(self, text='Destination')
+        label.grid(column=0, row=r, sticky='NSEW',
+                                padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.dest_entry = ttk.Entry(self, width=30, textvariable=self.btnvars['destination'])
+        self.dest_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.dest_entry)
+
+        self.dest_button = ttk.Button(self, text='Browse', command=self.get_dest)
+        self.dest_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.dest_button)
+        r += 1
+
+        # === existing radio button ===
+        self.existing = ttk.Radiobutton(self,
                                         command=self.on_op_change,
-                                        variable=self.op,
+                                        variable=op_var,
                                         value='existing',
                                         text='Sync a single directory'
                                         )
-        self.existing.pack(fill=tk.X)
+        self.existing.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1
+        
+        # === sync folder ===
+        label = ttk.Label(self, text='Sync Folder')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(fold_entry)
 
-        self.recursive = ttk.Radiobutton(   self.action_frame,
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('sync_dir'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(fold_button)
+        r += 1
+
+        # === recursive radio button ===
+        self.recursive = ttk.Radiobutton(   self,
                                             command=self.on_op_change,
-                                            variable=self.op,
+                                            variable=op_var,
                                             value='recursive',
                                             text='Recursively sync'
                                         )
-        self.recursive.pack(fill=tk.X)
+        self.recursive.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1        
+        
+        # === recur folder ===
+        label = ttk.Label(self, text='Start Search')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['recur_fold'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(fold_entry)
 
-        self.upload = ttk.Radiobutton(   self.action_frame,
+        fold_button = ttk.Button(self, text='Browse', command= lambda : self.get_fold('recur_fold'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(fold_button)
+        r += 1
+
+        # === upload radio button ===
+        self.upload = ttk.Radiobutton(   self,
                                     command=self.on_op_change,
-                                    variable=self.op,
+                                    variable=op_var,
                                     value='upload',
                                     text='Upload '
                                 )
-        self.upload.pack(fill=tk.X)
-
-
-        #list of widgets in the settings frame
-        self.settings_widgets = []
-
-        label = ttk.Label(self, text='Computer Name')
-        label.grid(column=0, row=2, sticky='NSEW',
-                  padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(label)
-
-        self.computer_name = ttk.Entry(self, textvariable=self.btnvars['computer_name'])
-        self.computer_name.grid(column=2, row=2, sticky='NSEW',
-                  padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(self.computer_name)
-
-        label = ttk.Label(self, text='Direct sync')
-        label.grid(column=0, row=3, sticky='NSEW',
-                  padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(label)
-
-        self.direct = ttk.Checkbutton(self, variable=self.btnvars['direct'])
-        self.direct.grid(column=2, row=3, sticky='NSEW',
-                  padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(self.direct)
-
-        label = ttk.Label(self, text='Destination')
-        label.grid(column=0, row=4, sticky='NSEW',
-                                padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(label)
-
-        self.dest_entry = ttk.Entry(self, width=30, textvariable=self.btnvars['destination'])
-        self.dest_entry.grid(column=2, row=4, sticky='NSEW',
+        self.upload.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1
+        
+        # === upload config file ===
+        label = ttk.Label(self, text='Configuration File')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['upload'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['upload_cfg'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
                              padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(self.dest_entry)
+        self.widgets['upload'].append(fold_entry)
 
-        self.dest_button = ttk.Button(self, text='Browse', command=self.get_dest)
-        self.dest_button.grid(column=3, row=4, sticky='NSEW',
+        fold_button = ttk.Button(self, text='Browse', command= self.get_cfg)
+        fold_button.grid(column=3, row=r, sticky='NSEW',
                              padx=self.padx, pady=self.pady)
-        self.settings_widgets.append(self.dest_button)
-
-
-        self.columnconfigure(2, weight=1)
+        self.widgets['upload'].append(fold_button)
+        r += 1
 
         #update state of widgets
         self.on_op_change()
@@ -2360,10 +2435,10 @@ class SyncSetupFrame(ttk.Labelframe):
     def do_sync_action(self, next_step='sync-setup'):
 
         # get selection
-        selection = self.op.get()
-        #get folder
-        fold = self.btnvars['sync_dir'].get()
+        selection = self.btnvars['SyncOp'].get()
         if selection == 'setup':
+            #get folder
+            fold = self.btnvars['sync_dir'].get()
             set_path = path.join(fold, test_copy.settings_name)
             if path.exists(set_path):
                 raise RuntimeError('Sync settings exist!')
@@ -2389,11 +2464,20 @@ class SyncSetupFrame(ttk.Labelframe):
             loader.tk_main.win.set_step('sync-progress',extra=next_step)
 
             if selection == 'existing':
+                #get folder
+                fold = self.btnvars['sync_dir'].get()
                 set_file = path.join(fold, test_copy.settings_name)
+                #make sure we have settings
                 if not path.exists(set_file):
                     raise RuntimeError('Could not find settings file!')
+                
+                #copy files
                 test_copy.copy_test_files(fold, progress_update=spf.gui_progress_update)
             elif selection == 'recursive':
+                #get folder
+                fold = self.btnvars['recur_fold'].get()
+                
+                #copy files
                 num_found, num_success = test_copy.recursive_sync(fold, progress_update=spf.gui_progress_update)
                 if not num_found:
                     raise RuntimeError('No directories were found to sync')
@@ -2403,16 +2487,28 @@ class SyncSetupFrame(ttk.Labelframe):
                 #print message
                 tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
             elif selection == 'upload':
-                #TODO : make this better
-                config_name = path.join(fold, 'testCpy.cfg')
+                config_name = self.btnvars['upload_cfg'].get()
                 sync.export_sync(config_name, progress_update=spf.gui_progress_update)
 
-    def get_fold(self):
-        initial = self.btnvars['sync_dir'].get()
+    def get_cfg(self):
+        initial = self.btnvars['destination'].get()
+        if not initial and os.name == 'nt':
+            #no selection made, try to default to "This PC"
+            #see https://stackoverflow.com/a/53569377
+            initial = 'shell:MyComputerFolder'
+        else:
+            #strip filename from path
+            initial = path.dirname(initial)
+        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('config','*.cfg'),))
+        if file:
+            self.btnvars['upload_cfg'].set(path.normpath(file))
+        
+    def get_fold(self, var):
+        initial = self.btnvars[var].get()
         fold = fdl.askdirectory(parent=self.master, initialdir=initial)
         if fold:
             fold = path.normpath(fold)
-            self.btnvars['sync_dir'].set(fold)
+            self.btnvars[var].set(fold)
 
     def get_dest(self):
         initial = self.btnvars['destination'].get()
@@ -2426,11 +2522,15 @@ class SyncSetupFrame(ttk.Labelframe):
             self.btnvars['destination'].set(fold)
 
     def on_op_change(self):
+        '''
+        Enable the appropriate widgets based on operation.
+        '''
+        op = self.btnvars['SyncOp'].get()
 
-        state = '!disabled' if self.op.get() == 'setup'  else 'disabled'
-
-        for c in self.settings_widgets:
-            c.configure(state=state)
+        for w_op,w_list in self.widgets.items():
+            state = '!disabled' if w_op == op else 'disabled'
+            for c in w_list:
+                c.configure(state=state)
 
 class ScrollText(shared.ScrollableFrame):
 
@@ -4435,6 +4535,9 @@ def load_defaults():
     DEFAULTS['SyncSetupFrame']['SyncOp']='recursive'
     DEFAULTS['SyncSetupFrame']['direct']=False
     DEFAULTS['SyncSetupFrame']['destination']=''
+    DEFAULTS['SyncSetupFrame']['recur_fold']=save_dir
+    DEFAULTS['SyncSetupFrame']['upload_cfg']=''
+    
 
 def main():
 
