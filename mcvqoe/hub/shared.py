@@ -44,7 +44,7 @@ class ScrollableFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         self.container = ttk.Frame(master)
         self.canvas = tk.Canvas(self.container)
-        scrollbar = ttk.Scrollbar(
+        self.scrollbar = ttk.Scrollbar(
             self.container, orient='vertical', command=self.canvas.yview)
 
         super().__init__(self.canvas, **kwargs)
@@ -54,9 +54,9 @@ class ScrollableFrame(ttk.Frame):
                 self._on_resize
                 )
         self.canvas.create_window((0, 0), window=self, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
 
     def _on_resize(self, e):

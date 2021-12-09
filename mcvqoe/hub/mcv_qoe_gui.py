@@ -30,7 +30,7 @@ from tkinter import ttk
 import tkinter as tk
 import _tkinter
 
-from mcvqoe.utilities import test_copy
+from mcvqoe.utilities import test_copy, sync
 from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
@@ -329,6 +329,8 @@ class MCVQoEGui(tk.Tk):
             TestProgressFrame,
             PostProcessingFrame,
             ProcessDataFrame,
+            SyncProgressFrame,
+            SyncSetupFrame,
 
             loader.DevDlyCharFrame,
 
@@ -1072,28 +1074,37 @@ class MCVQoEGui(tk.Tk):
     def _set_step(self, step, extra=None):
 
         back_btn_txt = 'Back'
+        disable_config = True
         selected_test = self.selected_test.get()
-        if step == 'empty':
-            # blank window
-            self.selected_test.set('EmptyFrame')
-            next_btn_txt = 'Next'
-            next_btn = None #disabled
-            back_btn = None
+        if step == 'config':
+            disable_config = False
+            #check if a post processing step was selected
+            if selected_test == 'ProcessDataFrame':
+                self.show_frame(self.selected_test.get())
+                next_btn_txt = 'Finish'
+                next_btn = lambda: self.on_finish()
+                back_btn = lambda: self.set_step('empty')
 
-        elif step == 'config' and selected_test != 'ProcessDataFrame':
-            # test configuration
-            self.show_frame(self.selected_test.get())
-            next_btn_txt = 'Next'
-            next_btn = self.run
-            back_btn = lambda : self.set_step('empty')
-
-        elif step == 'config' and selected_test == 'ProcessDataFrame':
-            self.show_frame(self.selected_test.get())
+            elif selected_test == 'SyncSetupFrame':
+                #change step to sync
+                step = 'sync-setup'
+            else:
+                # test configuration
+                self.show_frame(self.selected_test.get())
+                next_btn_txt = 'Next'
+                next_btn = self.run
+                back_btn = lambda : self.set_step('empty')
+        #step can be changed above, start if-else over here
+        if step == 'sync-progress':
+            self.show_frame('SyncProgressFrame')
             next_btn_txt = 'Finish'
-            next_btn = lambda: self.on_finish()
-            back_btn = lambda: self.set_step('empty')
-
-
+            next_btn = lambda : self.on_finish()
+            if extra:
+                back_btn = lambda : self.set_step(extra)
+                back_btn_txt = 'Ok'
+            else:
+                back_btn = None
+                back_btn_txt = None
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1140,6 +1151,25 @@ class MCVQoEGui(tk.Tk):
             back_btn = lambda : self.set_step('config')
             back_btn_txt = 'Run Again'
 
+        elif step == 'sync-setup':
+            self.show_frame('SyncSetupFrame')
+            next_btn_txt = 'Next'
+            ssf = loader.tk_main.win.frames['SyncSetupFrame']
+            next_btn = ssf.do_sync_action
+            back_btn = lambda : self.set_step('empty')
+            back_btn_txt = 'Back'
+
+        elif step == 'empty':
+            # blank window
+            self.selected_test.set('EmptyFrame')
+            next_btn_txt = 'Next'
+            next_btn = None #disabled
+            back_btn = None
+            disable_config = False
+
+        elif step == 'config':
+            #already handled
+            pass
         else:
             # invalid step
             raise ValueError(f'"{step}" is not a known step')
@@ -1151,7 +1181,7 @@ class MCVQoEGui(tk.Tk):
         self.set_back_btn(back_btn_txt, back_btn)
 
         # disable or enable leftmost buttons depending on if they are functional
-        self._disable_left_frame(step not in ('empty', 'config'))
+        self._disable_left_frame(disable_config)
 
     def on_finish(self):
         # Note: can kill evaluate server here if we want
@@ -1317,6 +1347,7 @@ accesstime = 'AccssDFrame'
 psud = 'PSuDFrame'
 intelligibility = 'IgtibyFrame'
 process = 'ProcessDataFrame'
+sync_data = 'SyncSetupFrame'
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -1723,8 +1754,11 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Separator(self).pack(fill=tk.X, pady=15)
 
+        section_font = tk.font.Font(**shared.FNT.actual())
+        section_font.configure(weight='bold')
+
         # Choose Test
-        ttk.Label(self, text='Choose Test:').pack(fill=tk.X)
+        ttk.Label(self, text='Configure Test:', font=section_font).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='M2E Latency',
                         variable=sel_txt, value=m2e).pack(fill=tk.X)
@@ -1738,13 +1772,13 @@ class TestTypeFrame(tk.Frame):
         ttk.Radiobutton(self, text='Intelligibility',
                         variable=sel_txt, value=intelligibility).pack(fill=tk.X)
 
-        # Process Data button
-        ttk.Separator(self).pack(fill=tk.X, pady=15)
-
-        ttk.Label(self, text='Other Options:').pack(fill=tk.X)
+        ttk.Label(self, text='Post Test:', font=section_font).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Process Data',
                    variable=sel_txt, value=process).pack(fill=tk.X)
+
+        ttk.Radiobutton(self, text='Sync Data',
+                   variable=sel_txt, value=sync_data).pack(fill=tk.X)
 
         # version information
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
@@ -2212,6 +2246,535 @@ class TestProgressFrame(tk.LabelFrame):
         """
         self._is_paused = True
 
+class SyncSetupFrame(ttk.Labelframe):
+    """Replacement for the TestInfoGui. Collects pre-test notes
+
+    """
+
+    padx = 10
+    pady = 10
+
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Sync Settings', **kwargs)
+
+        self.btnvars = btnvars
+        
+        #get variable for opperation
+        op_var = self.btnvars['SyncOp']
+        
+        #dict of widgets for each radio button
+        self.widgets = {
+            'setup' : [],
+            'existing' : [],
+            'recursive' : [],
+            'upload'    : [],
+            }
+            
+        
+        #row in frame
+        r=0
+
+        # === Setup radio button ===
+        self.setup = ttk.Radiobutton(self,
+                                     command=self.on_op_change,
+                                     variable=op_var,
+                                     value='setup',
+                                     text='Setup new sync'
+                                     )
+        self.setup.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+                    
+        r += 1
+        
+        # === sync folder ===
+        label = ttk.Label(self, text='Sync Folder')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(fold_entry)
+
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('sync_dir'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(fold_button)
+        r += 1
+        
+        # === computer name ===
+        label = ttk.Label(self, text='Computer Name')
+        label.grid(column=0, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.computer_name = ttk.Entry(self, textvariable=self.btnvars['computer_name'])
+        self.computer_name.grid(column=2, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.computer_name)
+        r += 1
+
+        # === direct checkbox ==
+        label = ttk.Label(self, text='Direct sync')
+        label.grid(column=0, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.direct = ttk.Checkbutton(self, variable=self.btnvars['direct'])
+        self.direct.grid(column=2, row=r, sticky='NSEW',
+                  padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.direct)
+        r += 1
+
+        # === Destination directory ===
+        label = ttk.Label(self, text='Destination')
+        label.grid(column=0, row=r, sticky='NSEW',
+                                padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(label)
+
+        self.dest_entry = ttk.Entry(self, width=30, textvariable=self.btnvars['destination'])
+        self.dest_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.dest_entry)
+
+        self.dest_button = ttk.Button(self, text='Browse', command=self.get_dest)
+        self.dest_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['setup'].append(self.dest_button)
+        r += 1
+
+        # === existing radio button ===
+        self.existing = ttk.Radiobutton(self,
+                                        command=self.on_op_change,
+                                        variable=op_var,
+                                        value='existing',
+                                        text='Sync a single directory'
+                                        )
+        self.existing.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1
+        
+        # === sync folder ===
+        label = ttk.Label(self, text='Sync Folder')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['sync_dir'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(fold_entry)
+
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('sync_dir'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['existing'].append(fold_button)
+        r += 1
+
+        # === recursive radio button ===
+        self.recursive = ttk.Radiobutton(   self,
+                                            command=self.on_op_change,
+                                            variable=op_var,
+                                            value='recursive',
+                                            text='Recursively sync'
+                                        )
+        self.recursive.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1        
+        
+        # === recur folder ===
+        label = ttk.Label(self, text='Start Search')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['recur_fold'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(fold_entry)
+
+        fold_button = ttk.Button(self, text='Browse', command= lambda : self.get_fold('recur_fold'))
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['recursive'].append(fold_button)
+        r += 1
+
+        # === upload radio button ===
+        self.upload = ttk.Radiobutton(   self,
+                                    command=self.on_op_change,
+                                    variable=op_var,
+                                    value='upload',
+                                    text='Upload '
+                                )
+        self.upload.grid(column=0, row=r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+        r += 1
+        
+        # === upload config file ===
+        label = ttk.Label(self, text='Configuration File')
+        label.grid(column=0, row=r, sticky='NSEW',
+                        padx=self.padx, pady=self.pady)
+        self.widgets['upload'].append(label)
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['upload_cfg'])
+        fold_entry.grid(column=2, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['upload'].append(fold_entry)
+
+        fold_button = ttk.Button(self, text='Browse', command= self.get_cfg)
+        fold_button.grid(column=3, row=r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+        self.widgets['upload'].append(fold_button)
+        r += 1
+
+        #update state of widgets
+        self.on_op_change()
+
+    @in_thread('MainThread', wait=False)
+    def do_sync_action(self, next_step='sync-setup'):
+
+        # get selection
+        selection = self.btnvars['SyncOp'].get()
+        if selection == 'setup':
+            #get folder
+            fold = self.btnvars['sync_dir'].get()
+            set_path = path.join(fold, test_copy.settings_name)
+            if path.exists(set_path):
+                raise RuntimeError('Sync settings exist!')
+            if not path.exists(path.join(fold,'tests.log')):
+                raise RuntimeError(f'Log file not found in \'{fold}\'! Do you have the correct directory?')
+            direct = self.btnvars['direct'].get()
+            cname  = self.btnvars['computer_name'].get()
+            if not cname:
+                raise RuntimeError('Computer name must be given')
+
+            #create settings dictionary
+            settings = test_copy.create_new_settings(direct, fold, cname)
+            with open(set_path,'w') as set_file:
+                test_copy.write_settings(settings, set_file)
+            tk.messagebox.showinfo(title='Success!',message='Settings saved!')
+        else:
+            #get the test progress frame, will be used for copy progress
+            spf = loader.tk_main.win.frames['SyncProgressFrame']
+
+            #clear out old progress info
+            spf.clear_progress()
+            #switch to sync-progress step
+            loader.tk_main.win.set_step('sync-progress',extra=next_step)
+
+            if selection == 'existing':
+                #get folder
+                fold = self.btnvars['sync_dir'].get()
+                set_file = path.join(fold, test_copy.settings_name)
+                #make sure we have settings
+                if not path.exists(set_file):
+                    raise RuntimeError('Could not find settings file!')
+                
+                #copy files
+                test_copy.copy_test_files(fold, progress_update=spf.gui_progress_update)
+            elif selection == 'recursive':
+                #get folder
+                fold = self.btnvars['recur_fold'].get()
+                
+                #copy files
+                num_found, num_success = test_copy.recursive_sync(fold, progress_update=spf.gui_progress_update)
+                if not num_found:
+                    raise RuntimeError('No directories were found to sync')
+                if num_found != num_success:
+                    raise RuntimeError(f'Only {num_success} out of {num_found} directories synced correctly')
+
+                #print message
+                tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
+            elif selection == 'upload':
+                config_name = self.btnvars['upload_cfg'].get()
+                sync.export_sync(config_name, progress_update=spf.gui_progress_update)
+
+    def get_cfg(self):
+        initial = self.btnvars['destination'].get()
+        if not initial and os.name == 'nt':
+            #no selection made, try to default to "This PC"
+            #see https://stackoverflow.com/a/53569377
+            initial = 'shell:MyComputerFolder'
+        else:
+            #strip filename from path
+            initial = path.dirname(initial)
+        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('config','*.cfg'),))
+        if file:
+            self.btnvars['upload_cfg'].set(path.normpath(file))
+        
+    def get_fold(self, var):
+        initial = self.btnvars[var].get()
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial)
+        if fold:
+            fold = path.normpath(fold)
+            self.btnvars[var].set(fold)
+
+    def get_dest(self):
+        initial = self.btnvars['destination'].get()
+        if not initial and os.name == 'nt':
+            #no selection made, try to default to "This PC"
+            #see https://stackoverflow.com/a/53569377
+            initial = 'shell:MyComputerFolder'
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial, title='Select the sync destination folder')
+        if fold:
+            fold = path.normpath(fold)
+            self.btnvars['destination'].set(fold)
+
+    def on_op_change(self):
+        '''
+        Enable the appropriate widgets based on operation.
+        '''
+        op = self.btnvars['SyncOp'].get()
+
+        for w_op,w_list in self.widgets.items():
+            state = '!disabled' if w_op == op else 'disabled'
+            for c in w_list:
+                c.configure(state=state)
+
+class ScrollText(shared.ScrollableFrame):
+
+    def __init__(self, master, btnvars, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+
+        #add sunken relief to container to make it more visible
+        self.container.configure(relief=tk.SUNKEN, borderwidth=5)
+
+        #create text var for scroll able text
+        self.scroll_text = tk.StringVar()
+
+        #create label for scroll able text
+        self.label = ttk.Label(self, textvariable=self.scroll_text)
+
+        #bind to configure event to update wrap width
+        self.container.bind('<Configure>', self.text_resize)
+
+        self.label.pack()
+
+    def text_resize(self, event):
+
+        #update things so winfo_width returns good values
+        self.container.update_idletasks()
+
+        border = self.container['borderwidth']
+        #set wrap length based on new width
+        self.label.configure(wraplength=self.canvas.winfo_width()-2*border)
+
+    def clear(self):
+        self.scroll_text.set('')
+
+    def add_line(self, text):
+        self.scroll_text.set(self.scroll_text.get() + text + '\n')
+        #scroll to bottom
+        self.canvas.yview(tk.MOVETO, 1)
+
+class SyncProgressFrame(tk.LabelFrame):
+    """Reports on syncing progress by handling progress_update events.
+
+    """
+
+    def pack(self, *args, **kwargs):
+        super().pack(*args, **kwargs)
+        self.pack_configure(expand=True, fill=tk.BOTH)
+
+    def __init__(self, master, btnvars, *args, **kwargs):
+        # a stopwatch to help estimate time remaining
+        self.stopwatch = _StopWatch()
+        self.stopwatch.start()
+
+        self.pause_after = None
+        self.rec_stop = None
+        self._is_paused = False
+        self.warnings = []
+
+        self.btnvars = btnvars
+
+        super().__init__(master, *args, text='', **kwargs)
+
+        #pause button
+        #ttk.Button(self, text='Pause', command=self.pause).pack(padx=10, pady=10)
+
+        # text above bar
+        self.primary_text = tk.StringVar()
+        ttk.Label(self, textvariable=self.primary_text).pack(padx=10, pady=10, fill='x')
+
+        # the progress bars
+        self.bars = []
+        self.labeles = []
+        self.label_vars = []
+
+        for i in range(3):
+            bar = ttk.Progressbar(self, mode='determinate', maximum=0, value=0)
+            bar.pack(fill=tk.X, padx=10, pady=10)
+
+            #the text below each bar
+            text_var = tk.StringVar()
+
+            label = ttk.Label(self, textvariable=text_var)
+            label.pack(padx=10, pady=10, fill='x')
+
+            #add to arrays
+            self.bars.append(bar)
+            self.labeles.append(label)
+            self.label_vars.append(text_var)
+
+        self.scrolled_text = ScrollText(self, btnvars)
+        self.scrolled_text.pack(fill="both", expand=True)
+
+    def check_for_abort(self):
+        """Checks to see if the user pressed abort, and if so, aborts.
+
+
+        Raises
+        ------
+        Abort_by_User
+            a BaseException that aborts the measurement.
+
+
+        """
+        if loader.tk_main.win.step == 'aborting':
+            # indicate that the test should not continue
+            raise Abort_by_User()
+
+    def clear_progress(self):
+
+        #clear primary text
+        self.primary_text.set('')
+
+        #clear all bar lables
+        for var in self.label_vars:
+            var.set('')
+        #set all bars to zero
+        for bar in self.bars:
+            bar.configure(value=0, maximum = 0, mode='determinate')
+
+    def set_complete(self):
+        self.primary_text.set('Finished!')
+
+    @in_thread('GuiThread', wait=True, except_=Abort_by_User)
+    def gui_progress_update(self, prog_type, total, current, **kwargs):
+
+        """
+        Progress update function for syncing.
+
+        The sync progress updates are a bit diffrent than test progress updates
+        and get their owne function.
+        """
+
+        #TESTING : print out things
+        #print('sync progress call :\n'
+        #      '\t' f'type : {prog_type}\n'
+        #      '\t' f'total : {total}\n'
+        #      '\t' f'current : {current}\n'
+        #      '\t' f'kwargs : {kwargs}'
+        #      )
+
+        #TODO : use this?
+        self.check_for_abort()
+
+        bar_indicies = {
+        'main' : 0,
+        'sub' : 1,
+        'cull' : 2,
+        'log' : 1,
+        'subsub' : 2,
+        'supdate' : 1,
+        'skip' : 1,
+        }
+
+        action_names = {
+        'main' : 'main',
+        'sub' : 'loooking at folder',
+        'cull' : 'removing old files',
+        'log' : 'copying log files',
+        'subsub' : 'copying files',
+        'skip' : 'copying skipped files',
+        }
+
+
+        split_type = prog_type.split('-')
+
+        major_type = split_type[0]
+
+        if len(split_type) > 1:
+            minor_type = split_type[1]
+        else:
+            #no minor type
+            minor_type = None
+
+        if major_type in bar_indicies:
+            bar_idx = bar_indicies[major_type]
+            if total != 0:
+                self.bars[bar_idx].stop()
+                self.bars[bar_idx].configure(value=current+1, maximum = total,
+                               mode='determinate')
+                if prog_type == 'main-update':
+                    self.label_vars[bar_idx].set(f'{kwargs["step_name"]}, step {current+1} of {total}')
+                elif major_type in action_names:
+                    self.label_vars[bar_idx].set(f'{action_names[major_type]} : {current+1} of {total}')
+
+                for bar in self.bars[bar_idx+1:]:
+                    bar.stop()
+                    #set all bars after this one to zero
+                    bar.configure(value=0, maximum = 0,
+                               mode='determinate')
+
+        #TESTING : grab things from terminal progress so we can understand what's going on...
+        indent = ''
+        if prog_type == 'main' :
+            self.scrolled_text.add_line(indent+f'processing directory {current} of {total}')
+        if prog_type == 'main-section' :
+            self.scrolled_text.add_line(indent+f'Running section {kwargs["sect"]}')
+        elif prog_type == 'sub' :
+            self.scrolled_text.add_line(indent+f'processing subdirectory {current} of {total}')
+        #common things
+        elif minor_type == 'start':
+            self.scrolled_text.add_line(indent+f'Found {total} files to copy')
+        elif minor_type == 'dir':
+            if major_type == 'log':
+                self.scrolled_text.add_line(indent+f'Finding Log files in \'{kwargs["dir"]}\'')
+            else:
+                self.scrolled_text.add_line(indent+f'Checking directory \'{kwargs["dir"]}\' for new files')
+        elif minor_type == 'skip':
+            if 'dir' in kwargs:
+                self.scrolled_text.add_line(indent + f'No new files found to copy to \'{kwargs["dir"]}\'')
+            else:
+                self.scrolled_text.add_line(indent + 'Up to date')
+        elif minor_type == 'backup':
+            self.scrolled_text.add_line(indent + f'Backing files up from \'{kwargs["dest"]}\' to \'{kwargs["src"]}\'')
+        elif minor_type == 'invalid':
+            self.scrolled_text.add_line(indent + f'Skipping \'{kwargs["dir"]}\' it is not a directory or .zip file')
+        elif minor_type == 'new':
+            self.scrolled_text.add_line(indent+f'Creating folder \'{kwargs["dir"]}\'')
+        elif minor_type == 'temp':
+            self.scrolled_text.add_line(indent+f'Skipping \'{kwargs["file"]}\'')
+        elif minor_type == 'skipdir':
+            self.scrolled_text.add_line(indent+f'Skipping Directory \'{kwargs["dir"]}\'')
+        elif minor_type == 'srcdest':
+            self.scrolled_text.add_line(indent + f'Copying \'{kwargs["src"]}\' to \'{kwargs["dest"]}\'')
+        #cull things
+        elif prog_type == 'cull-deldir':
+            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["dir"]}\'')
+        elif prog_type == 'cull-delfile':
+            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["file"]}\'')
+        elif prog_type == 'cull-baddate' :
+            self.scrolled_text.add_line(indent + f'Unable to parse date in file \'{kwargs["file"]}\'')
+        #skipping things
+        elif prog_type == 'skip-later' :
+            self.scrolled_text.add_line(indent+f'Skipping {kwargs["file"]} for later')
+        elif prog_type == 'skip-start' :
+            #ignore indent here, this will be done at the end
+            self.scrolled_text.add_line(f'Copying skipped {kwargs["ext"]} files')
+
+        return True
+
+    def remove_warning(self, w):
+        '''
+        Remove `w` from the list of warnings.
+        '''
+        self.warnings.remove(w)
+
+
 
 class _StopWatch:
     """A working stopwatch.
@@ -2388,23 +2951,19 @@ class PostProcessingFrame(ttk.Frame):
         """run current testCpy on the current directory."""
 
         #get the test progress frame, will be used for copy progress
-        tpf = loader.tk_main.win.frames['TestProgressFrame']
+        spf = loader.tk_main.win.frames['SyncProgressFrame']
 
-        #TODO : initialize frame
-        tpf.gui_progress_update('status', 0,0, msg='Starting Sync')
+        #clear out old progress info
+        spf.clear_progress()
 
-        #switch to in-progress step)
-        loader.tk_main.win.set_step('in-progress')
+        #switch to sync-progress step, go back to post processing when done
+        loader.tk_main.win.set_step('sync-progress',extra='post-process')
 
-        test_copy.copy_test_files(self.outdir)
+        test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
+        #test_copy.copy_test_files(self.outdir)
 
-        #go back to post-processing frame
-        loader.tk_main.win.set_step('post-process')
-
-        #show info that it completed
-        #TODO : show more details about sync
-        tk.messagebox.showinfo('Test Copy', 'Data copied successfully!')
-
+        #indicate we are done
+        spf.set_complete()
 
     @in_thread('GuiThread', wait=False)
     def add_element(self, element, **kwargs):
@@ -3713,7 +4272,7 @@ def load_defaults():
 
     #check if defaults have already been loaded
     if DEFAULTS:
-        print('Defaults have alread been loaded!')
+        print('Defaults have already been loaded!')
         return
 
     # declare values here to pull default values from measure (or interface) class
@@ -3733,6 +4292,10 @@ def load_defaults():
         'TestProgressFrame': [],
 
         'PostProcessingFrame': [],
+
+        'SyncProgressFrame': [],
+
+        'SyncSetupFrame': [],
 
 
         dev_dly_char: [
@@ -3958,14 +4521,25 @@ def load_defaults():
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
 
     DEFAULTS[process]['data_files'] = ''
-    
+
     data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
-    
+
     if data_path is None:
         # Use default hub
         DEFAULTS[process]['data_path'] = save_dir
     else:
         DEFAULTS[process]['data_path'] = data_path
+
+    #add settings for sync
+
+    DEFAULTS['SyncSetupFrame']['sync_dir'] = save_dir
+    DEFAULTS['SyncSetupFrame']['computer_name']=''
+    DEFAULTS['SyncSetupFrame']['SyncOp']='recursive'
+    DEFAULTS['SyncSetupFrame']['direct']=False
+    DEFAULTS['SyncSetupFrame']['destination']=''
+    DEFAULTS['SyncSetupFrame']['recur_fold']=save_dir
+    DEFAULTS['SyncSetupFrame']['upload_cfg']=''
+    
 
 def main():
 
