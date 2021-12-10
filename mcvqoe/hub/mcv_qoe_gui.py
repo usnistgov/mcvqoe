@@ -2691,16 +2691,7 @@ class SyncProgressFrame(tk.LabelFrame):
         'skip' : 'copying skipped files',
         }
 
-
-        split_type = prog_type.split('-')
-
-        major_type = split_type[0]
-
-        if len(split_type) > 1:
-            minor_type = split_type[1]
-        else:
-            #no minor type
-            minor_type = None
+        p_str, major_type, minor_type  = sync.prog_str(prog_type, **kwargs)
 
         if major_type in bar_indicies:
             bar_idx = bar_indicies[major_type]
@@ -2718,53 +2709,8 @@ class SyncProgressFrame(tk.LabelFrame):
                     #set all bars after this one to zero
                     bar.configure(value=0, maximum = 0,
                                mode='determinate')
-
-        #TESTING : grab things from terminal progress so we can understand what's going on...
-        indent = ''
-        if prog_type == 'main' :
-            self.scrolled_text.add_line(indent+f'processing directory {current} of {total}')
-        if prog_type == 'main-section' :
-            self.scrolled_text.add_line(indent+f'Running section {kwargs["sect"]}')
-        elif prog_type == 'sub' :
-            self.scrolled_text.add_line(indent+f'processing subdirectory {current} of {total}')
-        #common things
-        elif minor_type == 'start':
-            self.scrolled_text.add_line(indent+f'Found {total} files to copy')
-        elif minor_type == 'dir':
-            if major_type == 'log':
-                self.scrolled_text.add_line(indent+f'Finding Log files in \'{kwargs["dir"]}\'')
-            else:
-                self.scrolled_text.add_line(indent+f'Checking directory \'{kwargs["dir"]}\' for new files')
-        elif minor_type == 'skip':
-            if 'dir' in kwargs:
-                self.scrolled_text.add_line(indent + f'No new files found to copy to \'{kwargs["dir"]}\'')
-            else:
-                self.scrolled_text.add_line(indent + 'Up to date')
-        elif minor_type == 'backup':
-            self.scrolled_text.add_line(indent + f'Backing files up from \'{kwargs["dest"]}\' to \'{kwargs["src"]}\'')
-        elif minor_type == 'invalid':
-            self.scrolled_text.add_line(indent + f'Skipping \'{kwargs["dir"]}\' it is not a directory or .zip file')
-        elif minor_type == 'new':
-            self.scrolled_text.add_line(indent+f'Creating folder \'{kwargs["dir"]}\'')
-        elif minor_type == 'temp':
-            self.scrolled_text.add_line(indent+f'Skipping \'{kwargs["file"]}\'')
-        elif minor_type == 'skipdir':
-            self.scrolled_text.add_line(indent+f'Skipping Directory \'{kwargs["dir"]}\'')
-        elif minor_type == 'srcdest':
-            self.scrolled_text.add_line(indent + f'Copying \'{kwargs["src"]}\' to \'{kwargs["dest"]}\'')
-        #cull things
-        elif prog_type == 'cull-deldir':
-            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["dir"]}\'')
-        elif prog_type == 'cull-delfile':
-            self.scrolled_text.add_line(indent + f'Deleting old directory \'{kwargs["file"]}\'')
-        elif prog_type == 'cull-baddate' :
-            self.scrolled_text.add_line(indent + f'Unable to parse date in file \'{kwargs["file"]}\'')
-        #skipping things
-        elif prog_type == 'skip-later' :
-            self.scrolled_text.add_line(indent+f'Skipping {kwargs["file"]} for later')
-        elif prog_type == 'skip-start' :
-            #ignore indent here, this will be done at the end
-            self.scrolled_text.add_line(f'Copying skipped {kwargs["ext"]} files')
+        if p_str:
+            self.scrolled_text.add_line(p_str)
 
         return True
 
