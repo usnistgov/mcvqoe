@@ -2519,9 +2519,8 @@ class SyncSetupFrame(ttk.Labelframe):
             elif selection == 'upload':
                 config_name = self.btnvars['upload_cfg'].get()
                 sync.export_sync(config_name, progress_update=spf.gui_progress_update)
-            #enable buttons
-            spf.btns.set_back_btn_state(True)
-            spf.btns.set_next_btn_state(True)
+            #tell the progress frame we are done
+            spf.set_complete()
 
     def get_cfg(self):
         initial = self.btnvars['destination'].get()
@@ -2685,6 +2684,10 @@ class SyncProgressFrame(tk.LabelFrame):
             bar.configure(value=0, maximum = 0, mode='determinate')
 
     def set_complete(self):
+        #enable buttons
+        self.btns.set_back_btn_state(True)
+        self.btns.set_next_btn_state(True)
+        #clear out old text
         self.primary_text.set('Finished!')
 
     @in_thread('GuiThread', wait=True, except_=Abort_by_User)
