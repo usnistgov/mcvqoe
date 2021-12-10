@@ -1075,6 +1075,9 @@ class MCVQoEGui(tk.Tk):
 
         back_btn_txt = 'Back'
         disable_config = True
+        #states for back and next button
+        next_btn_state = None
+        back_btn_state = None
         selected_test = self.selected_test.get()
         if step == 'config':
             disable_config = False
@@ -1105,6 +1108,9 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = None
                 back_btn_txt = None
+            #buttons start disabled
+            next_btn_state = False
+            back_btn_state = False
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1175,10 +1181,10 @@ class MCVQoEGui(tk.Tk):
             raise ValueError(f'"{step}" is not a known step')
 
         #changes function and text of the next button
-        self.set_next_btn(next_btn_txt, next_btn)
+        self.set_next_btn(next_btn_txt, next_btn, state=next_btn_state)
 
         #changes back button
-        self.set_back_btn(back_btn_txt, back_btn)
+        self.set_back_btn(back_btn_txt, back_btn, state=back_btn_state)
 
         # disable or enable leftmost buttons depending on if they are functional
         self._disable_left_frame(disable_config)
@@ -1567,29 +1573,53 @@ class BottomButtons(tk.Frame):
                    command=master.save).pack(
             side=tk.RIGHT)
 
-    def set_back_btn(self, text, callback):
+    def set_back_btn(self, text, callback, state=None):
         self.back_textvar.set(text)
         self._back_callback = callback
 
-        if callback:
+        #if state is none, determine from callback
+        if state is None:
+            state = True if callback else False
+
+        if state:
             self._bck_btn_wgt.state(['!disabled'])
         else:
             self._bck_btn_wgt.state(['disabled'])
 
-    def set_next_btn(self, text, callback):
+    @in_thread('GuiThread')
+    def set_back_btn_state(self, state):
+        if state:
+            self._bck_btn_wgt.state(['!disabled'])
+        else:
+            self._bck_btn_wgt.state(['disabled'])
+
+    def set_next_btn(self, text, callback, state=None):
         self.run_textvar.set(text)
         self._next_callback = callback
 
-        if callback:
+        #if state is none, determine from callback
+        if state is None:
+            state = True if callback else False
+
+        if state:
+            self._nxt_btn_wgt.state(['!disabled'])
+        else:
+            self._nxt_btn_wgt.state(['disabled'])
+
+    @in_thread('GuiThread')
+    def set_next_btn_state(self, state):
+        if state:
             self._nxt_btn_wgt.state(['!disabled'])
         else:
             self._nxt_btn_wgt.state(['disabled'])
 
     def _next_btn(self):
+        #TODO : check button state?
         if self._next_callback:
             self._next_callback()
 
     def _back_btn(self):
+        #TODO : check button state?
         if self._back_callback:
             self._back_callback()
 
@@ -2489,6 +2519,9 @@ class SyncSetupFrame(ttk.Labelframe):
             elif selection == 'upload':
                 config_name = self.btnvars['upload_cfg'].get()
                 sync.export_sync(config_name, progress_update=spf.gui_progress_update)
+            #enable buttons
+            spf.btns.set_back_btn_state(True)
+            spf.btns.set_next_btn_state(True)
 
     def get_cfg(self):
         initial = self.btnvars['destination'].get()
@@ -2586,6 +2619,9 @@ class SyncProgressFrame(tk.LabelFrame):
         self.rec_stop = None
         self._is_paused = False
         self.warnings = []
+
+        #grab bottom buttons
+        self.btns = master.BottomButtons
 
         self.btnvars = btnvars
 
