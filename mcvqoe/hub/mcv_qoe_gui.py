@@ -2525,6 +2525,9 @@ class SyncSetupFrame(ttk.Labelframe):
                 #tell the progress frame we are done
                 spf.set_complete()
 
+            #if we had no error, update saved settings
+            loadandsave.sync_settings.update(self.btnvars.get())
+
     def get_cfg(self):
         initial = self.btnvars['destination'].get()
         if not initial and os.name == 'nt':
@@ -4527,6 +4530,9 @@ def load_defaults():
     DEFAULTS['SyncSetupFrame']['destination']=''
     DEFAULTS['SyncSetupFrame']['recur_fold']=save_dir
     DEFAULTS['SyncSetupFrame']['upload_cfg']=''
+
+    # loads previous session's hardware settings from disk, if applicable
+    DEFAULTS['SyncSetupFrame'].update(loadandsave.sync_settings)
 
 
 def main():
