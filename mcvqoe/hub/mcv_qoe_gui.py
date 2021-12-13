@@ -2485,42 +2485,45 @@ class SyncSetupFrame(ttk.Labelframe):
                 test_copy.write_settings(settings, set_file)
             tk.messagebox.showinfo(title='Success!',message='Settings saved!')
         else:
-            #get the test progress frame, will be used for copy progress
-            spf = loader.tk_main.win.frames['SyncProgressFrame']
+            try:
+                #get the test progress frame, will be used for copy progress
+                spf = loader.tk_main.win.frames['SyncProgressFrame']
 
-            #clear out old progress info
-            spf.clear_progress()
-            #switch to sync-progress step
-            loader.tk_main.win.set_step('sync-progress',extra=next_step)
+                #clear out old progress info
+                spf.clear_progress()
+                #switch to sync-progress step
+                loader.tk_main.win.set_step('sync-progress',extra=next_step)
 
-            if selection == 'existing':
-                #get folder
-                fold = self.btnvars['sync_dir'].get()
-                set_file = path.join(fold, test_copy.settings_name)
-                #make sure we have settings
-                if not path.exists(set_file):
-                    raise RuntimeError('Could not find settings file!')
+                if selection == 'existing':
+                    #get folder
+                    fold = self.btnvars['sync_dir'].get()
+                    set_file = path.join(fold, test_copy.settings_name)
+                    #make sure we have settings
+                    if not path.exists(set_file):
+                        raise RuntimeError('Could not find settings file!')
 
-                #copy files
-                test_copy.copy_test_files(fold, progress_update=spf.gui_progress_update)
-            elif selection == 'recursive':
-                #get folder
-                fold = self.btnvars['recur_fold'].get()
+                    #copy files
+                    test_copy.copy_test_files(fold, progress_update=spf.gui_progress_update)
+                elif selection == 'recursive':
+                    #get folder
+                    fold = self.btnvars['recur_fold'].get()
 
-                #copy files
-                num_found, num_success = test_copy.recursive_sync(fold, progress_update=spf.gui_progress_update)
-                if not num_found:
-                    raise RuntimeError('No directories were found to sync')
-                if num_found != num_success:
-                    raise RuntimeError(f'Only {num_success} out of {num_found} directories synced correctly')
+                    #copy files
+                    num_found, num_success = test_copy.recursive_sync(fold, progress_update=spf.gui_progress_update)
+                    if not num_found:
+                        raise RuntimeError('No directories were found to sync')
+                    if num_found != num_success:
+                        raise RuntimeError(f'Only {num_success} out of {num_found} directories synced correctly')
 
-                #print message
-                tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
-            elif selection == 'upload':
-                config_name = self.btnvars['upload_cfg'].get()
-                sync.export_sync(config_name, progress_update=spf.gui_progress_update)
-            #tell the progress frame we are done
-            spf.set_complete()
+                    #print message
+                    tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
+                elif selection == 'upload':
+                    config_name = self.btnvars['upload_cfg'].get()
+                    sync.export_sync(config_name, progress_update=spf.gui_progress_update)
+            finally:
+                #make sure that buttons are always enabled if an error happens
+                #tell the progress frame we are done
+                spf.set_complete()
 
     def get_cfg(self):
         initial = self.btnvars['destination'].get()
