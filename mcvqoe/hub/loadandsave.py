@@ -80,18 +80,18 @@ class TkVarDict(dict):
             try:
                 dict_[k] = v.get()
             except _tkinter.TclError:
-                
+
                 message = {
                     tk.BooleanVar: 'Must be either True or False',
                     tk.StringVar : 'Must be a string',
                     tk.DoubleVar : 'Must be a number',
                     tk.IntVar    : 'Must be a whole number',
                     CommaSepList : 'Must be a comma-separated list of strings',
-                    
+
                     }[type(v)]
-                
+
                 raise InvalidParameter(k, message) from None
-                
+
         return dict_
 
     def on_change(self):
@@ -213,7 +213,7 @@ class IntOrInf_OLD(tk.StringVar):
 class BaseCache(Config):
 
     default = None
-    
+
     def __init__(self, filename, *args, **kwargs):
         super().__init__(filename, *args, **kwargs)
 
@@ -221,7 +221,7 @@ class BaseCache(Config):
             self.load()
         except FileNotFoundError:
             pass
-        
+
         atexit.register(self.dump)
 
     def __getitem__(self, k):
@@ -232,7 +232,7 @@ class BaseCache(Config):
             return self.default
 
 class FdlCache(BaseCache):
-        
+
     def put(self, key, filepath):
         if os.path.isdir(filepath):
             self[key] = filepath
