@@ -2403,6 +2403,14 @@ class SyncSetupFrame(ttk.Labelframe):
         self.add_widgets('upload', 'Configuration File', (fold_entry, fold_button),
                             help_txt='Sync configuration file for upload sync.')
 
+        # === thorough checkbox ==
+        thorough = ttk.Checkbutton(self, variable=self.btnvars['thorough'])
+
+        self.add_widgets('upload', 'Thorough', (thorough,),
+                            help_txt='If checked, a more thorough sync will be '\
+                            'performed. This will take longer, but catch '\
+                            'missing files in subfolders')
+
         #update state of widgets
         self.on_op_change()
 
@@ -2501,7 +2509,10 @@ class SyncSetupFrame(ttk.Labelframe):
                     tk.messagebox.showinfo(title='Success!',message=f'Data synced in {num_success} directories.')
                 elif selection == 'upload':
                     config_name = self.btnvars['upload_cfg'].get()
-                    sync.export_sync(config_name, progress_update=spf.gui_progress_update)
+                    sync.export_sync(config_name,
+                                     progress_update=spf.gui_progress_update,
+                                     thorough=self.btnvars['thorough'].get(),
+                                     )
             finally:
                 #make sure that buttons are always enabled if an error happens
                 #tell the progress frame we are done
@@ -4512,6 +4523,7 @@ def load_defaults():
     DEFAULTS['SyncSetupFrame']['destination']=''
     DEFAULTS['SyncSetupFrame']['recur_fold']=save_dir
     DEFAULTS['SyncSetupFrame']['upload_cfg']=''
+    DEFAULTS['SyncSetupFrame']['thorough']=False
 
     # loads previous session's hardware settings from disk, if applicable
     DEFAULTS['SyncSetupFrame'].update(loadandsave.sync_settings)
