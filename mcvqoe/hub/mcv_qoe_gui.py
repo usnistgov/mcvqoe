@@ -2459,6 +2459,8 @@ class SyncSetupFrame(ttk.Labelframe):
         if selection == 'setup':
             #get folder
             fold = self.btnvars['sync_dir'].get()
+            #get destination
+            dest_dir = self.btnvars['destination'].get()
             set_path = path.join(fold, test_copy.settings_name)
             if path.exists(set_path):
                 raise RuntimeError('Sync settings exist!')
@@ -2470,7 +2472,7 @@ class SyncSetupFrame(ttk.Labelframe):
                 raise RuntimeError('Computer name must be given')
 
             #create settings dictionary
-            settings = test_copy.create_new_settings(direct, fold, cname)
+            settings = test_copy.create_new_settings(direct, dest_dir, cname)
             with open(set_path,'w') as set_file:
                 test_copy.write_settings(settings, set_file)
             tk.messagebox.showinfo(title='Success!',message='Settings saved!')
