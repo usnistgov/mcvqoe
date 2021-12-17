@@ -2397,7 +2397,7 @@ class ReprocessFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('split_audio_path'))
 
         self.add_widgets('Split Audio Path', (fold_entry, fold_button),
-                            help_txt='Folder to find audio clips in. If this is empty, split audio will not be written')
+                            help_txt='Folder to write split Rx audio files to. If this is empty, split audio will not be written. Only used for Access Time and PSuD.')
 
         # === Two Location Reprocess type ===
 
