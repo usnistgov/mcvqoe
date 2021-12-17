@@ -2396,7 +2396,7 @@ class ReprocessFrame(ttk.Labelframe):
         twoloc = ttk.Radiobutton(self,
                         variable=btnvars['reprocess_type'],
                         value='2loc',
-                        text='Only Two Location Reprocess'
+                        text='Two Location Reprocess'
                         )
         
         self.add_widget(twoloc)
@@ -2428,19 +2428,9 @@ class ReprocessFrame(ttk.Labelframe):
                         help_txt='Duration of extra audio to add after tx clip '
                         'stopped. This mayb be used, in some cases, to correct '
                         'for data that was recorded with a poorly chosen overplay.')
-                            
-        # === Measurement Reprocess type ===
-        
-        combined = ttk.Radiobutton(self,
-                        variable=btnvars['reprocess_type'],
-                        value='combined',
-                        text='Two location followed by measurement reprocess'
-                        )
-        
-        self.add_widget(combined)
-        
-        
-        
+
+
+
     def add_widget(self, w):
         '''
         Add a single widget that spans 4 columnspan
