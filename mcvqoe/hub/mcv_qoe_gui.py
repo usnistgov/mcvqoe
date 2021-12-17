@@ -1104,7 +1104,7 @@ class MCVQoEGui(tk.Tk):
             next_btn = lambda : self.on_finish()
             if extra:
                 back_btn = lambda : self.set_step(extra)
-                back_btn_txt = 'Ok'
+                back_btn_txt = 'Back'
             else:
                 back_btn = None
                 back_btn_txt = None
