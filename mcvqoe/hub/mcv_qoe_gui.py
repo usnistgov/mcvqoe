@@ -332,6 +332,7 @@ class MCVQoEGui(tk.Tk):
             ProcessDataFrame,
             SyncProgressFrame,
             SyncSetupFrame,
+            ReprocessFrame,
 
             loader.DevDlyCharFrame,
 
@@ -1092,6 +1093,10 @@ class MCVQoEGui(tk.Tk):
             elif selected_test == 'SyncSetupFrame':
                 #change step to sync
                 step = 'sync-setup'
+
+            elif selected_test == 'ReprocessFrame':
+                #change step to reprocess
+                step = 'reprocess'
             else:
                 # test configuration
                 self.show_frame(self.selected_test.get())
@@ -1112,6 +1117,18 @@ class MCVQoEGui(tk.Tk):
             #buttons start disabled
             next_btn_state = False
             back_btn_state = False
+        elif step == 'reprocess':
+            self.show_frame('ReprocessFrame')
+            #TODO : set buttons appropriately
+            rpf = loader.tk_main.win.frames['ReprocessFrame']
+            next_btn_txt = 'Reprocess'
+            next_btn = lambda : rpf.do_reprocess()
+            if extra:
+                back_btn = lambda : self.set_step(extra)
+                back_btn_txt = 'Ok'
+            else:
+                back_btn = None
+                back_btn_txt = None
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1808,6 +1825,9 @@ class TestTypeFrame(tk.Frame):
         ttk.Radiobutton(self, text='Sync Data',
                    variable=sel_txt, value=sync_data).pack(fill=tk.X)
 
+        ttk.Radiobutton(self, text='Reprocess Data',
+                   variable=sel_txt, value='ReprocessFrame').pack(fill=tk.X)
+
         # version information
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
             side=tk.BOTTOM, fill=tk.X)
@@ -2273,6 +2293,244 @@ class TestProgressFrame(tk.LabelFrame):
         """Pause button
         """
         self._is_paused = True
+
+class ReprocessFrame(ttk.Labelframe):
+    """Reprocess data from a prevous test
+
+    """
+
+    padx = 10
+    pady = 10
+
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Reprocess Data', **kwargs)
+
+        self.btnvars = btnvars
+
+        #row in frame
+        self.r=0
+        
+        # === Reprocess file ===
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datafile'])
+
+        fold_button = ttk.Button(self, text='Browse', command=self.get_file)
+
+        self.add_widgets('Data File', (fold_entry, fold_button),
+                            help_txt='Data file from test to reprocess.')
+        
+        # === Measurement Reprocess type ===
+        
+        meas = ttk.Radiobutton(self,
+                        variable=btnvars['reprocess_type'],
+                        value='measurement',
+                        text='Measurement Reprocess'
+                        )
+        
+        self.add_widget(meas)
+        
+        # === Measurement Type ===
+        
+        btn_frame = ttk.LabelFrame(self, text='Measurement Type')
+        
+        btn_padx = self.padx*2
+        btn_pady = self.pady/2
+        
+        ttk.Radiobutton(btn_frame,
+                        variable=btnvars['measurement_type'],
+                        value='autodetect',
+                        text='Auto detect'
+                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+         
+        ttk.Radiobutton(btn_frame,
+                        variable=btnvars['measurement_type'],
+                        value='m2e',
+                        text='Mouth to Ear'
+                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+                        
+        ttk.Radiobutton(btn_frame,
+                        variable=btnvars['measurement_type'],
+                        value='access_delay',
+                        text='Access Delay'
+                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+
+        ttk.Radiobutton(btn_frame,
+                        variable=btnvars['measurement_type'],
+                        value='psud',
+                        text='PSuD'
+                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+
+        ttk.Radiobutton(btn_frame,
+                        variable=btnvars['measurement_type'],
+                        value='intell',
+                        text='Intelligibility'
+                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+        self.add_widget(btn_frame)
+        
+        # === Save file ===
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['savefile'])
+
+        fold_button = ttk.Button(self, text='Browse', command=self.save_file)
+
+        self.add_widgets('Save File', (fold_entry, fold_button),
+                            help_txt='File to save reprocessed data to. If this is empty, the name is chosen automatically.')
+
+        # === Audio Path ===
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['audio_path'])
+
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('audio_path'))
+
+        self.add_widgets('Audio Path', (fold_entry, fold_button),
+                            help_txt='Folder to find audio clips in. If this is empty, the files will be found automatically.')
+
+        # === Split Audio Path ===
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['split_audio_path'])
+
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('split_audio_path'))
+                                    
+        self.add_widgets('Split Audio Path', (fold_entry, fold_button),
+                            help_txt='Folder to find audio clips in. If this is empty, split audio will not be written')
+        
+        # === Two Location Reprocess type ===
+        
+        twoloc = ttk.Radiobutton(self,
+                        variable=btnvars['reprocess_type'],
+                        value='2loc',
+                        text='Only Two Location Reprocess'
+                        )
+        
+        self.add_widget(twoloc)
+
+        # === Rx file select ===
+        
+        rx_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['rx_name'])
+
+        rx_button = ttk.Button(self, text='Browse', command=self.get_rx)
+                                    
+        self.add_widgets('Rx file', (rx_entry, rx_button),
+                            help_txt='Rx recording. If not given it will be determined automatically')
+
+        # === Outdir ===
+        
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['outdir'])
+
+        fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('outdir'))
+                                    
+        self.add_widgets('Output Folder', (fold_entry, fold_button),
+                            help_txt='Folder to write processed files to.')
+        
+        # === Extra Play ===
+        
+        extraplay = ttk.Spinbox(self, increment=0.1, from_=0, to=10,
+                                 textvariable=self.btnvars['extraplay'])
+                                    
+        self.add_widgets('Extra Play', (extraplay,),
+                        help_txt='Duration of extra audio to add after tx clip '
+                        'stopped. This mayb be used, in some cases, to correct '
+                        'for data that was recorded with a poorly chosen overplay.')
+                            
+        # === Measurement Reprocess type ===
+        
+        combined = ttk.Radiobutton(self,
+                        variable=btnvars['reprocess_type'],
+                        value='combined',
+                        text='Two location followed by measurement reprocess'
+                        )
+        
+        self.add_widget(combined)
+        
+        
+        
+    def add_widget(self, w):
+        '''
+        Add a single widget that spans 4 columnspan
+        '''
+        w.grid(column=0, row=self.r, columnspan=4, sticky='NSW',
+                        padx=self.padx, pady=self.pady)
+
+        #move to next row
+        self.r += 1
+
+    def add_widgets(self, l_text, widgets , help_txt=None):
+        '''
+        Add a row of widgets in the grid.
+
+        With label and optional help.
+        '''
+        #add label
+        label = ttk.Label(self, text=l_text)
+        label.grid(column=0, row=self.r, sticky='NSEW',
+                    padx=self.padx, pady=self.pady)
+        #add text
+        if help_txt:
+            h_icon = shared.HelpIcon(self, tooltext=help_txt)
+            h_icon.grid(column=1, row=self.r, padx=0, pady=self.pady, sticky='NW')
+
+        #add widgets
+        for c, w in enumerate(widgets, 2):
+            w.grid(column=c, row=self.r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+
+        #move to next row
+        self.r += 1
+    
+    @in_thread('MainThread', wait=False)
+    def do_reprocess(self):
+        '''
+        Run selected reprocess action.
+        '''
+        pass
+        
+    def get_file(self):
+        initial = self.btnvars['datafile'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            initial = save_dir
+
+        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),))
+        if file:
+            self.btnvars['datafile'].set(path.normpath(file))
+            
+    def save_file(self):
+        initial = self.btnvars['savefile'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            dat_file = self.btnvars['datafile'].get()
+            if dat_file:
+                #initial directory same as data file
+                initial = path.dirname(dat_file)
+            else:
+                initial = save_dir
+
+        file = fdl.asksaveasfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),), defaultextension='.csv')
+        if file:
+            self.btnvars['savefile'].set(path.normpath(file))
+    
+    def get_fold(self, var):
+        initial = self.btnvars[var].get()
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial)
+        if fold:
+            fold = path.normpath(fold)
+            self.btnvars[var].set(fold)   
+    
+    def get_rx(self):
+        initial = self.btnvars['rx_name'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            initial = save_dir
+
+        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),))
+        if file:
+            self.btnvars['rx_name'].set(path.normpath(file))
 
 class SyncSetupFrame(ttk.Labelframe):
     """Replacement for the TestInfoGui. Collects pre-test notes
@@ -4276,6 +4534,7 @@ def load_defaults():
 
         'SyncSetupFrame': [],
 
+        'ReprocessFrame': [],
 
         dev_dly_char: [
             'audio_files',
@@ -4523,6 +4782,16 @@ def load_defaults():
     # loads previous session's hardware settings from disk, if applicable
     DEFAULTS['SyncSetupFrame'].update(loadandsave.sync_settings)
 
+    DEFAULTS['ReprocessFrame']['measurement_type'] = 'autodetect'
+    DEFAULTS['ReprocessFrame']['datafile'] = ''
+    DEFAULTS['ReprocessFrame']['savefile'] = ''
+    DEFAULTS['ReprocessFrame']['audio_path'] = ''
+    DEFAULTS['ReprocessFrame']['split_audio_path'] = ''
+    DEFAULTS['ReprocessFrame']['reprocess_type'] = 'measurement'
+    DEFAULTS['ReprocessFrame']['rx_name'] = ''
+    DEFAULTS['ReprocessFrame']['outdir'] = ''
+    DEFAULTS['ReprocessFrame']['extraplay'] = '0'
+    
 
 def main():
 
