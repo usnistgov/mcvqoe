@@ -2310,6 +2310,11 @@ class ReprocessFrame(ttk.Labelframe):
         #row in frame
         self.r=0
 
+        self.widgets = {
+            'meas_only' : [],
+            '2loc' : [],
+            }
+
         # === Reprocess file ===
 
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datafile'])
@@ -2324,7 +2329,8 @@ class ReprocessFrame(ttk.Labelframe):
         meas = ttk.Radiobutton(self,
                         variable=btnvars['reprocess_type'],
                         value='measurement',
-                        text='Measurement Reprocess'
+                        text='Measurement Reprocess',
+                        command=self.on_type_change,
                         )
 
         self.add_widget(meas)
@@ -2371,6 +2377,7 @@ class ReprocessFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=self.save_file)
 
         self.add_widgets('Save File', (fold_entry, fold_button),
+                            group='meas_only',
                             help_txt='File to save reprocessed data to. If this is empty, the name is chosen automatically.')
 
         # === Audio Path ===
@@ -2380,6 +2387,7 @@ class ReprocessFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('audio_path'))
 
         self.add_widgets('Audio Path', (fold_entry, fold_button),
+                            group='meas_only',
                             help_txt='Folder to find audio clips in. If this is empty, the files will be found automatically.')
 
         # === Split Audio Path ===
@@ -2396,7 +2404,8 @@ class ReprocessFrame(ttk.Labelframe):
         twoloc = ttk.Radiobutton(self,
                         variable=btnvars['reprocess_type'],
                         value='2loc',
-                        text='Two Location Reprocess'
+                        text='Two Location Reprocess',
+                        command=self.on_type_change,
                         )
 
         self.add_widget(twoloc)
@@ -2407,7 +2416,7 @@ class ReprocessFrame(ttk.Labelframe):
 
         rx_button = ttk.Button(self, text='Browse', command=self.get_rx)
 
-        self.add_widgets('Rx file', (rx_entry, rx_button),
+        self.add_widgets('Rx file', (rx_entry, rx_button), group='2loc',
                             help_txt='Rx recording. If not given it will be determined automatically')
 
         # === Outdir ===
@@ -2417,6 +2426,7 @@ class ReprocessFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('outdir'))
 
         self.add_widgets('Output Folder', (fold_entry, fold_button),
+                            group='2loc',
                             help_txt='Folder to write processed files to.')
 
         # === Extra Play ===
@@ -2424,12 +2434,13 @@ class ReprocessFrame(ttk.Labelframe):
         extraplay = ttk.Spinbox(self, increment=0.1, from_=0, to=10,
                                  textvariable=self.btnvars['extraplay'])
 
-        self.add_widgets('Extra Play', (extraplay,),
+        self.add_widgets('Extra Play', (extraplay,), group='2loc',
                         help_txt='Duration of extra audio to add after tx clip '
                         'stopped. This mayb be used, in some cases, to correct '
                         'for data that was recorded with a poorly chosen overplay.')
 
-
+        #call on_type_change here so things default to the right state
+        self.on_type_change()
 
     def add_widget(self, w):
         '''
@@ -2441,7 +2452,7 @@ class ReprocessFrame(ttk.Labelframe):
         #move to next row
         self.r += 1
 
-    def add_widgets(self, l_text, widgets , help_txt=None):
+    def add_widgets(self,  l_text, widgets ,group=None , help_txt=None):
         '''
         Add a row of widgets in the grid.
 
@@ -2451,15 +2462,21 @@ class ReprocessFrame(ttk.Labelframe):
         label = ttk.Label(self, text=l_text)
         label.grid(column=0, row=self.r, sticky='NSEW',
                     padx=self.padx, pady=self.pady)
+        if group:
+            self.widgets[group].append(label)
         #add text
         if help_txt:
             h_icon = shared.HelpIcon(self, tooltext=help_txt)
             h_icon.grid(column=1, row=self.r, padx=0, pady=self.pady, sticky='NW')
+            if group:
+                self.widgets[group].append(label)
 
         #add widgets
         for c, w in enumerate(widgets, 2):
             w.grid(column=c, row=self.r, sticky='NSEW',
                              padx=self.padx, pady=self.pady)
+            if group:
+                self.widgets[group].append(w)
 
         #move to next row
         self.r += 1
@@ -2518,6 +2535,22 @@ class ReprocessFrame(ttk.Labelframe):
         file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),))
         if file:
             self.btnvars['rx_name'].set(path.normpath(file))
+
+    def on_type_change(self):
+        '''
+        Enable the appropriate widgets based on reprocess type.
+        '''
+        op = self.btnvars['reprocess_type'].get()
+
+        for w_op,w_list in self.widgets.items():
+            if op == 'measurement' and w_op == 'meas_only':
+                state = '!disabled'
+            elif op == '2loc' and w_op == '2loc':
+                state = '!disabled'
+            else:
+                state = 'disabled'
+            for c in w_list:
+                c.configure(state=state)
 
 class SyncSetupFrame(ttk.Labelframe):
     """Replacement for the TestInfoGui. Collects pre-test notes
