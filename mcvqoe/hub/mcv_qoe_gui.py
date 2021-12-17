@@ -2309,26 +2309,26 @@ class ReprocessFrame(ttk.Labelframe):
 
         #row in frame
         self.r=0
-        
+
         # === Reprocess file ===
-        
+
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datafile'])
 
         fold_button = ttk.Button(self, text='Browse', command=self.get_file)
 
         self.add_widgets('Data File', (fold_entry, fold_button),
                             help_txt='Data file from test to reprocess.')
-        
+
         # === Measurement Reprocess type ===
-        
+
         meas = ttk.Radiobutton(self,
                         variable=btnvars['reprocess_type'],
                         value='measurement',
                         text='Measurement Reprocess'
                         )
-        
+
         self.add_widget(meas)
-        
+
         # === Measurement Type ===
 
 
@@ -2365,7 +2365,7 @@ class ReprocessFrame(ttk.Labelframe):
                             help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
 
         # === Save file ===
-        
+
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['savefile'])
 
         fold_button = ttk.Button(self, text='Browse', command=self.save_file)
@@ -2374,7 +2374,7 @@ class ReprocessFrame(ttk.Labelframe):
                             help_txt='File to save reprocessed data to. If this is empty, the name is chosen automatically.')
 
         # === Audio Path ===
-        
+
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['audio_path'])
 
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('audio_path'))
@@ -2383,47 +2383,47 @@ class ReprocessFrame(ttk.Labelframe):
                             help_txt='Folder to find audio clips in. If this is empty, the files will be found automatically.')
 
         # === Split Audio Path ===
-        
+
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['split_audio_path'])
 
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('split_audio_path'))
-                                    
+
         self.add_widgets('Split Audio Path', (fold_entry, fold_button),
                             help_txt='Folder to find audio clips in. If this is empty, split audio will not be written')
-        
+
         # === Two Location Reprocess type ===
-        
+
         twoloc = ttk.Radiobutton(self,
                         variable=btnvars['reprocess_type'],
                         value='2loc',
                         text='Two Location Reprocess'
                         )
-        
+
         self.add_widget(twoloc)
 
         # === Rx file select ===
-        
+
         rx_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['rx_name'])
 
         rx_button = ttk.Button(self, text='Browse', command=self.get_rx)
-                                    
+
         self.add_widgets('Rx file', (rx_entry, rx_button),
                             help_txt='Rx recording. If not given it will be determined automatically')
 
         # === Outdir ===
-        
+
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['outdir'])
 
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('outdir'))
-                                    
+
         self.add_widgets('Output Folder', (fold_entry, fold_button),
                             help_txt='Folder to write processed files to.')
-        
+
         # === Extra Play ===
-        
+
         extraplay = ttk.Spinbox(self, increment=0.1, from_=0, to=10,
                                  textvariable=self.btnvars['extraplay'])
-                                    
+
         self.add_widgets('Extra Play', (extraplay,),
                         help_txt='Duration of extra audio to add after tx clip '
                         'stopped. This mayb be used, in some cases, to correct '
@@ -2463,14 +2463,14 @@ class ReprocessFrame(ttk.Labelframe):
 
         #move to next row
         self.r += 1
-    
+
     @in_thread('MainThread', wait=False)
     def do_reprocess(self):
         '''
         Run selected reprocess action.
         '''
         pass
-        
+
     def get_file(self):
         initial = self.btnvars['datafile'].get()
         if initial:
@@ -2482,7 +2482,7 @@ class ReprocessFrame(ttk.Labelframe):
         file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),))
         if file:
             self.btnvars['datafile'].set(path.normpath(file))
-            
+
     def save_file(self):
         initial = self.btnvars['savefile'].get()
         if initial:
@@ -2499,14 +2499,14 @@ class ReprocessFrame(ttk.Labelframe):
         file = fdl.asksaveasfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),), defaultextension='.csv')
         if file:
             self.btnvars['savefile'].set(path.normpath(file))
-    
+
     def get_fold(self, var):
         initial = self.btnvars[var].get()
         fold = fdl.askdirectory(parent=self.master, initialdir=initial)
         if fold:
             fold = path.normpath(fold)
-            self.btnvars[var].set(fold)   
-    
+            self.btnvars[var].set(fold)
+
     def get_rx(self):
         initial = self.btnvars['rx_name'].get()
         if initial:
@@ -4778,7 +4778,7 @@ def load_defaults():
     DEFAULTS['ReprocessFrame']['rx_name'] = ''
     DEFAULTS['ReprocessFrame']['outdir'] = ''
     DEFAULTS['ReprocessFrame']['extraplay'] = '0'
-    
+
 
 def main():
 
