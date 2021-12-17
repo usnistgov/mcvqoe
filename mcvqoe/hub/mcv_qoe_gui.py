@@ -2330,43 +2330,40 @@ class ReprocessFrame(ttk.Labelframe):
         self.add_widget(meas)
         
         # === Measurement Type ===
-        
+
+
+        self.meas_types = {'autodetect':'auto detect',
+                           'm2e':'Mouth to Ear',
+                           'access_delay':'Access Delay',
+                           'psud':'PSuD',
+                           'intell':'Intelligibility',
+                           }
+
+        self.pretty_type = tk.StringVar()
+
+        #set based on measurement_type
+        self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+
+        dropdown = ttk.Menubutton(self, textvariable=self.pretty_type)
+
+        menu = tk.Menu(dropdown, tearoff=False)
+
+        for v, l in self.meas_types.items():
+            def get_command(choice):
+                def set_choice():
+                    self.btnvars['measurement_type'].set(choice)
+                    self.pretty_type.set(self.meas_types[choice])
+                return set_choice
+            menu.add_command(label=l,
+                            command=get_command(v))
+
+        dropdown.configure(menu=menu)
+
         btn_frame = ttk.LabelFrame(self, text='Measurement Type')
-        
-        btn_padx = self.padx*2
-        btn_pady = self.pady/2
-        
-        ttk.Radiobutton(btn_frame,
-                        variable=btnvars['measurement_type'],
-                        value='autodetect',
-                        text='Auto detect'
-                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
-         
-        ttk.Radiobutton(btn_frame,
-                        variable=btnvars['measurement_type'],
-                        value='m2e',
-                        text='Mouth to Ear'
-                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
-                        
-        ttk.Radiobutton(btn_frame,
-                        variable=btnvars['measurement_type'],
-                        value='access_delay',
-                        text='Access Delay'
-                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
 
-        ttk.Radiobutton(btn_frame,
-                        variable=btnvars['measurement_type'],
-                        value='psud',
-                        text='PSuD'
-                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
+        self.add_widgets('Measurement Type', (dropdown,),
+                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
 
-        ttk.Radiobutton(btn_frame,
-                        variable=btnvars['measurement_type'],
-                        value='intell',
-                        text='Intelligibility'
-                        ).pack(fill=tk.X, padx=btn_padx, pady=btn_pady)
-        self.add_widget(btn_frame)
-        
         # === Save file ===
         
         fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['savefile'])
