@@ -2936,20 +2936,22 @@ class PostProcessingFrame(ttk.Frame):
     def copy_tests(self, e=None):
         """run current testCpy on the current directory."""
 
-        #get the test progress frame, will be used for copy progress
-        spf = loader.tk_main.win.frames['SyncProgressFrame']
+        #try/finally so buttons are always enabled at the end
+        try:
+            #get the test progress frame, will be used for copy progress
+            spf = loader.tk_main.win.frames['SyncProgressFrame']
 
-        #clear out old progress info
-        spf.clear_progress()
+            #clear out old progress info
+            spf.clear_progress()
 
-        #switch to sync-progress step, go back to post processing when done
-        loader.tk_main.win.set_step('sync-progress',extra='post-process')
+            #switch to sync-progress step, go back to post processing when done
+            loader.tk_main.win.set_step('sync-progress',extra='post-process')
 
-        test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
-        #test_copy.copy_test_files(self.outdir)
-
-        #indicate we are done
-        spf.set_complete()
+            test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
+            #test_copy.copy_test_files(self.outdir)
+        finally:
+            #indicate we are done
+            spf.set_complete()
 
     @in_thread('GuiThread', wait=False)
     def add_element(self, element, **kwargs):
