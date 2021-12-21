@@ -49,6 +49,7 @@ import _thread
 import json
 import math
 import pickle
+import platform
 import os
 import shutil
 from os import path, listdir
@@ -1449,6 +1450,7 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         add_mcv_icon(self)
 
         text = {
+            platform.python_implementation()+' version' : platform.python_version(),
             'Core Libraries' : '',
             'GUI'  : gui_version,
             'Mouth to ear'  : loader.m2e_gui.m2e.version,
