@@ -1394,10 +1394,6 @@ class ImportLoader():
                                  'intelligibility_gui' : 'mcvqoe.hub.intelligibility_gui',
                                  'IgtibyFrame' : ('mcvqoe.hub.intelligibility_gui','IgtibyFrame'),
                                 },
-            'Plotting' : {
-                            'Figure' : ('matplotlib.figure','Figure'),
-                            'FigureCanvasTkAgg' : ('matplotlib.backends.backend_tkagg','FigureCanvasTkAgg'),
-                         },
         }
 
         try:
@@ -2963,18 +2959,11 @@ class PostProcessingFrame(ttk.Frame):
         Parameters
         ----------
         element :
-            A string, matplotlib figure, or tk widget class to be added into
-            the window
+            A string, or tk widget class to be added into the window
 
         """
 
-        if isinstance(element, loader.Figure):
-            canvas = loader.FigureCanvasTkAgg(element, master=self)
-            widget = canvas.get_tk_widget()
-            canvas.draw()
-            self.canvasses.append(widget)
-
-        elif isinstance(element, str):
+        if isinstance(element, str):
             widget = ttk.Label(self, text=element)
 
         else:
