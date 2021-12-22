@@ -35,6 +35,7 @@ setuptools.setup(
         'flask',
         'plotly',
         'requests',
+        'pillow',
     ],
     extras_require={
         'plots': ['PyQt5'],
