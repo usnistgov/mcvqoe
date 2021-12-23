@@ -24,12 +24,13 @@ from mcvqoe.hub.common import save_dir as default_data_dir
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
 import mcvqoe.psud as psud
+import mcvqoe.accesstime as access
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
     'intell',
     'psud',
-    # TODO: Add rest of measurements
+    'access',
     ]
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#edeef0'
@@ -125,6 +126,8 @@ def load_json_data(jsonified_data, measurement):
     test_dict = json.loads(jsonified_data)
     if measurement == 'psud':
         eval_obj = psud.evaluate(json_data=jsonified_data)
+    elif measurement == 'access':
+        eval_obj = access.evaluate(json_data=jsonified_data)
     else:
         with tempfile.TemporaryDirectory() as tmpdirname:
             # Initialize tmpdir
@@ -265,8 +268,11 @@ for measurement in measurements:
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
-            
-            for filename in test_dict:
+            if measurement == 'access':
+                filenames = json.loads(test_dict['test_info']).keys()
+            else:
+                filenames = test_dict
+            for filename in filenames:
                 children.append(format_data_filename(filename))
         else:
             # TODO: Figure out what to do with cutpoints here...
@@ -389,6 +395,23 @@ def measurement_results_filters(measurement):
                 style=style_result_filters_dropdown,
                 )
             ])
+    elif measurement == 'access':
+        raw_alpha_options = np.arange(0.5, 1, 0.01)
+        alpha_options = [{'label': np.round(x, 2), 'value': np.round(x, 2)} for x in raw_alpha_options]
+        default_alpha_options = [0.9,]
+        children = html.Div([
+            html.Div([
+                html.Label('Alpha'),
+                dcc.Dropdown(
+                    id=f'{measurement}-alpha',
+                    options=alpha_options,
+                    multi=True,
+                    value=default_alpha_options,
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                )
+            ])
     else:
         children = None
     return children
@@ -431,7 +454,7 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement == 'm2e' or measurement == 'intell' or measurement == 'psud':
+    if measurement in measurements:
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -527,6 +550,37 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'access':
+        children = [
+            # TODO: Generalize this
+            html.Div([
+                html.Label('Intelligibility'),
+                dcc.RadioItems(
+                    id=f'{measurement}-intell-type',
+                    options = [
+                        {'label': 'Relative to asymptotic', 'value': 'relative'},
+                        {'label': 'Raw Intelligibility', 'value': 'intelligibility'},
+                        ],
+                    value='message',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style,
+                ),
+            html.Div([
+                html.Label('X-axis'),
+                dcc.RadioItems(
+                    id=f'{measurement}-x-axis',
+                    options = [{'label': 'Trial', 'value': 'index'},
+                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                               ],
+                    value='index',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -590,6 +644,21 @@ def measurement_plots(measurement):
             # ----------------[Test chain histogram]-------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            ]
+    elif measurement == 'access':
+        children = [
+            # --------------[Access plot] ---------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-plot',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # --------------[Intell Scatter Plot]------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-scatter',
                           figure=blank_fig(),
                           ),
                 ], className='twelve columns'),
