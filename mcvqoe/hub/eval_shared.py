@@ -15,16 +15,20 @@ import numpy as np
 import os
 import pandas as pd
 import plotly.graph_objects as go
+import re
 import tempfile 
 
 from mcvqoe.hub.eval_app import app
+from mcvqoe.hub.common import save_dir as default_data_dir
 
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
+import mcvqoe.psud as psud
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
     'intell',
+    'psud',
     # TODO: Add rest of measurements
     ]
 # --------------[General Style]--------------------------------------------
@@ -119,24 +123,111 @@ def load_json_data(jsonified_data, measurement):
     """
     # Parse dict of dataframes
     test_dict = json.loads(jsonified_data)
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        # Initialize tmpdir
-        os.makedirs(os.path.join(tmpdirname, 'csv'))
-        outpaths = []
-        for test_name in test_dict:
-            # Read json of dict element as a dataframe
-            test_df = pd.read_json(test_dict[test_name])
-            tmpname = os.path.join(tmpdirname, 'csv', test_name)
-            # Store temporary file
-            test_df.to_csv(tmpname, index=False)
-            outpaths.append(tmpname)
-        if measurement == 'm2e':
-            # Load temporary files
-            eval_obj = mouth2ear.evaluate(outpaths)
-        elif measurement == 'intell':
-            eval_obj = intell.evaluate(outpaths)
+    if measurement == 'psud':
+        eval_obj = psud.evaluate(json_data=jsonified_data)
+    else:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # Initialize tmpdir
+            os.makedirs(os.path.join(tmpdirname, 'csv'))
+            outpaths = []
+            for test_name in test_dict:
+                # Read json of dict element as a dataframe
+                test_df = pd.read_json(test_dict[test_name])
+                tmpname = os.path.join(tmpdirname, 'csv', test_name)
+                # Store temporary file
+                test_df.to_csv(tmpname, index=False)
+                outpaths.append(tmpname)
+            if measurement == 'm2e':
+                # Load temporary files
+                eval_obj = mouth2ear.evaluate(outpaths)
+            elif measurement == 'intell':
+                eval_obj = intell.evaluate(outpaths)
+            elif measurement == 'psud':
+                eval_obj = psud.evaluate(outpaths)
         
-        return eval_obj
+    return eval_obj
+
+def find_cutpoints(fname, df, measurement):
+    '''
+    Try to find cutpoints based on fname.
+    
+    Looks for cutpoints in:
+        * mcvqoe.hub.common.save_dir as default_data_dir
+        * sees if it can find matching cutpoints from measurement default/included audio
+    If cannot find it in either needs to do something smart to inform user of limitation
+      * Say open data from measurement gui/make sure that they have stuff stored appropriately (Reference?)
+    '''
+    
+    data_dir = os.path.join(default_data_dir, measurement, 'data')
+    # Identify session identification string
+    session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
+    session_search = session_pattern.search(fname)
+    if session_search is not None:
+        session_id = session_search.groups()[0]
+    else:
+        # TODO: Be smarter than this
+        raise RuntimeError('No valid session id found in uploaded data')
+   
+    # Construct wav folder path based off capture id
+    wav_dir = os.path.join(data_dir, 'wav', session_id)
+    
+    # Determine if wav directory exists
+    if os.path.exists(wav_dir):        
+        # Initialize cutpoints dictionary
+        cps = dict()
+        # TODO: This logic only works for PSuD, extract from access data file
+        for file in np.unique(df['Filename']):
+            # Construct path to cutpoint file
+            cp_name = f'Tx_{file}.csv'
+            cp_path = os.path.join(wav_dir, cp_name)
+            
+            # Load cutpoints
+            cp = pd.read_csv(cp_path)
+            
+            # Store as json in dict
+            cps[file] = cp.to_json()
+    else:
+        # Try to find the cutpoints from the defaults included in the package
+        if measurement == 'psud':
+            print('Trying to find default cps')
+            # Get default audio sets and audio path
+            [default_audio_sets, default_audio_path] = psud.measure.included_audio_sets()
+            # Initialize cutpoints dictionary
+            cps = dict()
+            
+            # Search string extract set number from filenames
+            set_search = re.compile(r'(?:[FM]\d_n\d+_s)(\d+)(?:_c\d+)')
+            for file in np.unique(df['Filename']):
+                # Search for set
+                search_res = set_search.search(file)
+                if search_res is not None:
+                    aset = 'set' + search_res.groups()[0]
+                    # Make sure it is in default audio sets
+                    if aset in default_audio_sets:
+                        # Construct path to cutpoint file
+                        cp_name = f'{file}.csv'
+                        cp_path = os.path.join(default_audio_path, aset, cp_name)
+                        
+                        # Load cutpoints
+                        cp = pd.read_csv(cp_path)
+                        
+                        # Store in json dict
+                        cps[file] = cp.to_json()
+                    else:
+                        # TODO: Figure out how to flag this for users
+                        raise RuntimeError('Cannot find cutpoints, say something to user')
+                else:
+                    # TODO: Figure out how to flag this for users
+                    raise RuntimeError('Cannot find cutpoints, say something to user')
+                
+        # Store all measurement data and cutpoints for this session file
+    
+    out_json = {
+        'measurement': df.to_json(),
+        'cutpoints': cps,
+        }
+    return out_json
+
 
 for measurement in measurements:
     @app.callback(
@@ -149,7 +240,7 @@ for measurement in measurements:
         State(f'{measurement}-json-data', 'data'),
         )
     def update_output(list_of_contents, list_of_names,
-                      initial_data_flag, initial_data):
+                      initial_data_flag, initial_data, measurement=measurement):
         """
         Process uploaded data and store csv files as json
     
@@ -174,25 +265,36 @@ for measurement in measurements:
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
+            
             for filename in test_dict:
                 children.append(format_data_filename(filename))
-            # children = html.Div('I need to do this part')
         else:
-            # time.sleep(3)
+            # TODO: Figure out what to do with cutpoints here...
             if list_of_contents is not None:
                 children = []
                 dfs = []
-                for c, n in zip(list_of_contents, list_of_names):
-                    child, df = parse_contents(c, n)
+                # TODO: Figure out a better variable name/place to store this
+                
+                out_json = {}
+                for c, filename in zip(list_of_contents, list_of_names):
+                    child, df = parse_contents(c, filename)
                     children.append(child)
                     dfs.append(df)
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                        os.makedirs(os.path.join(tmpdirname, 'csv'))
+                    
+                    if measurement == 'psud':
                         
-                        out_json = {}
-                        for filename, df in zip(list_of_names, dfs):
-                            out_json[filename] = df.to_json()
-                            
+                        out_json[filename] = find_cutpoints(filename, df, measurement)
+                        # TODO: Think working up to here...
+                    elif measurement == 'access':
+                        # TODO: Do something here
+                        print('I need to handle ACCESS cutpoints here...')
+                    else:
+                        out_json[filename] =  df.to_json()
+                        
+                
+                # for filename, df in zip(list_of_names, dfs):
+                #     out_json[filename] = df.to_json()
+                    
                 final_json = json.dumps(out_json)
             else:
                 children = None
@@ -233,6 +335,64 @@ style_measurement_format = {
     'marginRight': '10px',
     'padding': '10px',
     }
+
+style_result_filters_dropdown = {
+    'width': '30%',
+    'display': 'inline-block'
+    }
+def measurement_results_filters(measurement):
+    if measurement == 'psud':
+        raw_intell_options = np.arange(0.5, 1.01, 0.1)
+        intell_options = [{'label': np.round(x, 1), 'value': np.round(x, 1)} for x in raw_intell_options]
+        default_intell_options=[0.5,]
+        
+        raw_msg_len_options = np.arange(1, 11, 1)
+        msg_len_options = [{'label': x, 'value': x} for x in raw_msg_len_options]
+        default_msg_len = [1, 3, 5, 10]
+        
+        children = html.Div([
+            html.Div([
+                html.Label('Method'),
+                dcc.Dropdown(
+                    id=f'{measurement}-method',
+                    options=[
+                        {'label': 'Every Word Critical (EWC)', 'value': 'EWC'},
+                        {'label': 'Average Message Intelligibility (AMI)', 'value': 'AMI'},
+                        ],
+                    multi=True,
+                    value=['EWC', 'AMI'],
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                ),
+            html.Div([
+                html.Label('Intelligibility Threshold'),
+                dcc.Dropdown(
+                    id=f'{measurement}-intelligibility-threshold',
+                    options=intell_options,
+                    multi=True,
+                    value=default_intell_options,
+                    
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                ),
+            html.Div([
+                html.Label('Message Length'),
+                dcc.Dropdown(
+                    id=f'{measurement}-message-length',
+                    options=msg_len_options,
+                    multi=True,
+                    value=default_msg_len,
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                )
+            ])
+    else:
+        children = None
+    return children
+
 digit_range = [1, 6]
 digit_default = 4
 
@@ -240,7 +400,6 @@ def measurement_digits(display, digits=digit_default, measurement=''):
     style = style_measurement_format
     
     style['display'] = display
-    # print(f'In measurement_digits: measurement-{measurement}, style[display]: {style["display"]}')
     children = html.Div([
         html.Label(f'Number of Digits in Results ({digit_range[0]} - {digit_range[1]}):'),
         dcc.Input(id=f'{measurement}-measurement-digits',
@@ -262,7 +421,7 @@ def pretty_numbers(x, digits=digit_default):
     if isinstance(x, list):
         pretty_vals = []
         for xv in x:
-            pretty_vals.append(pretty_numbers(xv))
+            pretty_vals.append(pretty_numbers(xv, digits=digits))
     else:
         pretty_vals = np.round(x, digits)
     return pretty_vals
@@ -272,7 +431,7 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement == 'm2e' or measurement == 'intell':
+    if measurement == 'm2e' or measurement == 'intell' or measurement == 'psud':
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -337,6 +496,37 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'psud':
+        children = [
+            # TODO: Generalize this
+            html.Div([
+                html.Label('Intelligibility'),
+                dcc.RadioItems(
+                    id=f'{measurement}-intell-type',
+                    options = [
+                        {'label': 'Message', 'value': 'message'},
+                        {'label': 'Word', 'value': 'word'},
+                        ],
+                    value='message',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style,
+                ),
+            html.Div([
+                html.Label('X-axis'),
+                dcc.RadioItems(
+                    id=f'{measurement}-x-axis',
+                    options = [{'label': 'Trial', 'value': 'index'},
+                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                               ],
+                    value='index',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -383,6 +573,27 @@ def measurement_plots(measurement):
                   ),
                 ], className='twelve columns'),
             ]
+    elif measurement == 'psud':
+        children = [
+            # --------------[PSuD vs msg length Plot] ---------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-plot',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # --------------[Intell Scatter Plot]------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-scatter',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # ----------------[Test chain histogram]-------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            ]
     else:
         
         children = [html.Div('Undefined measurement')]   
@@ -422,6 +633,11 @@ def layout_template(measurement):
                  id=f'{measurement}-initial-data-passed',
                  style={'display': 'none'}),
         html.Hr(),
+        html.Div(
+            measurement_results_filters(measurement),
+            id=f'{measurement}-results-filters', # Unused for m2e and intell, only for psud and access
+            className='twelve columns',
+            ),
         html.Div([
             html.Div(
                 id=f'{measurement}-measurement-results',

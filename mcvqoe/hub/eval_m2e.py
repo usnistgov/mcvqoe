@@ -48,7 +48,10 @@ def format_m2e_results(m2e_eval, digits=6):
         html.H6('Mean mouth-to-ear latency'),
         html.Div(f'{pretty_mean} seconds'),
         html.H6('95% Confidence Interval'),
-        html.Div(f'{pretty_ci} seconds')
+        html.Div(f'{pretty_ci} seconds'),
+        html.H6('Thinning factor'),
+        html.Div(f'{m2e_eval.common_thinning}'),
+        html.Div('TODO: Do something smarter when common thinning factor is not found'),
         ],
         style=eval_shared.style_results,
         # className='six columns',

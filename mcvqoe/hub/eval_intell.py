@@ -123,7 +123,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
         
         
         filenames = intell_eval.data['Filename']
-        pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
+        pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
         talkers = set()
         for fname in filenames:
             res = pattern.search(fname)

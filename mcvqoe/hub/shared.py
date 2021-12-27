@@ -37,35 +37,35 @@ def add_mcv_icon(win):
 class ScrollableFrame(ttk.Frame):
     """Used to add a scrollbar to frames. see MCVQoEGui.init_frames() for
     details on how to add a scrollbar to a frame.
-    
+
     """
-    
+
     def __init__(self, master, **kwargs):
         self.container = ttk.Frame(master)
         self.canvas = tk.Canvas(self.container)
-        scrollbar = ttk.Scrollbar(
+        self.scrollbar = ttk.Scrollbar(
             self.container, orient='vertical', command=self.canvas.yview)
-        
+
         super().__init__(self.canvas, **kwargs)
-        
+
         self.bind(
                 "<Configure>",
                 self._on_resize
                 )
         self.canvas.create_window((0, 0), window=self, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+
     def _on_resize(self, e):
         self.canvas.configure(
                     scrollregion=self.canvas.bbox("all")
                     )
-    
+
     def pack(self, *args, **kwargs):
         self.container.pack(*args, **kwargs)
-    
+
     def grid(self, *args, **kwargs):
         self.container.grid(*args, **kwargs)
     def place(self, *args, **kwargs):
@@ -74,9 +74,9 @@ class ScrollableFrame(ttk.Frame):
         self.container.pack_forget()
     def grid_forget(self):
         self.container.grid_forget()
-        
+
     def scroll(self, event):
-        
+
         if (hasattr(event, 'num') and event.num == 5) or (hasattr(
                 event, 'delta') and event.delta < 0):
             delta = -1
@@ -95,73 +95,72 @@ class ScrollableFrame(ttk.Frame):
 
 
 
-        
+
 class TestCfgFrame(ttk.LabelFrame):
 
     """
     Base class for frames to configure and run a measurement.
-    
-    
+
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         The title of the frame
-    
-    
+
+
     PARAMETERS
     ----------
-    
+
     btnvars : TkVarDict
         loads and stores the values in the controls
-    
-    
+
+
     """
-    
+
     text = ''
-    
-       
-    
+
+
+
     def __init__(self, btnvars, *args, **kwargs):
-        
+
         kwargs['text'] = self.text
-            
         super().__init__(*args, **kwargs)
-        
+
+
         #option functions will get and store their values in here
         self.btnvars = btnvars
-        
-        
+
+
         #sets what controls will be in this frame
         controls = self.get_controls()
-        
+
         #initializes controls
         self.controls = {}
         for row in range(len(controls)):
             c = controls[row](master=self, row=row)
-            
+
             self.controls[c.__class__.__name__] = c
-            
+
     def update_title(self, title):
         self.configure(text = title)        
-        
-        
-        
+
+
     def get_controls(self) -> iter:
         """
         Called to acquire an ordered list of control classes to construct.
-        
+
         Classes should be subclasses of LabeledControl
-        
+
         Subclasses should override this.
-        
-        
+
+
         RETURNS
         -------
         control-list : iter
             a list of control classes that go into the frame, in the order they should
             appear
-            
+
         """
         return tuple()
 
@@ -169,112 +168,111 @@ class TestCfgFrame(ttk.LabelFrame):
 
 class SubCfgFrame(TestCfgFrame):
     """Base class to make a subframe for controls grouped together.
-    
+
     It is designed to behave like a control in and of itself, and should be
     included in the get_controls() of its master.
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         the title of the frame
-    
+
     """
-    
+
     text = ''
-    
+
     def __init__(self, master, row, *args, **kwargs):
-        
-        
-    
+
+
+
         super().__init__(master.btnvars, master, *args, **kwargs)
-        
-        
+
+
         self.grid(column=0, row=row, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
-        
+
         master.controls.update(self.controls)
-        
-        
-        
+
+
+
     def get_controls(self) -> iter:
         """see TestCfgFrame.get_controls"""
         return tuple()
-    
+
 
 class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     """A Toplevel window containing advanced/other parameters.
-    
+
     Used as a base class for all advanced windows, as well as
     hardware- and simulation-settings windows.
-    
+
     ATTRIBUTES
     ----------
-    
+
     text : str
         the title of the window
 
     """
     text = ''
-    
+
     def __init__(self, master, btnvars, *args, **kwargs):
-        
-        
+
+
         super().__init__(master, *args, **kwargs)
         #hide the window
         self.withdraw()
         #as soon as possible (after app starts) show again
         self.after(0,self.deiconify)
-        
+
         # keeps track of tcl variable traces for later destruction
         # this prevents some errors in the simulation settings window.
         self.traces_ = []
-        
+
         # sets its title based on class variable 'text'
         self.title(self.text)
-        
+
         #sets the controls in this window
         control_classes = list(self.get_controls())
-        
+
         # include the OK button to close the window
         control_classes.append(_advanced_submit)
-        
+
         self.btnvars = btnvars
-        
+
         # take keyboard focus
         self.focus_force()
-        
+
         add_mcv_icon(self)
-        
+
         self.controls = master.controls
         #initializes controls
         for row in range(len(control_classes)):
             c = control_classes[row](master=self, row=row)
-            
+
             # stores controls with their keys being their parameter names
             self.controls[c.__class__.__name__] = c
-            
-        
-        
-        
+
+
+
+
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
-        
-        
-        
-        
-        
-            
+
+
+
+
+
+
     def get_controls(self):
         pass
-    
+
     def destroy(self):
         super().destroy()
-        
+
         # remove tcl variable traces (prevents errors in simulation settings)
         for var, trace_id in self.traces_:
             var.trace_remove('write', trace_id)
-                
 
 class DescriptionBlock:        
     """
@@ -323,12 +321,12 @@ class DescriptionBlock:
 class LabeledControl:
     """
     A row consisting of the following general template:
-        
+
         MyParameter:   (?)     [value          ]     BUTTON
-    
+
     NOTE: if you can, use one of the following base-classes instead of
     over-customizing this one:
-        
+
         LabeledEntry
         LabeledNumber
         LabeledCheckbox
@@ -336,96 +334,96 @@ class LabeledControl:
         MultiChoice
         EntryWithButton
         advanced
-    
-    
+
+
     Subclasses should redefine any of the class variables, as well as the
         setup() method
-        
+
     Subclasses should have their names be equal to the internal parameter name
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         a user-friendly name for the parameter
-        
-        
+
+
     do_font_scaling : bool
         whether the middle control has user-modifiable text that can be font-scaled
-        
+
         set this to false for things like radiobuttons and checkboxes
-        
-        
+
+
     MCtrl : tkinter.ttk widget class
         the class of tkinter widget to use for the middle control
-        
+
         recommended to use classes from the tkinter.ttk module for aesthetic reasons.
-        
+
     MCtrlargs : list
         positional arguments to be passed to the MCtrl constructor
-    
+
     MCtrlkwargs : dict
         kw arguments to be passed to the MCtrl constructor
-        
+
     variable_arg : 'textvariable', 'variable'
         whether the control's value should be pulled from its text.
-        
+
         change this to 'variable' for controls like sliders, checkboxes, radiobuttons, etc
         that don't have user-modifiable text
-        
-    
+
+
     RCtrl : tkinter.ttk widget class
         the right-most control (usually a button)
-        
+
     RCtrlkwargs : dict
         the kwargs to be passed to the RCtrl constructor
-    
+
     padx, pady : int
         the control's padding, in pixels
-        
+
     no_value : bool
         set this to true for controls, such as the advanced button,
         that do not have a value to put into the measure class
-    
-    
+
+
     PARAMETERS  (handled internally)
     ----------
-    master : 
+    master :
         the window that this will be in
-        
+
     row : int
         the row that the controls should be gridded in
-        
-    
+
+
     """
     text = ''
-    
+
     do_font_scaling = True
-    
+
     MCtrl = ttk.Entry
     MCtrlargs = []
     MCtrlkwargs = {}
-    
+
     variable_arg = 'textvariable'
-    
+
     #usually the browse button
     RCtrl = None
     RCtrlkwargs = {}
-    
+
     padx = PADX
     pady = PADY
-    
+
     no_value = False # if it has no associated instance variable in measure
-    
-    
+
+
     def setup(self):
         """additional code that can be run during initiation
-        
+
         """
         pass
-    
-    
-    
+
+
+
     def __init__(self, master, row):
         self.master = master
 
@@ -433,16 +431,16 @@ class LabeledControl:
         
         self.l_ctrl.grid(
             padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
-        
+
         MCtrlkwargs = self.MCtrlkwargs.copy()
         MCtrlargs = self.MCtrlargs.copy()
         RCtrlkwargs = self.RCtrlkwargs.copy()
 
-        
-        # get tcl variable 
+        # get tcl variable
         if self.__class__.__name__ in master.btnvars:
             self.btnvar = master.btnvars[self.__class__.__name__]
-        
+
+
         # help button
         if self.__class__.__doc__:
             self.h_ctrl = HelpIcon(master, tooltext=self._get_help())
@@ -461,40 +459,41 @@ class LabeledControl:
                                'is missing its default value. '+
                                "Make sure it is declared in 'control_list', "+
                                "and that it is an accepted type")
-                
+
             if self.variable_arg:
                 MCtrlkwargs[self.variable_arg] = self.btnvar
-                
+
             else:
                 MCtrlargs.insert(0, self.btnvar)
-            
+
             if self.do_font_scaling:
                 MCtrlkwargs['font'] = (FONT_SIZE,)
-            
+
             # initialize the control
             self.m_ctrl = self.MCtrl(master, *MCtrlargs, **MCtrlkwargs)
             self.m_ctrl.grid(
                 column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
         
+
         # Right-most control
         if self.RCtrl:
             #add command to button
             if self.RCtrl in (ttk.Button, tk.Button):
                 RCtrlkwargs['command'] = self.on_button
-            
+
             # initialize the control
             self.r_ctrl = self.RCtrl(master, **RCtrlkwargs)
-            
+
             self.r_ctrl.grid(
                 padx=self.padx, pady=self.pady, column=3, row=row, sticky='WE')
-            
-            
+
+
     def _get_help(self):
-        
+
         lst = []
         for line in self.__class__.__doc__.splitlines():
             lst.append(line.strip())
-        
+
         return '\n'.join(lst)
         
     def destroy(self):
@@ -531,33 +530,33 @@ class LabeledControl:
     def on_button(self):
         """The function to run when the user presses the button on the right
         of the control.
-        
+
         Subclasses should override this.
 
         """
         pass
-            
+
 
 
 class HelpIcon(ttk.Button):
     """
     Shows the control's __doc__ when you hover over or select this icon
-    
+
     """
     def __init__(self, master, *args, tooltext, **kwargs):
         kwargs['text'] = '?'
         kwargs['style'] = 'McvHelpBtn.TLabel'
         super().__init__(master, *args, **kwargs)
-        
+
         # bind hover and selection events
         self.bind('<Enter>', self.enter)
         self.bind('<FocusIn>', self.enter)
         self.bind('<Leave>', self.leave)
         self.bind('<FocusOut>', self.leave)
-        
+
         self.tw = None
         self.tooltext = tooltext
-        
+
     def enter(self, event):
         """
         shows the HELP tooltip
@@ -575,25 +574,25 @@ class HelpIcon(ttk.Button):
         if self.tw:
             return
         self.tw = ToolTip(self, self.tooltext)
-        
+
         # get location of help icon
         x, y, cx, cy = self.bbox("insert")
         rootx = _get_master(self).winfo_rootx()
-        
+
         # calculate location of tooltip
         x = x + self.winfo_rootx() - self.tw.winfo_width()
         y = y + cy + self.winfo_rooty() + 27
-        
+
         #ensure tooltip does not fall off left edge of window
         if x < rootx + 20: x = rootx + 20
-                
+
         # set position of tooltip
         self.tw.wm_geometry("+%d+%d" % (x, y))
-        
+
         #show tooltip
         self.tw.show()
-        
-        
+
+
     def leave(self, event):
         """
         Hides the tooltip
@@ -612,33 +611,33 @@ class HelpIcon(ttk.Button):
             return
         self.tw.destroy()
         self.tw = None
-        
+
 def _get_master(m, targets = (tk.Tk, tk.Toplevel)):
     """
     given a tkinter widget, goes up the chain of hierarchy until it finds
     a widget in targets, and returns that widget.
-    
+
     Used to get a widget's parent window, or to get the tkinter main window
-    
+
 
     Parameters
     ----------
     m : widget
-        
+
     targets : tk classes
         The default is (tk.Tk, tk.Toplevel).
 
     Returns
     -------
     m : instance of targets
-        
+
 
     """
     while hasattr(m, 'master'):
             if isinstance(m, targets):
                 return m
             m = m.master
-        
+
 
 class ToolTip(tk.Toplevel):
     """
@@ -646,28 +645,28 @@ class ToolTip(tk.Toplevel):
     """
     def __init__(self, master, text, style='McvToolTip.TLabel'):
         super().__init__(master)
-        
+
         try:
             # on windows, add alwaysontop
             self.attributes('-topmost',True)
         except: pass
-        
-        
+
+
         lf = ttk.Frame(self, style='McvToolTip.TFrame')
         lf.pack()
-        
+
         ttk.Label(lf, text=text, style=style).pack(
             padx=PADX, pady=PADY)
-        
+
         #removes window title-bar, taskbar icon, etc
         self.wm_overrideredirect(1)
-        
+
         # temporarily hides window to prevent sudden movement
         self.withdraw()
-        
+
         # solidifies the window's size to ensure correct placement on screen
         self.update_idletasks()
-    
+
     def show(self):self.deiconify()
 
 
@@ -675,13 +674,13 @@ class ToolTip(tk.Toplevel):
 class LabeledEntry(LabeledControl):
     """
     A convenient text-entry control
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         a user-friendly name for the parameter
-    
+
     """
 
 
@@ -691,36 +690,36 @@ class LabeledEntry(LabeledControl):
 
 class LabeledNumber(LabeledControl):
     """A convenient base class for parameters that should be a number.
-    
+
     Sub-classes should set any of the following class variables for customization
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         the user-friendly name for the parameter
-    
+
     min_ : number
         the minimum value (defaults to 0)
     max_ : number
         the maximum value (defaults to very large)
-        
+
     increment : number
         how much the up- and down- buttons should change the value.
         this does NOT limit the resolution of the value
-    
-    
+
+
     """
     RCtrl = None
-    
+
     MCtrl = ttk.Spinbox
-    
+
     min_ = 0
     max_ = 2**15 - 1
     increment = 1
-    
+
     def __init__(self, *args, **kwargs):
-        
+
         self.MCtrlkwargs = {'increment':self.increment,
                                           'from_':self.min_,
                                           'to':self.max_}
@@ -729,80 +728,80 @@ class LabeledNumber(LabeledControl):
 
 class LabeledSlider(LabeledControl):
     """A convenient base class for parameters that should be a percentage
-    
+
     Base classes should not modify any of the class variables (except 'text');
     Use LabeledNumber for better resolution and range.
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         the user-friendly name for the parameter
-    
+
     """
-    
+
     RCtrl = None
     MCtrl = None
     # slider does not accept font size
-    do_font_scaling = False    
-    
-    
+    do_font_scaling = False
+
+
     def __init__(self, master, row, *args, **kwargs):
         super().__init__(master, row, *args, **kwargs)
         self.txtvar = self._percentage()
         self.on_change()
-        
+
         self.btnvar.trace_add('write', self.on_change)
-    
+
         ttk.Label(master, textvariable=self.txtvar).grid(
             column=3, row=row, sticky='W')
-    
+
         self.m_ctrl = ttk.Scale(master, variable=self.btnvar,
             from_=0, to=1)
-        
+
         self.m_ctrl.grid(
             column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
-    
+
     def on_change(self, *args, **kwargs):
         #updates the percentage to match the value of the slider
         self.txtvar.set(self.btnvar.get())
 
     class _percentage(tk.StringVar):
         """Displays a percentage instead of a float
-    
+
         """
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-        
+
         def set(self, value):
             v = float(value) * 100
             s = ''
-        
+
             for char in str(v):
                 if char == '.':
                     break
                 s = f'{s}{char}'
-        
-                    
+
+
             super().set(f'{s}%')
-            
+
 
 
 class _MultiChoice_Frame(tk.Frame):
     def __init__(self, *args, association, textvariable, **kwargs):
-        
+
         super().__init__(*args, **kwargs)
         self.controls = []
-        
+
         #initialize
         for val, text in association.items():
             c = ttk.Radiobutton(self, variable=textvariable, value=val,
                 text=text)
-            
+
             c.pack(fill=tk.X)
-            
+
             self.controls.append(c)
-            
+
     def configure(self, *args, **kwargs):
         for ctrl in self.controls:
             ctrl.configure(*args, **kwargs)
@@ -813,36 +812,36 @@ class _MultiChoice_Frame(tk.Frame):
 
 class MultiChoice(LabeledControl):
     """ A base class for multiple-choice controls
-    
+
     sub-classes should change any of the following class variables
     for customization
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         user-friendly name for the parameter
-    
+
     association : dict
         associates the internal option with its user-friendly name. i.e.:
-            
+
             {
             'm2e_1loc'   : '1 Location',
             'm2e_2loc_tx': '2 Location (transmit)',
             'm2e_2loc_rx': '2 Location (receive)'
             }
-        
-    
-    
+
+
+
     """
     association = {}
     do_font_scaling = False
     MCtrl = _MultiChoice_Frame
-    
+
     def __init__(self, *args, **kwargs):
         self.MCtrlkwargs = self.MCtrlkwargs.copy()
         self.MCtrlkwargs['association'] = self.association
-        
+
         super().__init__(*args, **kwargs)
 
 
@@ -850,107 +849,107 @@ class MultiChoice(LabeledControl):
 class LabeledCheckbox(LabeledControl):
     """
     Base class for parameters that are boolean
-    
+
     sub-classes should not change any of the class variables (except 'text')
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         USE MIDDLE_TEXT INSTEAD
-    
+
     middle_text : str
         user-friendly name for parameter
-    
+
     """
     middle_text = ''
-    
+
     MCtrl = ttk.Checkbutton
     do_font_scaling = False
     variable_arg = 'variable'
-    
+
     def __init__(self, *args, **kwargs):
-        
-        
+
+
         self.MCtrlkwargs = {'text': self.middle_text}
-        
-        
+
+
         super().__init__(*args, **kwargs)
 
 
 
 class EntryWithButton(LabeledControl):
     """A base-class for controls that have an entry alongside a button.
-    
+
     Subclasses should override the on_button() method to determine the button's action.
     Within the method, the parameter's value can be interacted with using:
-    
+
         current_value = self.btnvar.get()
-        
+
         self.btnvar.set(new_value)
-        
+
     the following class variables should be overridden for customization
-    
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         user-friendly name for the parameter
-        
+
     button_text : str
         text to go into the button
-    
-    
+
+
     """
-    
+
     button_text = ''
-    
-    
+
+
     RCtrl = ttk.Button
-    
+
     def on_button(self): pass
-    
+
     def __init__(self, *args, **kwargs):
-        
+
         self.RCtrlkwargs = self.RCtrlkwargs.copy()
         self.RCtrlkwargs['text'] = self.button_text
         super().__init__(*args, **kwargs)
-        
-        
+
+
 
 
 
 class advanced(EntryWithButton):
     """Base class for singular-button 'advanced' controls.
-    
+
     This could theoretically be sub-classed further for other single-button uses.
-    
+
     Subclasses should modify the following class variables:
-        
+
     CLASS VARIABLES
     ---------------
-    
+
     text : str
         USE BUTTON_TEXT INSTEAD
-    
+
     toplevel : type
         a subclass of tk.Toplevel that will be constructed when the button is pressed
-        
+
     button_text : str
         the text inside the button
-    
-    
+
+
     """
     text = ''
-    
+
     MCtrl = None
-    
+
     button_text = 'Advanced...'
-    
+
     toplevel = None
-    
+
     no_value = True
-    
+
     def on_button(self):
         self.toplevel(master=self.master, btnvars=self.master.btnvars)
 
@@ -984,76 +983,76 @@ class advanced(EntryWithButton):
 
 class audio_files(EntryWithButton):
     """Audio files to use for testing.
-    
+
     If left blank, all the files in "Audio Folder" are used. """
-    
+
     text = 'Audio File(s):'
-    
+
     button_text = 'Browse...'
-        
-    
-    
+
+
+
     def on_button(self):
-        
+
         initpath = self.master.btnvars['audio_path'].get()
         if not initpath or not path.isdir(initpath):
-            
+
             # load cached folder
             initpath = loadandsave.fdl_cache[
                 f'{self.master.__class__.__name__}.audio_path']
-        
-        
+
+
         fp = fdl.askopenfilenames(parent=self.master,
                 initialdir=initpath,
                 filetypes=[('WAV files', '*.wav')])
         if fp:
             # normalize paths (prevents mixing of / and \ on windows)
             fp = [path.normpath(f) for f in fp]
-            
+
             path_, files = format_audio_files('', fp)
             self.btnvar.set(files)
             self.master.btnvars['audio_path'].set(path_)
-            
+
             # cache folder
             loadandsave.fdl_cache.put(
                 f'{self.master.__class__.__name__}.audio_path',
                  path_,
                  )
-            
-            
-    
-            
-            
+
+
+
+
+
 class audio_path(EntryWithButton):
     """The source folder containing the audio files."""
-    
-    
+
+
     text = 'Audio Folder:'
-    
+
     button_text = 'Browse Folder'
-    
-    
+
+
     def on_button(self):
-        
+
         initpath = self.btnvar.get()
         if not initpath or not path.isdir(initpath):
-            
+
             # load cached folder
             initpath = loadandsave.fdl_cache[
                 f'{self.master.__class__.__name__}.audio_path']
-        
-        
+
+
         fp = fdl.askdirectory(initialdir = initpath)
         if fp:
-            
+
             fp = path.normpath(fp)
-            
+
             path_, files = format_audio_files(path_=fp)
-            
+
             self.master.btnvars['audio_files'].set(files)
-            
+
             self.btnvar.set(path_)
-            
+
             loadandsave.fdl_cache.put(
                 f'{self.master.__class__.__name__}.audio_path',
                 path_,
@@ -1078,73 +1077,73 @@ class Audio_Set(LabeledControl):
 
 class trials(LabeledNumber):
     """Number of trials to use for test."""
-    
+
     text = 'Number of Trials:'
-       
+
     min_ = 1
-    
-    
+
+
 class outdir(EntryWithButton):
     """Location to store all output files"""
-    
+
     text='Output Folder:'
-    
+
     button_text = 'Browse...'
-    
+
     def on_button(self):
         dirp = fdl.askdirectory(parent=self.master)
         if dirp:
             dirp = path.normpath(dirp)
             self.btnvar.set(dirp)
-            
-            
+
+
     def __init__(self, *args, **kwargs):
-        
+
         super().__init__(*args, **kwargs)
-        
+
 
 
 class overplay(LabeledNumber):
     """The number of seconds to play silence after the audio is complete.
     This allows for all of the audio to be recorded when there is delay
     in the system"""
-    
-    
+
+
     text='Overplay Time (sec):'
-    
+
     increment = 0.01
-    
-    
+
+
 
 class ptt_gap(LabeledNumber):
     """Time to pause after completing one trial and starting the next."""
 
     text = 'Gap Between Trials:'
-    
+
     MCtrl = ttk.Spinbox
-    
+
     increment = 0.01
-    
-    
+
+
 class SaveAudio(MultiChoice):
     """Sets what recorded audio should be saved into the output folder.
-    
+
     Set to 'Rx audio only' to only save received audio."""
     text = 'Save Audio:'
-    
+
     association = {'all_audio' : 'All audio',
                    'rx_only'   : 'Rx audio only',
                    'no_audio'  : 'No audio',
                    }
-    
+
 
 
 
 # --------------------------- the following 3 are all for pause_trials--------
 class RadioCheck(SubCfgFrame):
-    
+
     text = 'Regular Radio Checks'
-    
+
     def get_controls(self):
         return (
             _limited_trials,
@@ -1153,71 +1152,71 @@ class RadioCheck(SubCfgFrame):
 
 class _limited_trials(LabeledCheckbox):
     """When disabled, sets the number of pause_trials to infinite"""
-    
+
     middle_text = 'Enable Radio Checks'
-    
-    
+
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         # give itself an actual stored value
         self.btnvar = tk.BooleanVar()
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         # set a trace to change the value depending on 'pause_trials' parameter
         self.btnvar.trace_add('write', self.on_button)
         self.master.btnvars['pause_trials'].trace_add('write', self.update)
         self.update()
-        
-        
+
+
     def on_button(self, *args, **kwargs):
         if self.btnvar.get():
             val = self.previous
         else:
             val = 'inf'
-            
+
         self.master.btnvars['pause_trials'].set(val)
-    
+
     def update(self, *args, **kwargs):
-        
+
         v = self.master.btnvars['pause_trials'].get()
-        
+
         other = v != 'inf'
         this = self.btnvar.get()
-        
+
         if other:
             self.previous = v
-            
+
         if other != this:
             self.btnvar.set(other)
-        
-        
-        
-    
-        
+
+
+
+
+
 class pause_trials(LabeledNumber):
     """Number of trials to run before pausing to perform a radio check."""
-    
+
     text = 'Trials between check:'
-    
-       
+
+
     min_ = 1
-    
-    
-    
-        
+
+
+
+
 
 class time_expand(SubCfgFrame):
     text = 'Time Expand'
-    
-    
-    
+
+
+
     def __init__(self, master, row, **kwargs):
-        
+
         super().__init__(master, row, **kwargs)
-    
+
     def get_controls(self):
-        
+
         return (
             _time_expand_i,
             _time_expand_f,
@@ -1227,31 +1226,31 @@ class _time_expand_i(LabeledNumber):
     """Length of time, in seconds, of extra
     audio to send BEFORE the keyword to ABC_MRT16. Adding time protects
     against inaccurate M2E latency calculations and misaligned audio."""
-    
+
     text = 'Expand Before:'
-    
+
     increment = 0.01
-    
-    
+
+
 class _time_expand_f(LabeledNumber):
     """Length of time, in seconds, of extra
     audio to send AFTER the keyword to ABC_MRT16. Adding time protects
     against inaccurate M2E latency calculations and misaligned audio."""
-    
+
     text = 'Expand After:'
-    
+
     increment = 0.01
 
-    
-    
+
+
 class bgnoise_file(EntryWithButton):
     """This is used to read in a noise file to be mixed with the
     test audio. Default is no background noise."""
 
     text = 'Noise File:'
-    
+
     button_text = 'Browse...'
-    
+
     def on_button(self):
         fp = fdl.askopenfilename(parent=self.master,
             initialfile=self.btnvar.get(),
@@ -1273,11 +1272,9 @@ class ptt_wait(LabeledNumber):
     for access to be granted on the system."""
 
     text = 'PTT Wait Time:'
-    
+
     increment = 0.01
 
-              
-                                  
 
 
 
@@ -1286,28 +1283,30 @@ class ptt_wait(LabeledNumber):
 
 
 
-    
+
+
+
 
 class _advanced_submit(advanced):
-    
+
     #closes the advanced window
-    
+
     button_text = 'OK'
-    
+
     def on_button(self):
         self.master.destroy()
-    
-    
+
+
 # advanced groups
 
 class BgNoise(SubCfgFrame):
     text = 'Background Noise'
-    
+
     def get_controls(self):
         return (bgnoise_file,
                 bgnoise_volume)
 
-       
+
 
 
 
@@ -1318,15 +1317,15 @@ class BgNoise(SubCfgFrame):
 class dev_dly(LabeledNumber):
     """Delay in seconds of the audio path with no communication device
     present."""
-    
+
     text = 'Device Delay:'
-    
+
     increment = 0.001
-    
+
     # add button functionality too.
     RCtrl = ttk.Button
     RCtrlkwargs = {'text': 'Calibrate'}
-    
+
 
     def on_button(self):
         CharDevDly()
@@ -1334,7 +1333,7 @@ class dev_dly(LabeledNumber):
 
 
 class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         #hide the window
@@ -1343,9 +1342,9 @@ class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
         self.after(0,self.deiconify)
 
         add_mcv_icon(self)
-        
+
         self.title('Device Delay Characterization')
-        
+
         ttk.Label(self, text=
 """It seems like you have not yet done a characterization test. A
 characterization test is a Mouth-to-Ear test that is run with the audio
@@ -1358,7 +1357,7 @@ output directly fed into the input, as shown below.
         max_height = 500
 
         canvas = tk.Canvas(self,width=max_width, height=max_height)
-        
+
         with importlib.resources.path('mcvqoe.hub','dev_dly_char_example.png') as name:
             img = Image.open(name)
 
@@ -1378,12 +1377,12 @@ output directly fed into the input, as shown below.
                    ).pack()
 
         self.finished = False
-                   
-    
-    
-    
+
+
+
+
     def continue_btn(self):
-        
+
         _get_master(self, tk.Tk).selected_test.set('DevDlyCharFrame')
         self.destroy()
 
@@ -1394,12 +1393,13 @@ output directly fed into the input, as shown below.
 
 class _HdwPrototype:
     """Contains the default audioplayer settings.
-    
-    Settings must be drawn from here because the real audioplayer might throw a 
+
+    Settings must be drawn from here because the real audioplayer might throw a
     RuntimeError on program load if the interface is not found.
-    
+
     """
     radioport = ''
+    default_radio = 1
     blocksize=512
     buffersize=20
     overplay=1.0
@@ -1408,25 +1408,33 @@ class _HdwPrototype:
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
-    
+
     # used for _restore_defaults control
     prototype = _HdwPrototype
-    
+
     def get_controls(self):
         return (
             AudioSettings,
             overplay,
             radioport,
+            default_radio,
             timecode_type,
             _restore_defaults,
             )
-            
+
 class radioport(LabeledControl):
     """Port to use for radio interface. Defaults to the first
     port where a radio interface is detected"""
-    
+
     text = 'Radio Port:'
-    
+
+class default_radio(LabeledControl):
+    """PTT output number to use for test."""
+
+    text='PTT Number:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_':1, 'to':2}
+
 class timecode_type(LabeledControl):
     """type of timecode to use for two location tests"""
 
@@ -1435,76 +1443,74 @@ class timecode_type(LabeledControl):
     MCtrlkwargs = {'values' : ('IRIGB_timecode','soft_timecode')}
 
 class AudioSettings(SubCfgFrame):
-    
+
     text = 'Audio Settings'
-    
+
     def get_controls(self):
         return (blocksize, buffersize)
-      
+
 class blocksize(LabeledControl):
     """Block size for transmitting audio, must be a power of 2"""
-    
+
     text = 'Block Size:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
-    
+
 
 class buffersize(LabeledControl):
     """Number of blocks used for buffering audio"""
-    
+
     text='Buffer Size:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
 class _restore_defaults(LabeledControl):
-    
-    
+
+
     MCtrl = None
     RCtrl = ttk.Button
-    
+
     RCtrlkwargs = {'text' : 'Restore Defaults'}
-    
+
     def on_button(self):
         """restores the default hardware/simulation settings.
 
         """
-        
+
         from_obj = self.master.prototype()
-        
+
         for k, tk_var in self.master.btnvars.items():
-            
+
             if hasattr(from_obj, k):
                 tk_var.set(getattr(from_obj, k))
 
 class _SimPrototype(QoEsim):
     def __init__(self):
         QoEsim.__init__(self)
-        
         self._impairment_plugin = ''
 
 #SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
-    
-    
+
+
     text = 'Simulation Settings'
-    
+
     # used for _restore_defaults button
     prototype = _SimPrototype
-    
+
     def get_controls(self):
         return (
             channel_tech,
             channel_rate,
-            
+
             overplay,
-            
+
             m2e_latency,
             access_delay,
             device_delay,
             rec_snr,
             PTT_sig_freq,
             PTT_sig_amplitude,
-            
             ImpairmentsSelect,
             _restore_defaults,
             )
@@ -1514,22 +1520,22 @@ class channel_tech(LabeledControl):
     handled by plugins. The only tech that is available by default is 'clean'."""
 
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = 'Channel Tech:'
         self.MCtrl = ttk.Menubutton
         self.do_font_scaling = False
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
-        
+
         self.m_ctrl.configure(menu=self.menu)
-        
+
         try:
             rates = QoEsim.get_channel_techs()
         except Exception as e:
             show_error(e)
-        
+
         else:
             # get channel_techs to use as menu options
             for tech_ in rates:
@@ -1539,42 +1545,42 @@ class channel_tech(LabeledControl):
 class channel_rate(LabeledControl):
     """Rate to simulate channel at. Each channel tech handles this differently.
     When set to None the default rate is used."""
-    
-    
+
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = 'Channel Rate:'
         self.MCtrl = ttk.Menubutton
-        
+
         self.do_font_scaling = False
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
-        
+
         #track selection of channel_tech
         id = self.master.btnvars['channel_tech'].trace_add('write', self.update)
         self.master.traces_.append((self.master.btnvars['channel_tech'], id))
-    
+
         #fill menu with options
         self.update()
-        
 
-    
+
+
     def update(self, *args, **kwargs):
         failed = False
         try:
             chan_tech = self.master.btnvars['channel_tech'].get()
-            
+
             self.menu.delete(0, 'end')
-            
+
             default, rates = QoEsim.get_channel_rates(chan_tech)
-            
+
             old = self.btnvar.get()
             if old not in rates:
                 self.btnvar.set(default)
-            
+
             for rate in rates:
                 #add a dropdown list option
                 self.menu.add_command(label=str(rate),
@@ -1582,20 +1588,20 @@ class channel_rate(LabeledControl):
         except Exception as e:
             show_error(e)
             failed = True
-        
+
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
 
 class m2e_latency(LabeledControl):
     """Simulated mouth to ear latency for the channel in seconds.
-    
+
     Defaults to the minimum latency allowed by the channel tech."""
-    
+
     text = 'Mouth-to-ear Latency:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
-    
-    
+
+
 class access_delay(LabeledControl):
     """Delay between the time that the simulated push to talk button is pushed
     and when audio starts coming through the channel. If the 'ptt_delay'
@@ -1603,36 +1609,37 @@ class access_delay(LabeledControl):
     'ptt_delay' is added to access_delay to get the time when access is
     granted. Otherwise access is granted 'access_delay' seconds after the
     clip starts."""
-    
+
     text = 'Access Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
 
 class device_delay(LabeledControl):
     """Simulated device delay in seconds."""
-    
+
     text = 'Device Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
-    
+
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
     text = 'Channel SNR:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':1.0}
-    
+
 
 class PTT_sig_freq(LabeledControl):
     """Frequency of the PTT signal from the play_record method."""
     text = 'PTT Signal Frequency:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
-    
+
 class PTT_sig_amplitude(LabeledControl):
     """Amplitude of the PTT signal from the play_record method."""
     text = 'PTT Signal Amplitude:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
+
 
 class ImpairmentsSelect(SubCfgFrame):
     
@@ -1644,7 +1651,6 @@ class ImpairmentsSelect(SubCfgFrame):
         
         super().__init__(master, *args, **kwargs)
 
-        
     def get_controls(self):
         return (
             PreImpairment,
@@ -1932,18 +1938,19 @@ class PostImpairmentSettings(ImpairmentSettings):
         super().__init__(master, row, *args, **kwargs)
 
 
+
 # ---------------------------------- Misc ------------------------------------
 
 class SignalOverride():
-    
+
     def sig_handler(self, *args, **kwargs):
         #override signal's ability to close the application
-        
+
         raise Abort_by_User()
-        
+
 def format_audio_files(path_= '', files=[]):
     """
-    
+
 
     Parameters
     ----------
@@ -1960,28 +1967,100 @@ def format_audio_files(path_= '', files=[]):
         the paths relative to newpath containing the files.
 
     """
-    
+
     if not files:
         return path_, ['<entire audio folder>']
-    
+
     if len(files) == 1:
         f = path.join(path_, files[0])
-        
+
         if path.isfile(f):
-        
+
             newpath, newfile = path.split(f)
-            
+
             return newpath, [newfile]
-        
+
         elif path.isdir(f):
-            
+
             return f, ['<entire audio folder>']
         else:
-            
+
             return '', []
-    
+
     newpath = path.commonpath([path.join(path_, f) for f in files])
-    
+
     newfiles = [path.relpath(f, newpath) for f in files]
-    
+
     return newpath, newfiles
+
+class ProcessSettings():
+    def get_controls(self):
+        return (
+            data_files,
+            data_path,
+            )
+
+class data_path(EntryWithButton):
+    """The default source folder containing all measurements."""
+
+
+    text = 'Data Folder:'
+
+    button_text = 'Browse Folder'
+
+
+    def on_button(self):
+
+        initpath = self.btnvar.get()
+        if not initpath or not path.isdir(initpath):
+
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.data_path']
+
+
+        fp = fdl.askdirectory(initialdir = initpath)
+        if fp:
+
+            fp = path.normpath(fp)
+
+            path_, files = format_audio_files(path_=fp)
+
+            self.master.btnvars['data_path'].set(files)
+
+            self.btnvar.set(path_)
+
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.data_path',
+                path_,
+                )
+class data_files(EntryWithButton):
+
+    text = 'Data Files:'
+    button_text = 'Browse Files'
+
+    def on_button(self):
+        initpath = self.master.btnvars['data_path'].get()
+        if not initpath or not path.isdir(initpath):
+
+            # load cached folder
+            initpath = loadandsave.fdl_cache[
+                f'{self.master.__class__.__name__}.data_path']
+
+
+        fp = fdl.askopenfilenames(parent=self.master,
+                initialdir=initpath,
+                filetypes=[('CSV files', '*.csv')])
+        if fp:
+            # normalize paths (prevents mixing of / and \ on windows)
+            fp = [path.normpath(f) for f in fp]
+
+            path_, files = format_audio_files('', fp)
+            self.btnvar.set(files)
+            self.master.btnvars['data_path'].set(path_)
+
+            # cache folder
+            loadandsave.fdl_cache.put(
+                f'{self.master.__class__.__name__}.data_path',
+                 path_,
+                 )
