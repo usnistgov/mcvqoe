@@ -17,8 +17,7 @@ import mcvqoe.hub.loadandsave as loadandsave
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 
-
-from mcvqoe.simulation import QoEsim,PBI
+from mcvqoe.simulation import QoEsim
 
 PADX = 10
 PADY = 10
@@ -124,6 +123,7 @@ class TestCfgFrame(ttk.LabelFrame):
 
 
     def __init__(self, btnvars, *args, **kwargs):
+
         kwargs['text'] = self.text
         super().__init__(*args, **kwargs)
 
@@ -142,8 +142,8 @@ class TestCfgFrame(ttk.LabelFrame):
 
             self.controls[c.__class__.__name__] = c
 
-
-
+    def update_title(self, title):
+        self.configure(text = title)        
 
 
     def get_controls(self) -> iter:
@@ -274,9 +274,49 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         for var, trace_id in self.traces_:
             var.trace_remove('write', trace_id)
 
+class DescriptionBlock:        
+    """
+    A block of text to go with Labled controls.
+    
+    A block of text that is wordwraped that spans 3 grid rows
+    """
+    
+    text = ''
+    
+    do_font_scaling = True
+    
+    MCtrl = ttk.Entry
+    MCtrlargs = []
+    MCtrlkwargs = {}
+    
+    #usually the browse button
+    RCtrl = None
+    RCtrlkwargs = {}
+    
+    padx = PADX
+    pady = PADY
+    
+    no_value = False # if it has no associated instance variable in measure
+    
+    def __init__(self, master, row):
+        self.master = master
 
+        self.description = ttk.Label(master, text=self.text, wraplength=320)
+        
+        self.description.grid(
+            padx=self.padx, pady=self.pady, column=0, columnspan=3, row=row, sticky='E')
+        
+    def destroy(self):
 
-
+        #destroy all the things
+        if hasattr(self,'description') and self.description is not None:
+            #make sure widget exists
+            if self.description.winfo_exists():
+                self.description.grid_forget()
+                self.description.destroy()
+            #mark as destroyed
+            self.description = None
+            
 
 class LabeledControl:
     """
@@ -387,33 +427,25 @@ class LabeledControl:
     def __init__(self, master, row):
         self.master = master
 
-
-
-
-        ttk.Label(master, text=self.text).grid(
+        self.l_ctrl = ttk.Label(master, text=self.text)
+        
+        self.l_ctrl.grid(
             padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
 
         MCtrlkwargs = self.MCtrlkwargs.copy()
         MCtrlargs = self.MCtrlargs.copy()
         RCtrlkwargs = self.RCtrlkwargs.copy()
 
-
-
         # get tcl variable
         if self.__class__.__name__ in master.btnvars:
             self.btnvar = master.btnvars[self.__class__.__name__]
 
 
-
-
-
         # help button
         if self.__class__.__doc__:
-            HelpIcon(master, tooltext=self._get_help()).grid(
+            self.h_ctrl = HelpIcon(master, tooltext=self._get_help())
+            self.h_ctrl.grid(
                 column=1, row=row, padx=0, pady=self.pady, sticky='NW')
-
-
-
 
         self.setup()
         #some controls require more flexibility, so they don't use self.MCtrl
@@ -422,7 +454,6 @@ class LabeledControl:
                 btnvar = self.btnvar
             except AttributeError:
                 btnvar = None
-            if btnvar is None:
                 raise KeyError(f" The parameter '{self.__class__.__name__}' "+
                                f"from '{self.master.__class__.__name__}' "+
                                'is missing its default value. '+
@@ -442,10 +473,7 @@ class LabeledControl:
             self.m_ctrl = self.MCtrl(master, *MCtrlargs, **MCtrlkwargs)
             self.m_ctrl.grid(
                 column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
-
-
-
-
+        
 
         # Right-most control
         if self.RCtrl:
@@ -467,9 +495,38 @@ class LabeledControl:
             lst.append(line.strip())
 
         return '\n'.join(lst)
+        
+    def destroy(self):
 
+        #destroy all the things
+        if hasattr(self,'l_ctrl') and self.l_ctrl is not None:
+            #make sure window exists
+            if self.l_ctrl.winfo_exists():
+                self.l_ctrl.grid_forget()
+                self.l_ctrl.destroy()
+            self.l_ctrl = None
 
+        if hasattr(self,'m_ctrl') and self.m_ctrl is not None:
+            #make sure window exists
+            if self.m_ctrl.winfo_exists():
+                self.m_ctrl.grid_forget()
+                self.m_ctrl.destroy()
+            self.m_ctrl = None
 
+        if hasattr(self,'r_ctrl') and self.r_ctrl is not None:
+            #make sure window exists
+            if self.r_ctrl.winfo_exists():
+                self.r_ctrl.grid_forget()
+                self.r_ctrl.destroy()
+            self.r_ctrl = None
+
+        if hasattr(self,'h_ctrl') and self.h_ctrl is not None:
+            #make sure window exists
+            if self.h_ctrl.winfo_exists():
+                self.h_ctrl.grid_forget()
+                self.h_ctrl.destroy()
+            self.h_ctrl = None
+        
     def on_button(self):
         """The function to run when the user presses the button on the right
         of the control.
@@ -1427,11 +1484,9 @@ class _restore_defaults(LabeledControl):
             if hasattr(from_obj, k):
                 tk_var.set(getattr(from_obj, k))
 
-class _SimPrototype(QoEsim, PBI):
+class _SimPrototype(QoEsim):
     def __init__(self):
         QoEsim.__init__(self)
-        PBI.__init__(self)
-
         self._impairment_plugin = ''
 
 #SIMULATION SETTINGS WINDOW
@@ -1456,9 +1511,7 @@ class SimSettings(AdvancedConfigGUI):
             rec_snr,
             PTT_sig_freq,
             PTT_sig_amplitude,
-
-            Probabilityizer,
-            _impairment_plugin,
+            ImpairmentsSelect,
             _restore_defaults,
             )
 
@@ -1587,84 +1640,312 @@ class PTT_sig_amplitude(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
 
-class Probabilityizer(SubCfgFrame):
 
-    text = 'Probabilityizer'
-
+class ImpairmentsSelect(SubCfgFrame):
+    
+    text = 'Impairments'
+    
     def __init__(self, master, *args, **kwargs):
-
+        
+        self.traces_ = []
+        
         super().__init__(master, *args, **kwargs)
 
-        btv = self.btnvars['_enable_PBI']
-        trace_id = btv.trace_add('write',lambda *a,**k:self.update())
-
-        # mark the trace for deletion, otherwise causes errors
-        _get_master(self).traces_.append((btv, trace_id))
-
-        self.update()
     def get_controls(self):
         return (
-            _enable_PBI,
-            pre_vs_post,
-            P_a1,
-            P_a2,
-            P_r,
-            interval,
+            PreImpairment,
+            PreImpairmentSettings,
+            ChannelImpairment,
+            ChannelImpairmentSettings,
+            PostImpairment,
+            PostImpairmentSettings,
             )
 
-    def update(self):
 
-        state = ('disabled', '!disabled')[self.btnvars['_enable_PBI'].get()]
+class ChannelImpairment(LabeledControl):
+    """Impairment to use on channel data."""
+    
+    
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.text = 'Channel Impairment:'
+        self.MCtrl = ttk.Menubutton
+        
+        self.do_font_scaling = False
+        
+        super().__init__(master, row, *args, **kwargs)
+        
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        self.m_ctrl.configure(menu=self.menu)
+        
+        #track selection of channel_tech
+        id = self.master.master.btnvars['channel_tech'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['channel_tech'], id))
+    
+        #fill menu with options
+        self.update()
+        
+        
+    def update(self, *args, **kwargs):
+        failed = False
+        try:
+            chan_tech = self.master.master.btnvars['channel_tech'].get()
 
-        # disable other controls
-        for ctrlname, ctrl in self.controls.items():
-            if ctrlname == '_enable_PBI':
-                continue
+            self.menu.delete(0, 'end')
+            
+            if chan_tech == 'None':
+                failed = True
+            else:
+                #get channel type
+                chan_type = QoEsim().get_channel_type(chan_tech)
 
-            ctrl.m_ctrl.configure(state=state)
+                #get list of impairments for the channel type
+                impairments = QoEsim.get_impairment_names(chan_type)
 
-class _enable_PBI(LabeledCheckbox):
+                old = self.btnvar.get()
+                if old not in impairments:
+                    self.btnvar.set('None')
+                
+                #add None to the list
+                self.menu.add_command(label='None',
+                                      command=tk._setit(self.btnvar, 'None'))
+                for i in impairments:
+                    #add a dropdown list option
+                    self.menu.add_command(label=i,
+                                command=tk._setit(self.btnvar, i))
+        except Exception as e:
+            show_error(e)
+            failed = True
+        
+        if failed:
+            self.master.btnvars['channel_tech'].set('None')
 
-    text = 'Enable P.B.I Impairments'
-class pre_vs_post(MultiChoice):
-    """Determine whether audio dropouts happen before or after channel simulation"""
-    text = "PBI Placement"
+class ImpairmentSettings(SubCfgFrame):    
+    
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.text = ''
+        
+        self.impairment=''
+        
+        self.row_num = row
+        
+        self.traces_ = []
+        
+        super().__init__(master, row, *args, **kwargs)
+        
+        #track selection of channel impairment
+        id = self.master.btnvars[self.impairment_name].trace_add('write', self.update)
+        self.master.traces_.append((self.master.btnvars[self.impairment_name], id))
+        
+        self.update()
+        
+    def get_controls(self):
+        
+        #empty list for controls
+        controls = []
+        
+        if self.impairment and self.impairment != 'None' and self.winfo_exists():
+            params = QoEsim.get_impairment_params(self.impairment)
+            
+            description = QoEsim.get_impairment_description(self.impairment)
+            
+            
+            #get the name of this class
+            cls_name = self.__class__.__name__
+            
+            descC = type(f'{cls_name}_Desc',(DescriptionBlock,),{
+                                                        'text': description,
+                                                      }
+                        )
+            
+            #append description control to list
+            controls.append(descC)
+            
+            for name,info in params.items():
+                #create type name from class and parameter name
+                type_name = f'{cls_name}_{name}'
 
-    association = {
-        'pre' : 'Before channel',
-        'post'  : 'After channel',
-        }
+                # check if a value exists
+                if type_name not in self.master.btnvars:
+                    #add default
+                    self.master.btnvars.add_entry(type_name,info.value_type(info.default))
 
-class P_a1(LabeledNumber):
-    min_ = 0
-    max_ = 1
-    increment = 0.01
-    text = 'P_a1:'
+                if info.choice_type in ('range', 'positive'):
 
-class P_a2(LabeledNumber):
-    min_ = 0
-    max_ = 1
-    increment = 0.01
-    text = 'P_a2:'
+                    class_vals = {
+                                    'min_' : info.min_val,
+                                    'max_' : info.max_val,
+                                    'increment' : info.interval,
+                                    'text' : name,
+                                 }
+                    
+                    if hasattr(info,'description'):
+                        class_vals['__doc__'] = info.description
+                    
+                    #create a control class
+                    cc = type(type_name,(LabeledNumber,),class_vals)
+                    #add to list of controls
+                    controls.append(cc)
+                elif info.choice_type == 'file':
 
-class P_r(LabeledNumber):
-    min_ = 0
-    max_ = 1
-    increment = 0.01
-    text = 'P_r:'
+                    #function to run when browse is clicked
+                    def brows_files(self):
+                        fp = fdl.askopenfilename(parent=self.master,
+                                filetypes=info.filetypes)
+                        if fp:
+                            # normalize paths (prevents mixing of / and \ on windows)
+                            fp = path.normpath(fp)
 
-class interval(LabeledNumber):
+                            self.btnvar.set(fp)
 
-    text = 'P_Interval:'
+                    class_vals = {
+                                    'on_button' : brows_files,
+                                    'button_text' : 'Browse...',
+                                    'text' : name,
+                                 }
 
-class _impairment_plugin(LabeledControl):
-    """Should be the name of a python module containing any of three functions:
+                    if hasattr(info,'description'):
+                        class_vals['__doc__'] = info.description
 
-        pre_impairment(audio, samplerate)
-        post_impairment(audio, samplerate)
-        channel_impairment(...)
-    """
-    text = 'Other Impairing Plugin:'
+                    #create a control class
+                    cc = type(type_name,(EntryWithButton,),class_vals)
+                    #add to list of controls
+                    controls.append(cc)
+                else:
+                    print(f'unknown choice type {info.choice_type}')
+            
+        return tuple(controls)
+        
+    def update(self, *args, **kwargs):
+        
+        #update impairment name
+        self.impairment = self.master.btnvars[self.impairment_name].get()
+        
+        cls_name = self.__class__.__name__
+
+        for n,c in self.master.controls.items():
+            if n.startswith(cls_name) and n != cls_name:
+                c.destroy()
+
+        #sets what controls will be in this frame
+        control_classes = self.get_controls()
+        
+        if not self.winfo_exists():
+            #window is invalid, bail out here
+            return
+
+        #remove remaining widgets from grid
+        for c in self.grid_slaves():
+            c.grid_forget()
+
+        #remove from grid and forget settings
+        if self.impairment == 'None':
+            self.grid_forget()
+        else:
+            #add back to grid
+            self.grid(column=0, row=self.row_num, columnspan=4, sticky='NSEW',
+                  padx=PADX, pady=PADY)
+            self.set_name(self.impairment)
+        
+        #initializes controls
+        controls = {}
+        for row in range(len(control_classes)):
+            c = control_classes[row](master=self, row=row)
+            
+            controls[c.__class__.__name__] = c
+        
+        self.master.controls = controls
+    
+    def set_name(self,impairment):
+        if impairment:
+            self.update_title(f'{impairment} Settings')
+        #else:
+        #    self.update_title('')
+
+class ChannelImpairmentSettings(ImpairmentSettings):    
+    
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.impairment_name = 'ChannelImpairment'
+        
+        super().__init__(master, row, *args, **kwargs)
+
+class PreImpairment(LabeledControl):
+    """impairment to use before audio goes into the channel"""
+
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.text = 'Pre Impairment :'
+        self.MCtrl = ttk.Menubutton
+        self.do_font_scaling = False
+        
+        super().__init__(master, row, *args, **kwargs)
+        
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        
+        self.m_ctrl.configure(menu=self.menu)
+        
+        try:
+            impairments = QoEsim.get_impairment_names('audio')
+        except Exception as e:
+            show_error(e)
+        
+        else:
+            #add None to the list
+            self.menu.add_command(label='None',
+                                  command=tk._setit(self.btnvar, 'None'))
+            # get channel_techs to use as menu options
+            for i in impairments:
+                self.menu.add_command(label=i,
+                        command=tk._setit(self.btnvar, i))
+                        
+class PreImpairmentSettings(ImpairmentSettings):    
+    
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.impairment_name = 'PreImpairment'
+        
+        super().__init__(master, row, *args, **kwargs)
+
+class PostImpairment(LabeledControl):
+    """impairment to use after audio goes through the channel"""
+
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.text = 'Post Impairment :'
+        self.MCtrl = ttk.Menubutton
+        self.do_font_scaling = False
+        
+        super().__init__(master, row, *args, **kwargs)
+        
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        
+        self.m_ctrl.configure(menu=self.menu)
+        
+        try:
+            impairments = QoEsim.get_impairment_names('audio')
+        except Exception as e:
+            show_error(e)
+        
+        else:
+            #add None to the list
+            self.menu.add_command(label='None',
+                                  command=tk._setit(self.btnvar, 'None'))
+            # get channel_techs to use as menu options
+            for i in impairments:
+                self.menu.add_command(label=i,
+                        command=tk._setit(self.btnvar, i))
+
+class PostImpairmentSettings(ImpairmentSettings):    
+    
+    def __init__(self, master, row, *args, **kwargs):
+        
+        self.impairment_name = 'PostImpairment'
+        
+        super().__init__(master, row, *args, **kwargs)
+
+
 
 # ---------------------------------- Misc ------------------------------------
 

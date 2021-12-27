@@ -3536,17 +3536,6 @@ def run(root_cfg):
             #user pressed 'back' in test info gui
             return
 
-
-        # fill probabilityizer into info
-        if is_sim and root_cfg['SimSettings']['_enable_PBI']:
-
-            pcfg = root_cfg['SimSettings']
-
-            my_obj.info['PBI P_a1']=str(pcfg['P_a1'])
-            my_obj.info['PBI P_a2']=str(pcfg['P_a2'])
-            my_obj.info['PBI P_r'] =str(pcfg['P_r'])
-            my_obj.info['PBI interval']=str(pcfg['interval'])
-
         #------------- Set up progress and post-process frames ----------------
 
         #show progress bar in gui
@@ -4061,40 +4050,12 @@ def get_interfaces(root_cfg):
         sim = loader.simulation.QoEsim(**channels)
 
         _set_values_from_cfg(sim, sim_cfg)
-
-        plname = sim_cfg['_impairment_plugin']
-        if plname:
-
-            try:
-                plugin = __import__(plname)
-            except ImportError:
-                raise InvalidParameter('_impairment_plugin',
-                        f'could not import "{plname}"')
-            else:
-                success = False
-                for attr in ('pre_impairment', 'post_impairment', 'channel_impairment'):
-                    if hasattr(plugin, attr):
-                        setattr(sim, attr, getattr(plugin, attr))
-                        success = True
-                if not success:
-                    raise InvalidParameter('_impairment_plugin',
-                            'Module must contain at least one appropriate function')
-
-        if sim_cfg['_enable_PBI']:
-
-            prob=loader.simulation.PBI()
-
-            prob.P_a1=sim_cfg['P_a1']
-            prob.P_a2=sim_cfg['P_a2']
-            prob.P_r=sim_cfg['P_r']
-            prob.interval=sim_cfg['interval']
-            if sim_cfg['pre_vs_post'] == 'pre':
-                sim.pre_impairment = prob.process_audio
-            else:
-                sim.post_impairment = prob.process_audio
-
-
-
+        
+        #create impairment functions from config
+        sim.pre_impairment = create_impairment('PreImpairment', sim_cfg)
+        sim.channel_impairment = create_impairment('ChannelImpairment', sim_cfg)
+        sim.post_impairment = create_impairment('PostImpairment', sim_cfg)
+        
         ri = sim
         ap = sim
 
@@ -4130,6 +4091,28 @@ def get_interfaces(root_cfg):
     ap.rec_stop = rec_stop
 
     return ri, ap
+
+
+def create_impairment(i_type, settings):
+    '''
+    Return an impairment function from settings.
+    '''
+    #get impairment type
+    i_name = settings[i_type]
+    #check if an impairment was chosen
+    if i_name == 'None':
+        return None
+    #get required parameters
+    p_desc = loader.simulation.QoEsim.get_impairment_params(i_name)
+    #new dictionary for parameters to actually send
+    params = {}
+
+    for k, v in p_desc.items():
+        #get value and convert to the correct type
+        params[k] = v.value_type(settings[f'{i_type}Settings_{k}'])
+
+    #return impairment function
+    return loader.simulation.QoEsim.get_impairment_func(i_name, **params)
 
 
 class _FakeRadioInterface:
@@ -4483,12 +4466,10 @@ def load_defaults():
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
     DEFAULTS['SimSettings']['device_delay'] = float(DEFAULTS['SimSettings']['device_delay'])
 
-    for k in ('P_a1', 'P_a2', 'P_r', 'interval'):
-        DEFAULTS['SimSettings'][k] = float(DEFAULTS['SimSettings'][k])
-
     # the following do not have a default value
-    DEFAULTS['SimSettings']['_enable_PBI'] = False
-    DEFAULTS['SimSettings']['pre_vs_post'] = 'post'
+    DEFAULTS['SimSettings']['PreImpairment'] = 'None'
+    DEFAULTS['SimSettings']['ChannelImpairment'] = 'None'
+    DEFAULTS['SimSettings']['PostImpairment'] = 'None'
 
     # Set PSuD wrapper class defaults
     DEFAULTS[psud]['audio_set'] = DEFAULTS[psud]['_default_audio_sets'][0]
