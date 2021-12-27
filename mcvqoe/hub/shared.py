@@ -1745,7 +1745,7 @@ class ImpairmentSettings(SubCfgFrame):
         #empty list for controls
         controls = []
         
-        if self.impairment and self.impairment != 'None':
+        if self.impairment and self.impairment != 'None' and self.winfo_exists():
             params = QoEsim.get_impairment_params(self.impairment)
             
             description = QoEsim.get_impairment_description(self.impairment)
@@ -1831,6 +1831,14 @@ class ImpairmentSettings(SubCfgFrame):
         #sets what controls will be in this frame
         control_classes = self.get_controls()
         
+        if not self.winfo_exists():
+            #window is invalid, bail out here
+            return
+
+        #remove remaining widgets from grid
+        for c in self.grid_slaves():
+            c.grid_forget()
+
         #remove from grid and forget settings
         if self.impairment == 'None':
             self.grid_forget()
