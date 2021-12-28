@@ -4070,12 +4070,12 @@ def get_interfaces(root_cfg):
         sim = loader.simulation.QoEsim(**channels)
 
         _set_values_from_cfg(sim, sim_cfg)
-        
+
         #create impairment functions from config
         sim.pre_impairment = create_impairment('PreImpairment', sim_cfg)
         sim.channel_impairment = create_impairment('ChannelImpairment', sim_cfg)
         sim.post_impairment = create_impairment('PostImpairment', sim_cfg)
-        
+
         ri = sim
         ap = sim
 
