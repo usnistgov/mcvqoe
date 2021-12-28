@@ -2346,6 +2346,13 @@ class SyncSetupFrame(ttk.Labelframe):
         self.add_widgets('setup', 'Destination', (dest_entry, dest_button),
                             help_txt='Location to copy data to.')
 
+        # === Add drive button ===
+
+        add_drive_button = ttk.Button(self, text='Add', command=self.add_drive)
+
+        self.add_widgets('setup', 'Add drive', (add_drive_button,),
+                            help_txt='Add additional sync drives to settings file.')
+
         # === existing radio button ===
         existing = ttk.Radiobutton(self,
                                         command=self.on_op_change,
@@ -2448,6 +2455,19 @@ class SyncSetupFrame(ttk.Labelframe):
         #move to next row
         self.r += 1
 
+    def add_drive(self):
+        if os.name == 'nt':
+            #no selection made, try to default to "This PC"
+            #see https://stackoverflow.com/a/53569377
+            initial = 'shell:MyComputerFolder'
+        else:
+            initial = ''
+
+        fold = fdl.askdirectory(parent=self.master, initialdir=initial, title='Select a drive to add')
+        if fold:
+            set_dir = self.btnvars['sync_dir'].get()
+            set_file = os.path.join(set_dir, test_copy.settings_name)
+            test_copy.add_drive(fold, set_file)
 
     @in_thread('MainThread', wait=False)
     def do_sync_action(self, next_step='sync-setup'):
