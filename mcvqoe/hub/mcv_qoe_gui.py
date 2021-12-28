@@ -4911,7 +4911,7 @@ def load_defaults():
     DEFAULTS['ReprocessFrame']['reprocess_type'] = 'measurement'
     DEFAULTS['ReprocessFrame']['rx_name'] = ''
     DEFAULTS['ReprocessFrame']['outdir'] = ''
-    DEFAULTS['ReprocessFrame']['extraplay'] = '0'
+    DEFAULTS['ReprocessFrame']['extraplay'] = 0
 
 
 def main():
