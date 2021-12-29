@@ -4352,7 +4352,7 @@ def param_modify(root_cfg):
 class RandomDelay:
     '''
     Class used to variable delay times.
-    
+
     This class is used to provide better logging
     '''
     def __init__(self, distribution, *args, **kwargs):
@@ -4372,7 +4372,7 @@ class RandomDelay:
     def __call__(self):
         f_rand = getattr(self._rng, self.distribution)
         return f_rand(*self.args, **self.kwargs)
-        
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 #------------------------- Construct Interfaces -------------------------------
