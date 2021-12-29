@@ -5,7 +5,7 @@ with open("README.md", "r",encoding='utf-8') as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="mcvqoe-gui",
+    name="mcvqoe",
     author="PSCR",
     author_email="PSCR@PSCR.gov",
     description="Graphical interface for mcvqoe measurements",
@@ -23,20 +23,27 @@ setuptools.setup(
     ],
     license='NIST software License',
     install_requires=[
-        'abcmrt-nist',
-        'mcvqoe-nist',
+        'abcmrt16',
+        'mcvqoe-base',
         'mcvqoe-psud',
         'mcvqoe-intelligibility',
         'mcvqoe-accesstime',
-        'mcvqoe-mouth2ear'
+        'mcvqoe-mouth2ear',
+        'numpy',
+        'pandas',
+        'dash',
+        'flask',
+        'plotly',
+        'requests',
+        'pillow',
     ],
-    extras_require={
-        'plots': ['PyQt5'],
-    },
     entry_points={
         'gui_scripts':[
             'mcvqoe=mcvqoe.hub.mcv_qoe_gui:main',
         ],
+        'console_scripts':[
+            'mcvqoe-eval=mcvqoe.hub.eval_index:main',
+            ]
     },
     python_requires='>=3.8',
 )
