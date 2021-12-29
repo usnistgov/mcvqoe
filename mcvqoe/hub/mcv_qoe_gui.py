@@ -2489,57 +2489,57 @@ class ReprocessFrame(ttk.Labelframe):
         '''
         Run selected reprocess action.
         '''
-        
+
         try:
             # update the progress screen to say 'Loading...'
             gui_progress_update('pre', 0, 0)
 
             loader.tk_main.win.set_step('in-progress')
-            
+
             reprocess_type = self.btnvars['reprocess_type'].get()
-            
+
             in_file = self.btnvars['datafile'].get()
-            
+
             #make sure a file was chosen
             if not in_file:
                 raise RuntimeError('A data file must be chosen')
-            
+
             split_audio = self.btnvars['split_audio_path'].get()
-            
+
             if not split_audio:
                 #set to None so that it's not used
                 split_audio = None
-            
+
             measurement = self.btnvars['measurement_type'].get()
-            
+
             if measurement == 'autodetect':
                 #set to none to automatically guess
                 measurement = None
-            
+
             measurement_class = reprocess.get_module(module_name=measurement, datafile=in_file)
-            
+
             #object to reprocess with
             process_obj=measurement_class()
-            
+
             #use GUI for progress updates
             process_obj.progress_update=gui_progress_update
-            
-            
-            #set split_audio_dest on measurement class            
+
+
+            #set split_audio_dest on measurement class
             process_obj.split_audio_dest = split_audio
-            
+
             if reprocess_type == '2loc':
                 rx_name = self.btnvars['rx_name'].get()
-                
+
                 if not rx_name:
                     rx_name = None
-                
+
                 outdir = self.btnvars['outdir'].get()
-                
+
                 #check if outdir was given
                 if not outdir:
                     #try to guess outdir from input name
-                    
+
                     #strip filename
                     outdir = path.dirname(in_file)
                     #strip measurement folder
@@ -2550,44 +2550,44 @@ class ReprocessFrame(ttk.Labelframe):
 
                         if fold not in expected_name:
                             raise RuntimeError(f'folder name \'{fold}\' does not match the expected names: {expected_name}')
-                
+
                 extraplay = self.btnvars['extraplay'].get()
-                
+
                 #process and set new name to in_file (used for reprocess below)
                 in_file = two_loc_process.twoloc_process(
                                             in_file, extra_play=extraplay,
                                             rx_name=rx_name,
                                             progress_update=gui_progress_update
                                                         )
-                
+
                 #when we reprocess, overwrite file
                 save_file = in_file
-                
+
                 #for reprocess, determine audio automatically
                 audio_path = None
-                
+
             elif reprocess_type == 'measurement':
                 save_file = self.btnvars['rx_name'].get()
-                
+
                 if not save_file:
                     save_file=None
-                    
+
                 audio_path =  self.btnvars['rx_name'].get()
-                
+
                 if not audio_path:
                     audio_path = None
-                
+
             else:
                 raise RuntimeError(f'Unexpecte reprocess type \'{reprocess_type}\'')
-            
+
             #reprocess file
             out_name = reprocess.reprocess_file(process_obj, in_file, save_file,
                                        audio_path=audio_path)
-            
+
             #print message
             tk.messagebox.showinfo(title='Success!',message='Data reprocessed '
                                         f'to \'{out_name}\'.')
-            
+
         finally:
             loader.tk_main.win.set_step('reprocess')
 
