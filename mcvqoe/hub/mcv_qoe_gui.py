@@ -4923,6 +4923,8 @@ def load_defaults():
     DEFAULTS['SimSettings']['access_delay_sigma'] =  2e-3
 
     DEFAULTS['SimSettings']['device_delay'] = float(DEFAULTS['SimSettings']['device_delay'])
+    DEFAULTS['SimSettings']['device_delay_type'] = 'constant'
+    DEFAULTS['SimSettings']['device_delay_sigma'] =  2e-3
 
     # the following do not have a default value
     DEFAULTS['SimSettings']['PreImpairment'] = 'None'

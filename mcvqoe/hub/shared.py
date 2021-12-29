@@ -1509,7 +1509,7 @@ class SimSettings(AdvancedConfigGUI):
 
             m2e_latency_cfg,
             access_delay_cfg,
-            device_delay,
+            device_delay_cfg,
 
             rec_snr,
             PTT_sig_freq,
@@ -1617,12 +1617,6 @@ class access_delay(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
 
-class device_delay(LabeledControl):
-    """Simulated device delay in seconds."""
-
-    text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
 
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
@@ -1953,6 +1947,93 @@ class access_delay_range(RangeDisplay):
 
                 lower = round(acc_val - acc_sigma, 4)
                 upper = round(acc_val + acc_sigma, 4)
+                #update range
+                self.update_rng(f'from {lower} to {upper} sec')
+        except (ValueError,_tkinter.TclError):
+            #ignore value errors (partially entered number)
+            pass
+
+
+class device_delay_cfg(SubCfgFrame):
+    '''
+    Config to control m2e latency
+    '''
+
+    text = 'Device Delay'
+
+    def get_controls(self):
+        return (
+            device_delay_type,
+            device_delay,
+            device_delay_sigma,
+            device_delay_range,
+            )
+
+class device_delay_type(DistributionType):
+    """Type of mouth to ear latency"""
+    #nothing else needs to be configured
+    pass
+
+class device_delay_sigma(LabeledControl):
+    """
+    Sigma value for m2e latency
+    """
+
+    text = '\u03C3:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class device_delay(LabeledControl):
+    """Simulated device delay in seconds."""
+
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class device_delay_range(RangeDisplay):
+    """display of the range of the mouth to ear latency"""
+
+    text = 'device delay range:'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        #track selection of m2e type
+        id = self.master.master.btnvars['device_delay_type'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['device_delay_type'], id))
+
+        #track selection of m2e value
+        id = self.master.master.btnvars['device_delay'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['device_delay'], id))
+
+        #track selection of m2e value
+        id = self.master.master.btnvars['device_delay_sigma'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars['device_delay_sigma'], id))
+
+        self.update()
+
+
+    def update(self, *args):
+        try:
+            dly_type = self.master.btnvars['device_delay_type'].get()
+            dly_val  = self.master.btnvars['device_delay'].get()
+            dly_sigma  = self.master.btnvars['device_delay_sigma'].get()
+
+            if dly_type == 'constant':
+                self.update_rng(f'{dly_val}')
+                #disable sigma
+                self.master.controls['device_delay_sigma'].m_ctrl.configure(state='disabled')
+            elif dly_type == 'Normal':
+
+                self.master.controls['device_delay_sigma'].m_ctrl.configure(state='!disabled')
+
+                #convert values to float
+                dly_val = float(dly_val)
+                dly_sigma = float(dly_sigma)
+
+                lower = round(dly_val - dly_sigma, 4)
+                upper = round(dly_val + dly_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
         except (ValueError,_tkinter.TclError):
