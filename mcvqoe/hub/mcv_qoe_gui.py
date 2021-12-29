@@ -2491,6 +2491,9 @@ class ReprocessFrame(ttk.Labelframe):
         '''
         
         try:
+            # update the progress screen to say 'Loading...'
+            gui_progress_update('pre', 0, 0)
+
             loader.tk_main.win.set_step('in-progress')
             
             reprocess_type = self.btnvars['reprocess_type'].get()
