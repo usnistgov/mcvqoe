@@ -1260,11 +1260,13 @@ class bgnoise_file(EntryWithButton):
 
 
 
-class bgnoise_volume(LabeledSlider):
-    """Scale factor for background
-    noise."""
+class bgnoise_snr(LabeledNumber):
+    """Signal to noise ratio for voice vs noise file."""
 
-    text = 'Volume:'
+    text = 'SNR:'
+    min_ = -5
+    max_ = 120
+    increment = 0.1
 
 class ptt_wait(LabeledNumber):
     """The amount of time to wait, in seconds, between pushing the
@@ -1304,7 +1306,7 @@ class BgNoise(SubCfgFrame):
 
     def get_controls(self):
         return (bgnoise_file,
-                bgnoise_volume)
+                bgnoise_snr)
 
 
 
