@@ -143,7 +143,7 @@ class TestCfgFrame(ttk.LabelFrame):
             self.controls[c.__class__.__name__] = c
 
     def update_title(self, title):
-        self.configure(text = title)        
+        self.configure(text = title)
 
 
     def get_controls(self) -> iter:
@@ -274,38 +274,38 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         for var, trace_id in self.traces_:
             var.trace_remove('write', trace_id)
 
-class DescriptionBlock:        
+class DescriptionBlock:
     """
     A block of text to go with Labled controls.
-    
+
     A block of text that is wordwraped that spans 3 grid rows
     """
-    
+
     text = ''
-    
+
     do_font_scaling = True
-    
+
     MCtrl = ttk.Entry
     MCtrlargs = []
     MCtrlkwargs = {}
-    
+
     #usually the browse button
     RCtrl = None
     RCtrlkwargs = {}
-    
+
     padx = PADX
     pady = PADY
-    
+
     no_value = False # if it has no associated instance variable in measure
-    
+
     def __init__(self, master, row):
         self.master = master
 
         self.description = ttk.Label(master, text=self.text, wraplength=320)
-        
+
         self.description.grid(
             padx=self.padx, pady=self.pady, column=0, columnspan=3, row=row, sticky='E')
-        
+
     def destroy(self):
 
         #destroy all the things
@@ -316,7 +316,7 @@ class DescriptionBlock:
                 self.description.destroy()
             #mark as destroyed
             self.description = None
-            
+
 
 class LabeledControl:
     """
@@ -428,7 +428,7 @@ class LabeledControl:
         self.master = master
 
         self.l_ctrl = ttk.Label(master, text=self.text)
-        
+
         self.l_ctrl.grid(
             padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
 
@@ -473,7 +473,7 @@ class LabeledControl:
             self.m_ctrl = self.MCtrl(master, *MCtrlargs, **MCtrlkwargs)
             self.m_ctrl.grid(
                 column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
-        
+
 
         # Right-most control
         if self.RCtrl:
@@ -495,7 +495,7 @@ class LabeledControl:
             lst.append(line.strip())
 
         return '\n'.join(lst)
-        
+
     def destroy(self):
 
         #destroy all the things
@@ -526,7 +526,7 @@ class LabeledControl:
                 self.h_ctrl.grid_forget()
                 self.h_ctrl.destroy()
             self.h_ctrl = None
-        
+
     def on_button(self):
         """The function to run when the user presses the button on the right
         of the control.
@@ -1644,13 +1644,13 @@ class PTT_sig_amplitude(LabeledControl):
 
 
 class ImpairmentsSelect(SubCfgFrame):
-    
+
     text = 'Impairments'
-    
+
     def __init__(self, master, *args, **kwargs):
-        
+
         self.traces_ = []
-        
+
         super().__init__(master, *args, **kwargs)
 
     def get_controls(self):
@@ -1666,35 +1666,35 @@ class ImpairmentsSelect(SubCfgFrame):
 
 class ChannelImpairment(LabeledControl):
     """Impairment to use on channel data."""
-    
-    
+
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = 'Channel Impairment:'
         self.MCtrl = ttk.Menubutton
-        
+
         self.do_font_scaling = False
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
-        
+
         #track selection of channel_tech
         id = self.master.master.btnvars['channel_tech'].trace_add('write', self.update)
         self.master.master.traces_.append((self.master.btnvars['channel_tech'], id))
-    
+
         #fill menu with options
         self.update()
-        
-        
+
+
     def update(self, *args, **kwargs):
         failed = False
         try:
             chan_tech = self.master.master.btnvars['channel_tech'].get()
 
             self.menu.delete(0, 'end')
-            
+
             if chan_tech == 'None':
                 failed = True
             else:
@@ -1707,7 +1707,7 @@ class ChannelImpairment(LabeledControl):
                 old = self.btnvar.get()
                 if old not in impairments:
                     self.btnvar.set('None')
-                
+
                 #add None to the list
                 self.menu.add_command(label='None',
                                       command=tk._setit(self.btnvar, 'None'))
@@ -1718,52 +1718,52 @@ class ChannelImpairment(LabeledControl):
         except Exception as e:
             show_error(e)
             failed = True
-        
+
         if failed:
             self.master.btnvars['channel_tech'].set('None')
 
-class ImpairmentSettings(SubCfgFrame):    
-    
+class ImpairmentSettings(SubCfgFrame):
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = ''
-        
+
         self.impairment=''
-        
+
         self.row_num = row
-        
+
         self.traces_ = []
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         #track selection of channel impairment
         id = self.master.btnvars[self.impairment_name].trace_add('write', self.update)
         self.master.traces_.append((self.master.btnvars[self.impairment_name], id))
-        
+
         self.update()
-        
+
     def get_controls(self):
-        
+
         #empty list for controls
         controls = []
-        
+
         if self.impairment and self.impairment != 'None' and self.winfo_exists():
             params = QoEsim.get_impairment_params(self.impairment)
-            
+
             description = QoEsim.get_impairment_description(self.impairment)
-            
-            
+
+
             #get the name of this class
             cls_name = self.__class__.__name__
-            
+
             descC = type(f'{cls_name}_Desc',(DescriptionBlock,),{
                                                         'text': description,
                                                       }
                         )
-            
+
             #append description control to list
             controls.append(descC)
-            
+
             for name,info in params.items():
                 #create type name from class and parameter name
                 type_name = f'{cls_name}_{name}'
@@ -1781,10 +1781,10 @@ class ImpairmentSettings(SubCfgFrame):
                                     'increment' : info.interval,
                                     'text' : name,
                                  }
-                    
+
                     if hasattr(info,'description'):
                         class_vals['__doc__'] = info.description
-                    
+
                     #create a control class
                     cc = type(type_name,(LabeledNumber,),class_vals)
                     #add to list of controls
@@ -1816,14 +1816,14 @@ class ImpairmentSettings(SubCfgFrame):
                     controls.append(cc)
                 else:
                     print(f'unknown choice type {info.choice_type}')
-            
+
         return tuple(controls)
-        
+
     def update(self, *args, **kwargs):
-        
+
         #update impairment name
         self.impairment = self.master.btnvars[self.impairment_name].get()
-        
+
         cls_name = self.__class__.__name__
 
         for n,c in self.master.controls.items():
@@ -1832,7 +1832,7 @@ class ImpairmentSettings(SubCfgFrame):
 
         #sets what controls will be in this frame
         control_classes = self.get_controls()
-        
+
         if not self.winfo_exists():
             #window is invalid, bail out here
             return
@@ -1849,50 +1849,50 @@ class ImpairmentSettings(SubCfgFrame):
             self.grid(column=0, row=self.row_num, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
             self.set_name(self.impairment)
-        
+
         #initializes controls
         controls = {}
         for row in range(len(control_classes)):
             c = control_classes[row](master=self, row=row)
-            
+
             controls[c.__class__.__name__] = c
-        
+
         self.master.controls = controls
-    
+
     def set_name(self,impairment):
         if impairment:
             self.update_title(f'{impairment} Settings')
         #else:
         #    self.update_title('')
 
-class ChannelImpairmentSettings(ImpairmentSettings):    
-    
+class ChannelImpairmentSettings(ImpairmentSettings):
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.impairment_name = 'ChannelImpairment'
-        
+
         super().__init__(master, row, *args, **kwargs)
 
 class PreImpairment(LabeledControl):
     """impairment to use before audio goes into the channel"""
 
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = 'Pre Impairment :'
         self.MCtrl = ttk.Menubutton
         self.do_font_scaling = False
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
-        
+
         self.m_ctrl.configure(menu=self.menu)
-        
+
         try:
             impairments = QoEsim.get_impairment_names('audio')
         except Exception as e:
             show_error(e)
-        
+
         else:
             #add None to the list
             self.menu.add_command(label='None',
@@ -1901,35 +1901,35 @@ class PreImpairment(LabeledControl):
             for i in impairments:
                 self.menu.add_command(label=i,
                         command=tk._setit(self.btnvar, i))
-                        
-class PreImpairmentSettings(ImpairmentSettings):    
-    
+
+class PreImpairmentSettings(ImpairmentSettings):
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.impairment_name = 'PreImpairment'
-        
+
         super().__init__(master, row, *args, **kwargs)
 
 class PostImpairment(LabeledControl):
     """impairment to use after audio goes through the channel"""
 
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.text = 'Post Impairment :'
         self.MCtrl = ttk.Menubutton
         self.do_font_scaling = False
-        
+
         super().__init__(master, row, *args, **kwargs)
-        
+
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
-        
+
         self.m_ctrl.configure(menu=self.menu)
-        
+
         try:
             impairments = QoEsim.get_impairment_names('audio')
         except Exception as e:
             show_error(e)
-        
+
         else:
             #add None to the list
             self.menu.add_command(label='None',
@@ -1939,12 +1939,12 @@ class PostImpairment(LabeledControl):
                 self.menu.add_command(label=i,
                         command=tk._setit(self.btnvar, i))
 
-class PostImpairmentSettings(ImpairmentSettings):    
-    
+class PostImpairmentSettings(ImpairmentSettings):
+
     def __init__(self, master, row, *args, **kwargs):
-        
+
         self.impairment_name = 'PostImpairment'
-        
+
         super().__init__(master, row, *args, **kwargs)
 
 

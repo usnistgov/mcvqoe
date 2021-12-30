@@ -22,16 +22,16 @@ from .shared import ptt_gap, RadioCheck, SaveAudio
 class intell_est(MultiChoice):
     """Control when, and how, intelligibility and mouth to ear estimations are
         done.
-        
+
         During Test:
             Compute intelligibility estimation for audio at end of each trial
         After Test:
             Compute intelligibility on audio after test is complete
         Never:
             don't compute intelligibility for audio
-            
+
     """
-    
+
     text = 'Compute Intelligibility:'
     association = {'trial': 'During Test',
                    'aggregate': 'After Test',
