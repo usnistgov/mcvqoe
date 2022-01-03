@@ -161,7 +161,6 @@ def display_page(pathname):
     pathparts = pathname.split(';')
     test_type = pathparts[0]
     measurement = test_type[1:]
-    print(f'pathparts: {pathparts}')
     if len(pathparts) > 1:
         # We have data to load
         data_files_url = pathparts[1:]
