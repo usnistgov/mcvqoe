@@ -454,7 +454,16 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement in measurements:
+    if measurement == 'access':
+        children = [html.Div([
+                    html.Label('Talker Select'),
+                    dcc.Dropdown(
+                        id=f'{measurement}-talker-select',
+                        multi=True,
+                        )
+                    ], style=dropdown_style),
+                ]
+    elif measurement in measurements:
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -561,20 +570,20 @@ def radio_filters(measurement):
                         {'label': 'Relative to asymptotic', 'value': 'relative'},
                         {'label': 'Raw Intelligibility', 'value': 'intelligibility'},
                         ],
-                    value='message',
+                    value='relative',
                     labelStyle=radio_labels_style,
                     ),
                 ],
                 style=radio_button_style,
                 ),
             html.Div([
-                html.Label('X-axis'),
+                html.Label('Plot raw data points'),
                 dcc.RadioItems(
-                    id=f'{measurement}-x-axis',
-                    options = [{'label': 'Trial', 'value': 'index'},
-                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                    id=f'{measurement}-show-raw',
+                    options = [{'label': 'True', 'value': 'True'},
+                               {'label': 'False', 'value': 'False'},
                                ],
-                    value='index',
+                    value='True',
                     labelStyle=radio_labels_style,
                     ),
                 ],
@@ -658,7 +667,7 @@ def measurement_plots(measurement):
                 ], className='twelve columns'),
             # --------------[Intell Scatter Plot]------------
             html.Div([
-                dcc.Graph(id=f'{measurement}-scatter',
+                dcc.Graph(id=f'{measurement}-intell',
                           figure=blank_fig(),
                           ),
                 ], className='twelve columns'),

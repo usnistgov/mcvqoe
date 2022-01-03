@@ -66,9 +66,9 @@ def format_access_results(access_eval,
         res = {
             'Alpha': alpha,
             'Intelligibility': intell,
-            'Access Time': eval_shared.pretty_numbers(val, digits),
-            'Confidence Lower Bound': eval_shared.pretty_numbers(ci[0], digits),
-            'Confidence Upper Bound': eval_shared.pretty_numbers(ci[1], digits),
+            'Access Time [seconds]': eval_shared.pretty_numbers(val, digits),
+            'Confidence Lower Bound [seconds]': eval_shared.pretty_numbers(ci[0], digits),
+            'Confidence Upper Bound [seconds]': eval_shared.pretty_numbers(ci[1], digits),
             }
         results.append(res)
         
@@ -99,18 +99,16 @@ def format_access_results(access_eval,
     Output(f'{measurement}-measurement-results', 'children'),
     Output(f'{measurement}-measurement-formatting', 'children'),
     Output(f'{measurement}-plot', 'figure'),
-    Output(f'{measurement}-scatter', 'figure'),
+    Output(f'{measurement}-intell', 'figure'),
     Output(f'{measurement}-talker-select', 'options'),
-    Output(f'{measurement}-session-select', 'options'),
     Input(f'{measurement}-json-data', 'data'),
     Input(f'{measurement}-talker-select', 'value'),
-    Input(f'{measurement}-session-select', 'value'),
-    Input(f'{measurement}-x-axis', 'value'),
+    Input(f'{measurement}-show-raw', 'value'),
     Input(f'{measurement}-intell-type', 'value'),
     Input(f'{measurement}-alpha', 'value'),
     Input(f'{measurement}-measurement-digits', 'value'),
     )
-def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
+def update_plots(jsonified_data, talker_select, show_raw, intell_type,
                  alphas, meas_digits,):
     """
     Update all plots
@@ -138,17 +136,27 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
     if jsonified_data is not None:
         access_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
         # thinned = thin == 'True'
-        if x == 'index':
-            x = None
+        
+        if show_raw == 'True':
+            show_raw = True
+        elif show_raw == 'False':
+            show_raw = False
+
         if talker_select == []:
             talker_select = None
-        if session_select == []:
-            session_select = None
+
         
-        # TODO: Implement these
-        fig_scatter = eval_shared.blank_fig()
-        fig_plot = eval_shared.blank_fig()
-        # fig_plot = access_eval.plot()
+        
+        # fig_plot = eval_shared.blank_fig()
+        
+        if intell_type == 'intelligibility':
+            raw_intell = True
+        else:
+            raw_intell = False
+        fig_plot = access_eval.plot(raw_intell=raw_intell,
+                                    talkers=talker_select,
+                                    )
+        fig_intell = access_eval.plot_intell(talkers=talker_select, show_raw=show_raw)
         # fig_scatter = access_eval.plot_intelligibility(
         #     x=x,
         #     data=intell_type,
@@ -165,9 +173,6 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
         filenames = np.unique(access_eval.data['talker_word'])
         
         talker_options = [{'label': i, 'value': i} for i in filenames]
-        
-        sessions = access_eval.test_names
-        session_options = [{'label': i, 'value': i} for i in sessions]            
         
         if alphas != []:
             res = format_access_results(access_eval,
@@ -188,16 +193,14 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
         res_formatting = eval_shared.measurement_digits('none',
                                                         measurement=measurement)
         fig_plot = eval_shared.blank_fig()
-        fig_scatter = eval_shared.blank_fig()
+        fig_intell = eval_shared.blank_fig()
         talker_options = none_dropdown
-        session_options = none_dropdown
             # )
     return_vals = (
             res,
             res_formatting,
             fig_plot,
-            fig_scatter,
+            fig_intell,
             talker_options,
-            session_options
             )
     return return_vals
