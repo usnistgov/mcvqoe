@@ -3142,6 +3142,7 @@ class ProcessDataFrame(ttk.LabelFrame):
             message += 'No valid files selected'
 
         data_path = self.btnvars['data_path'].get()
+        # TODO: Make a dropdown for test type, autodetect if you can but let user select if they can
         selected_test = os.path.basename(os.path.dirname(os.path.dirname(data_path)))
 
         start_server = True

@@ -236,11 +236,15 @@ def find_cutpoints(fname, df, measurement):
             tw_search = tw_search_var.search(fname)
             if tw_search is None:
                 raise RuntimeError(f'Unable to determine talker word from filename {fname}')
+            
             # Get talker word identifier for cutpoitns
             talker_word_name = tw_search.group()
+            
             # Get talker word combo for storing
             talker, bw_index, word = tw_search.groups()
             talker_word = talker + ' ' +  word
+            
+            # Get matching cutpoitn file name from defaults
             cp_name = [x for x in default_files if talker_word_name in x]
             if len(cp_name) == 1:
                 cp_name = cp_name[0]
@@ -248,8 +252,14 @@ def find_cutpoints(fname, df, measurement):
                 # TODO: Figure out how to flag this for users
                 raise RuntimeError('Cannot find cuptpoints, say something to user')
             cp_path = os.path.join(default_audio_path, cp_name)
+            
+            # Load cutpoints file
             cp = pd.read_csv(cp_path)
+            
+            # Save in dict as json
             cps = {talker_word: cp.to_json()}
+            
+            # Extract session id from file name
             name = fname.replace('_' + talker_word_name, '')
             # TODO: fs hardcoded...not ideal
             fs = 48000
@@ -259,7 +269,9 @@ def find_cutpoints(fname, df, measurement):
             
             # Store PTT time relative to start of P1 
             df['time_to_P1'] = T - df['PTT_time']
+            # Store session name
             df['name'] = name
+            # Store talker word combo
             df['talker_word'] = talker_word
         # Store all measurement data and cutpoints for this session file
     
@@ -335,28 +347,37 @@ for measurement in measurements:
                         
                 
                 if measurement == 'access':
-                    
+                    # Initialize dataframe for storing all data
                     access_df = pd.DataFrame()
+                    # Initialize cutpoints dict
                     cps = dict()
                     for sesh, sesh_dict in out_json.items():
+                        # Load data frame
                         df = pd.read_json(sesh_dict['measurement'])
+                        # Add to main dataframe
                         access_df = access_df.append(df)
                         
-                        # cps = cps | sesh_dict['cutpoints']
+                        # Merge talker word cutpoints into main cutpoints dict
                         cps = {**cps, **sesh_dict['cutpoints']}
+                    
+                    # Make unique index for each trial
                     nrow, _ = access_df.shape
                     access_df.index = np.arange(nrow)
+                    
+                    # Make a dummy test_info (required by access.load_json just not super relevant here)
                     test_info = {'uploaded-access-data': {
                         'data_path': 'unknown-upload',
                         'data_file': list_of_names,
                         'cp_path': 'unknown-upload'
                         }
                                  }
+                    # Store in dictionary used by access.load_json()
                     prep_json = {
                         'measurement': access_df.to_json(),
                         'cps': cps,
                         'test_info': json.dumps(test_info)
                             }
+                    # Dump dict to json
                     final_json = json.dumps(prep_json)
                 else:
                     final_json = json.dumps(out_json)

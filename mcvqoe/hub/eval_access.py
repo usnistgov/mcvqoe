@@ -31,7 +31,7 @@ import mcvqoe.accesstime as access
 
 
 #-----------------------[Begin layout]---------------------------
-# TODO: Say something about common thinning fctor if data can't be thined
+# TODO: Figure out how to handle correction data (non-default)
 measurement = 'access'
 
 layout = eval_shared.layout_template(measurement)
@@ -54,10 +54,6 @@ def format_access_results(access_eval,
         DESCRIPTION.
 
     """
-    # TODO: Make these controllable at top
-    # thresholds = [0.5, 0.7]
-    # message_lengths = [1, 3, 5, 10]
-    # methods = ['EWC', 'AMI']
 
     results = []
     for alpha in alphas:
@@ -72,11 +68,7 @@ def format_access_results(access_eval,
             }
         results.append(res)
         
-    # df_res = pd.DataFrame(results)
-        
-    # access_v, access_ci = access_eval.eval(0.5, 3)
-    # pretty_mean = eval_shared.pretty_numbers(access_v, digits)
-    # pretty_ci = eval_shared.pretty_numbers(access_ci, digits)
+
     children = html.Div([
         dash_table.DataTable(
             columns=[{'name': i, 'id': i} for i in results[0].keys()],
@@ -84,13 +76,8 @@ def format_access_results(access_eval,
             page_action='native',
             page_size=12,
             )
-        # html.H6('Probability of successful delivery (scale of 0-1)'),
-        # html.Div(f'{pretty_mean}'),
-        # html.H6('95% Confidence Interval'),
-        # html.Div(f'{pretty_ci}')
         ],
         style=eval_shared.style_results,
-        # className='six columns',
         )
     return children
 
@@ -134,9 +121,10 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type,
     """
     
     if jsonified_data is not None:
+        # Initialize access eval object
         access_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-        # thinned = thin == 'True'
         
+        # Translate show_raw, talker_select, intell_type options
         if show_raw == 'True':
             show_raw = True
         elif show_raw == 'False':
@@ -144,36 +132,25 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type,
 
         if talker_select == []:
             talker_select = None
-
-        
-        
-        # fig_plot = eval_shared.blank_fig()
-        
+            
         if intell_type == 'intelligibility':
             raw_intell = True
         else:
             raw_intell = False
+        
+        # Make access plot
         fig_plot = access_eval.plot(raw_intell=raw_intell,
                                     talkers=talker_select,
                                     )
+        # Make intell plot
         fig_intell = access_eval.plot_intell(talkers=talker_select, show_raw=show_raw)
-        # fig_scatter = access_eval.plot_intelligibility(
-        #     x=x,
-        #     data=intell_type,
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
-        # fig_histogram = access_eval.histogram()
-        # fig_histogram = access_eval.histogram(
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
         
-        
+        # Get talker word combos
         filenames = np.unique(access_eval.data['talker_word'])
-        
+        # Initialize dropdown options
         talker_options = [{'label': i, 'value': i} for i in filenames]
         
+        # Format table results
         if alphas != []:
             res = format_access_results(access_eval,
                                       digits=meas_digits,
@@ -188,14 +165,14 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type,
         
     else:
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
-        # return_vals = (
+        
         res = html.Div('access object could not be processed.')
         res_formatting = eval_shared.measurement_digits('none',
                                                         measurement=measurement)
         fig_plot = eval_shared.blank_fig()
         fig_intell = eval_shared.blank_fig()
         talker_options = none_dropdown
-            # )
+        
     return_vals = (
             res,
             res_formatting,
