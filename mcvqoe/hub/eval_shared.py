@@ -93,9 +93,12 @@ def parse_contents(contents, filename):
     fname, ext = os.path.splitext(filename)
     try:
         if ext == '.csv':
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8'))
-                )
+            # Load in data in fpath
+            try:
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            except pd.errors.ParserError:
+                # If parsing failed, access data, skip 3 rows
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
                 
     except Exception as e:
         print(e)
@@ -173,7 +176,6 @@ def find_cutpoints(fname, df, measurement):
    
     # Construct wav folder path based off capture id
     wav_dir = os.path.join(data_dir, 'wav', session_id)
-    
     # Determine if wav directory exists
     if os.path.exists(wav_dir):        
         # Initialize cutpoints dictionary
@@ -222,7 +224,43 @@ def find_cutpoints(fname, df, measurement):
                 else:
                     # TODO: Figure out how to flag this for users
                     raise RuntimeError('Cannot find cutpoints, say something to user')
-                
+        if measurement == 'access':
+            print('Trying to find default cps for access')
+            # Get default audio sets and audio path
+            default_audio_path = access.measure.included_audio_path()
+            default_files = os.listdir(default_audio_path)
+            
+            # Extract talker word combo from file name
+            tw_search_str = r'([FM]\d)(_b\d{1,2}_w\d_)(\w+)(?:.csv)'
+            tw_search_var = re.compile(tw_search_str)
+            tw_search = tw_search_var.search(fname)
+            if tw_search is None:
+                raise RuntimeError(f'Unable to determine talker word from filename {fname}')
+            # Get talker word identifier for cutpoitns
+            talker_word_name = tw_search.group()
+            # Get talker word combo for storing
+            talker, bw_index, word = tw_search.groups()
+            talker_word = talker + ' ' +  word
+            cp_name = [x for x in default_files if talker_word_name in x]
+            if len(cp_name) == 1:
+                cp_name = cp_name[0]
+            else:
+                # TODO: Figure out how to flag this for users
+                raise RuntimeError('Cannot find cuptpoints, say something to user')
+            cp_path = os.path.join(default_audio_path, cp_name)
+            cp = pd.read_csv(cp_path)
+            cps = {talker_word: cp.to_json()}
+            name = fname.replace('_' + talker_word_name, '')
+            # TODO: fs hardcoded...not ideal
+            fs = 48000
+            
+            # Determine length of T from cutpoints
+            T = cp.loc[0]['End']/fs
+            
+            # Store PTT time relative to start of P1 
+            df['time_to_P1'] = T - df['PTT_time']
+            df['name'] = name
+            df['talker_word'] = talker_word
         # Store all measurement data and cutpoints for this session file
     
     out_json = {
@@ -264,6 +302,7 @@ for measurement in measurements:
             DESCRIPTION.
     
         """
+        # TODO: Add comments for this stuff
         if initial_data_flag == 'True':
             final_json = initial_data
             test_dict = json.loads(final_json)
@@ -280,7 +319,6 @@ for measurement in measurements:
                 children = []
                 dfs = []
                 # TODO: Figure out a better variable name/place to store this
-                
                 out_json = {}
                 for c, filename in zip(list_of_contents, list_of_names):
                     child, df = parse_contents(c, filename)
@@ -288,20 +326,40 @@ for measurement in measurements:
                     dfs.append(df)
                     
                     if measurement == 'psud':
-                        
                         out_json[filename] = find_cutpoints(filename, df, measurement)
-                        # TODO: Think working up to here...
+                        
                     elif measurement == 'access':
-                        # TODO: Do something here
-                        print('I need to handle ACCESS cutpoints here...')
+                        out_json[filename] = find_cutpoints(filename, df, measurement)
                     else:
                         out_json[filename] =  df.to_json()
                         
                 
-                # for filename, df in zip(list_of_names, dfs):
-                #     out_json[filename] = df.to_json()
+                if measurement == 'access':
                     
-                final_json = json.dumps(out_json)
+                    access_df = pd.DataFrame()
+                    cps = dict()
+                    for sesh, sesh_dict in out_json.items():
+                        df = pd.read_json(sesh_dict['measurement'])
+                        access_df = access_df.append(df)
+                        
+                        # cps = cps | sesh_dict['cutpoints']
+                        cps = {**cps, **sesh_dict['cutpoints']}
+                    nrow, _ = access_df.shape
+                    access_df.index = np.arange(nrow)
+                    test_info = {'uploaded-access-data': {
+                        'data_path': 'unknown-upload',
+                        'data_file': list_of_names,
+                        'cp_path': 'unknown-upload'
+                        }
+                                 }
+                    prep_json = {
+                        'measurement': access_df.to_json(),
+                        'cps': cps,
+                        'test_info': json.dumps(test_info)
+                            }
+                    final_json = json.dumps(prep_json)
+                else:
+                    final_json = json.dumps(out_json)
             else:
                 children = None
                 final_json = None
