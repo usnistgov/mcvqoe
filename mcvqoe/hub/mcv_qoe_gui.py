@@ -3132,7 +3132,7 @@ class ProcessDataFrame(ttk.LabelFrame):
             message += 'No files selected\n'
 
         # Strip away weird extra characters from file selection
-        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}.csv)')
+        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}(.*).csv)')
         search = capture_search.search(data_files_raw)
         if search is not None:
             data_files = search.group().split("', '")
