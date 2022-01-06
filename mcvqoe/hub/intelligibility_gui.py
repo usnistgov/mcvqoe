@@ -11,26 +11,27 @@ import tkinter.ttk as ttk
 
 from .shared import LabeledSlider, TestCfgFrame, SignalOverride, MultiChoice
 from .shared import advanced as shared_advanced
+from .shared import AdvancedConfigGUI
 
 #--------------------------Controls-------------------------------------------
 
-from .shared import trials, outdir, ptt_wait
+from .shared import BgNoise, trials, outdir, ptt_wait
 from .shared import ptt_gap, RadioCheck, SaveAudio
 
 
 class intell_est(MultiChoice):
     """Control when, and how, intelligibility and mouth to ear estimations are
         done.
-        
+
         During Test:
             Compute intelligibility estimation for audio at end of each trial
         After Test:
             Compute intelligibility on audio after test is complete
         Never:
             don't compute intelligibility for audio
-            
+
     """
-    
+
     text = 'Compute Intelligibility:'
     association = {'trial': 'During Test',
                    'aggregate': 'After Test',
@@ -53,6 +54,22 @@ N	RMS Deviation	Maximum Absolute Deviation	Estimated Test Time
 1200        0.000                  0.000	            131 minutes
 """
     __doc__ = trials.__doc__ + __doc__
+
+
+# -------------------- The advanced configuration frame -----------------------
+
+class IntellAdvancedConfigGUI(AdvancedConfigGUI):
+    text = 'Intelligibility - Advanced'
+
+    def get_controls(self):
+        return (
+            BgNoise,
+            )
+
+
+class advanced(shared_advanced):
+    toplevel = IntellAdvancedConfigGUI
+
 # ---------------------- The main configuration frame -------------------------
 
 class IgtibyFrame(TestCfgFrame):
@@ -66,6 +83,7 @@ class IgtibyFrame(TestCfgFrame):
             SaveAudio,
             RadioCheck,
             intell_est,
+            advanced,
             )
 
 # ---------------------- Extending the measure class --------------------------

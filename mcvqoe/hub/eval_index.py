@@ -173,7 +173,7 @@ def display_page(pathname):
         # We have data to load
         data_files_url = pathparts[1:]
         data_files = [urllib.request.url2pathname(x) for x in data_files_url]
-        if measurement == 'psud' or measurement == 'access':
+        if measurement in ['psud', 'access', 'accesstime']:
             cutpoints = True
         else:
             cutpoints = False
@@ -186,20 +186,20 @@ def display_page(pathname):
         layout = psud.layout
         update_page_data(layout, final_json, measurement)
     
-    elif test_type =='/m2e':
+    elif test_type in ['/m2e', '/mouth2ear']:
         layout = m2e.layout
         # Update relevant layout children
         update_page_data(layout, final_json, measurement)
                 
-    elif test_type == '/intell':
+    elif test_type in ['/intell', '/intelligibility']:
         layout = intell.layout
         update_page_data(layout, final_json, measurement)
         
-    elif test_type == '/access':
+    elif test_type in ['/access', '/accesstime']:
         layout = access.layout
         update_page_data(layout, final_json, measurement)
         
-    elif test_type == '/measurement_select' or test_type == '/':
+    elif test_type in ['/measurement_select', '/']:
         layout = measurement_select.layout
         
     elif test_type == '/shutdown':
