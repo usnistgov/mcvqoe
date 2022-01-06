@@ -81,6 +81,7 @@ def format_access_results(access_eval,
         )
     return children
 
+
 # --------------[Callback functions (order matters here!)]--------------------
 @app.callback(
     Output(f'{measurement}-measurement-results', 'children'),
@@ -121,63 +122,69 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type,
     """
     
     if jsonified_data is not None:
-        # Initialize access eval object
-        access_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
         
-        # Translate show_raw, talker_select, intell_type options
-        if show_raw == 'True':
-            show_raw = True
-        elif show_raw == 'False':
-            show_raw = False
-
-        if talker_select == []:
-            talker_select = None
+        try:
+            # Initialize access eval object
+            # access_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
+            json_data = json.loads(jsonified_data)
+            if 'error' in json_data:
+                error_out = '. '.join(json_data['error'])
+                raise RuntimeError(error_out)
+            else:
+                access_eval = access.evaluate(json_data=jsonified_data)
+            # Translate show_raw, talker_select, intell_type options
+            if show_raw == 'True':
+                show_raw = True
+            elif show_raw == 'False':
+                show_raw = False
+    
+            if talker_select == []:
+                talker_select = None
+                
+            if intell_type == 'intelligibility':
+                raw_intell = True
+            else:
+                raw_intell = False
             
-        if intell_type == 'intelligibility':
-            raw_intell = True
-        else:
-            raw_intell = False
+            # Make access plot
+            fig_plot = access_eval.plot(raw_intell=raw_intell,
+                                        talkers=talker_select,
+                                        )
+            # Make intell plot
+            fig_intell = access_eval.plot_intell(talkers=talker_select,
+                                                 show_raw=show_raw,
+                                                 )
+            
+            # Get talker word combos
+            filenames = np.unique(access_eval.data['talker_word'])
+            # Initialize dropdown options
+            talker_options = [{'label': i, 'value': i} for i in filenames]
+            
+            # Format table results
+            if alphas != []:
+                res = format_access_results(access_eval,
+                                          digits=meas_digits,
+                                          alphas=alphas,
+                                          )
+                res_formatting = eval_shared.measurement_digits('grid', meas_digits,
+                                                                measurement=measurement)
+            else:
+                res = html.Div('Invalid filters selected')
+                res_formatting = eval_shared.measurement_digits('none',
+                                                                measurement=measurement)
+            return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_intell,
+                talker_options,
+                )
+        except Exception as e:
+            print(e)
+            return_vals = eval_shared.failed_process(measurement, msg=e.args)
         
-        # Make access plot
-        fig_plot = access_eval.plot(raw_intell=raw_intell,
-                                    talkers=talker_select,
-                                    )
-        # Make intell plot
-        fig_intell = access_eval.plot_intell(talkers=talker_select, show_raw=show_raw)
-        
-        # Get talker word combos
-        filenames = np.unique(access_eval.data['talker_word'])
-        # Initialize dropdown options
-        talker_options = [{'label': i, 'value': i} for i in filenames]
-        
-        # Format table results
-        if alphas != []:
-            res = format_access_results(access_eval,
-                                      digits=meas_digits,
-                                      alphas=alphas,
-                                      )
-            res_formatting = eval_shared.measurement_digits('grid', meas_digits,
-                                                            measurement=measurement)
-        else:
-            res = html.Div('Invalid filters selected')
-            res_formatting = eval_shared.measurement_digits('none',
-                                                            measurement=measurement)
         
     else:
-        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
-        
-        res = html.Div('access object could not be processed.')
-        res_formatting = eval_shared.measurement_digits('none',
-                                                        measurement=measurement)
-        fig_plot = eval_shared.blank_fig()
-        fig_intell = eval_shared.blank_fig()
-        talker_options = none_dropdown
-        
-    return_vals = (
-            res,
-            res_formatting,
-            fig_plot,
-            fig_intell,
-            talker_options,
-            )
+        return_vals = eval_shared.failed_process(measurement, )
+    
     return return_vals

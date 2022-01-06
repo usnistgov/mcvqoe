@@ -153,6 +153,7 @@ def load_json_data(jsonified_data, measurement):
         
     return eval_obj
 
+# TODO: Make these leverage evaluate classes better, rather than redoing work...
 def find_cutpoints(fname, df, measurement):
     '''
     Try to find cutpoints based on fname.
@@ -319,68 +320,79 @@ for measurement in measurements:
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
-            if measurement == 'access':
+            if 'error' in test_dict:
+                filenames = test_dict['test_info']
+            elif measurement == 'access':    
                 filenames = json.loads(test_dict['test_info']).keys()
             else:
                 filenames = test_dict
+            
             for filename in filenames:
                 children.append(format_data_filename(filename))
         else:
             # TODO: Figure out what to do with cutpoints here...
             if list_of_contents is not None:
-                children = []
-                dfs = []
-                # TODO: Figure out a better variable name/place to store this
-                out_json = {}
-                for c, filename in zip(list_of_contents, list_of_names):
-                    child, df = parse_contents(c, filename)
-                    children.append(child)
-                    dfs.append(df)
-                    
-                    if measurement == 'psud':
-                        out_json[filename] = find_cutpoints(filename, df, measurement)
+                try:
+                    children = []
+                    dfs = []
+                    # TODO: Figure out a better variable name/place to store this
+                    out_json = {}
+                    for c, filename in zip(list_of_contents, list_of_names):
+                        child, df = parse_contents(c, filename)
+                        children.append(child)
+                        dfs.append(df)
                         
-                    elif measurement == 'access':
-                        out_json[filename] = find_cutpoints(filename, df, measurement)
-                    else:
-                        out_json[filename] =  df.to_json()
-                        
-                
-                if measurement == 'access':
-                    # Initialize dataframe for storing all data
-                    access_df = pd.DataFrame()
-                    # Initialize cutpoints dict
-                    cps = dict()
-                    for sesh, sesh_dict in out_json.items():
-                        # Load data frame
-                        df = pd.read_json(sesh_dict['measurement'])
-                        # Add to main dataframe
-                        access_df = access_df.append(df)
-                        
-                        # Merge talker word cutpoints into main cutpoints dict
-                        cps = {**cps, **sesh_dict['cutpoints']}
+                        if measurement == 'psud':
+                            out_json[filename] = find_cutpoints(filename, df, measurement)
+                            
+                        elif measurement == 'access':
+                            out_json[filename] = find_cutpoints(filename, df, measurement)
+                        else:
+                            out_json[filename] =  df.to_json()
+                            
                     
-                    # Make unique index for each trial
-                    nrow, _ = access_df.shape
-                    access_df.index = np.arange(nrow)
-                    
-                    # Make a dummy test_info (required by access.load_json just not super relevant here)
-                    test_info = {'uploaded-access-data': {
-                        'data_path': 'unknown-upload',
-                        'data_file': list_of_names,
-                        'cp_path': 'unknown-upload'
-                        }
-                                 }
-                    # Store in dictionary used by access.load_json()
-                    prep_json = {
-                        'measurement': access_df.to_json(),
-                        'cps': cps,
-                        'test_info': json.dumps(test_info)
+                    if measurement == 'access':
+                        # Initialize dataframe for storing all data
+                        access_df = pd.DataFrame()
+                        # Initialize cutpoints dict
+                        cps = dict()
+                        for sesh, sesh_dict in out_json.items():
+                            # Load data frame
+                            df = pd.read_json(sesh_dict['measurement'])
+                            # Add to main dataframe
+                            access_df = access_df.append(df)
+                            
+                            # Merge talker word cutpoints into main cutpoints dict
+                            cps = {**cps, **sesh_dict['cutpoints']}
+                        
+                        # Make unique index for each trial
+                        nrow, _ = access_df.shape
+                        access_df.index = np.arange(nrow)
+                        
+                        # Make a dummy test_info (required by access.load_json just not super relevant here)
+                        test_info = {'uploaded-access-data': {
+                            'data_path': 'unknown-upload',
+                            'data_file': list_of_names,
+                            'cp_path': 'unknown-upload'
                             }
-                    # Dump dict to json
-                    final_json = json.dumps(prep_json)
-                else:
-                    final_json = json.dumps(out_json)
+                                     }
+                        # Store in dictionary used by access.load_json()
+                        prep_json = {
+                            'measurement': access_df.to_json(),
+                            'cps': cps,
+                            'test_info': json.dumps(test_info)
+                                }
+                        # Dump dict to json
+                        final_json = json.dumps(prep_json)
+                    else:
+                        final_json = json.dumps(out_json)
+                except Exception as e:
+                    out_info = {'test_info': list_of_names,
+                            'error': e.args,
+                        }
+                    print(f'e.args: {e.args}')
+                    final_json = json.dumps(out_info)
+                    
             else:
                 children = None
                 final_json = None
@@ -845,3 +857,97 @@ def layout_template(measurement):
             ),
         ])
     return layout
+
+def failed_process(measurement, msg=('', )):
+    if measurement == 'access':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        
+        default_msg = ('Access object could not be processed.\n', )
+        if msg[0] == 'Optimal parameters not found: Number of calls to function has reached maxfev = 600.':
+            debug_help = ('This measurement is invalid. Try rerunning the test with a smaller Time Increase per Step to increase resolution.', )
+        else:
+            debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                            measurement=measurement,
+                                            )
+        fig_plot = blank_fig()
+        fig_intell = blank_fig()
+        talker_options = none_dropdown
+        
+        return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_intell,
+                talker_options,
+                )
+    elif measurement == 'm2e':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        default_msg = ('Mouth-to-ear latency object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    elif measurement == 'psud':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        default_msg = ('PSuD object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_plot = blank_fig()
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    elif measurement == 'intell':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        default_msg = ('Intelligibility object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(default_msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    return return_vals

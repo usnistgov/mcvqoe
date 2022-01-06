@@ -76,8 +76,16 @@ def format_data(fpaths, cutpoint, measurement):
     out_json = {}
     
     if measurement == 'access':
-        acc_obj = mcvqoe.accesstime.evaluate(fpaths)
-        final_json = acc_obj.to_json()
+        try:
+            acc_obj = mcvqoe.accesstime.evaluate(fpaths)
+            final_json = acc_obj.to_json()
+        except RuntimeError as e:
+            # Store information for later error handling
+            out_info = {'test_info': fpaths,    
+                        'error': e.args,
+                    }
+            final_json = json.dumps(out_info)
+        
     else:
         # TODO: Make the rest of this behave like access does
         for fpath in fpaths:
