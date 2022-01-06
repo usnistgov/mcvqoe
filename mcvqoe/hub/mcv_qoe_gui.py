@@ -1130,8 +1130,8 @@ class MCVQoEGui(tk.Tk):
                 back_btn = lambda : self.set_step(extra)
                 back_btn_txt = 'Ok'
             else:
-                back_btn = None
-                back_btn_txt = None
+                back_btn = lambda : self.set_step('empty')
+                back_btn_txt = 'Back'
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -2588,8 +2588,26 @@ class ReprocessFrame(ttk.Labelframe):
             tk.messagebox.showinfo(title='Success!',message='Data reprocessed '
                                         f'to \'{out_name}\'.')
 
-        finally:
+            #get post processing frame
+            ppf = loader.tk_main.win.frames['PostProcessingFrame']
+            #store name of output file
+            ppf.last_test = out_name
+            #get module parts
+            mod_parts = process_obj.__module__.split('.')
+
+            if not mod_parts[0] == 'mcvqoe':
+                raise RuntimeError("Unable to determine measurement from module"
+                                    f"'{process_obj.__module__}'")
+            #set test type
+            ppf.reprocess_type = mod_parts[1]
+            #go to post processing frame
+            loader.tk_main.win.set_step('post-process')
+        except:
+            #go back to reprocess
             loader.tk_main.win.set_step('reprocess')
+            #re-raise the exception
+            raise
+
 
     def get_file(self):
         initial = self.btnvars['datafile'].get()
@@ -3402,6 +3420,8 @@ class PostProcessingFrame(ttk.Frame):
             test_type = 'psud'
         elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
+        elif selected_test == 'ReprocessFrame':
+            test_type = self.reprocess_type
         else:
             # TODO: Do something here?
             print('uh oh')
