@@ -215,6 +215,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
 
     """
     text = ''
+    use_scrollbar = False
 
     def __init__(self, master, btnvars, *args, **kwargs):
 
@@ -225,16 +226,21 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         #as soon as possible (after app starts) show again
         self.after(0,self.deiconify)
 
-        self.scroll_frame = ScrollableFrame(master=self)
-        self.bot_frame = ttk.Frame(master=self)
+        if self.use_scrollbar:
+            self.scroll_frame = ScrollableFrame(master=self)
+            self.bot_frame = ttk.Frame(master=self)
 
-        self.scroll_frame.pack(anchor=tk.N, fill=tk.BOTH, expand=True, side=tk.TOP)
+            self.scroll_frame.pack(anchor=tk.N, fill=tk.BOTH, expand=True,
+                                        side=tk.TOP)
+            self.bot_frame.pack(anchor=tk.S, fill=tk.X, side=tk.TOP)
 
-        self.bot_frame.pack(anchor=tk.S, fill=tk.X, side=tk.TOP)
-
-        # keeps track of tcl variable traces for later destruction
-        # this prevents some errors in the simulation settings window.
-        self.scroll_frame.traces_ = []
+            # keeps track of tcl variable traces for later destruction
+            # this prevents some errors in the simulation settings window.
+            self.scroll_frame.traces_ = []
+        else:
+            # keeps track of tcl variable traces for later destruction
+            # this prevents some errors in the simulation settings window.
+            self.traces_ = []
 
         # sets its title based on class variable 'text'
         self.title(self.text)
@@ -242,9 +248,11 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         #sets the controls in this window
         control_classes = list(self.get_controls())
 
-        self.scroll_frame.btnvars = btnvars
         self.btnvars = btnvars
-        self.bot_frame.btnvars = btnvars
+
+        if self.use_scrollbar:
+            self.scroll_frame.btnvars = btnvars
+            self.bot_frame.btnvars = btnvars
 
         # take keyboard focus
         self.focus_force()
@@ -252,19 +260,29 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         add_mcv_icon(self)
 
         self.controls = master.controls
-        self.scroll_frame.controls = self.controls
+        if self.use_scrollbar:
+            self.scroll_frame.controls = self.controls
 
-        # include the OK button to close the window
-        c = _advanced_submit(master=self.bot_frame, row=0)
-        c.action = self.destroy
-        self.controls[c.__class__.__name__] = c
+            #what to add the controls to
+            container = self.scroll_frame
+
+            # include the OK button to close the window
+            c = _advanced_submit(master=self.bot_frame, row=0)
+            c.action = self.destroy
+            self.controls[c.__class__.__name__] = c
+        else:
+            # include the OK button to close the window
+            control_classes.append(_advanced_submit)
+
+            #what to add the controls to
+            container = self
 
         #initializes controls
         for row in range(len(control_classes)):
-            c = control_classes[row](master=self.scroll_frame, row=row)
+            c = control_classes[row](master=container, row=row)
 
             # stores controls with their keys being their parameter names
-            self.scroll_frame.controls[c.__class__.__name__] = c
+            container.controls[c.__class__.__name__] = c
 
 
 
@@ -283,8 +301,13 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     def destroy(self):
         super().destroy()
 
+        if self.use_scrollbar:
+            container = self.scroll_frame
+        else:
+            container = self
+
         # remove tcl variable traces (prevents errors in simulation settings)
-        for var, trace_id in self.scroll_frame.traces_:
+        for var, trace_id in container.traces_:
             var.trace_remove('write', trace_id)
 
 class DescriptionBlock:
@@ -1512,6 +1535,8 @@ class SimSettings(AdvancedConfigGUI):
 
 
     text = 'Simulation Settings'
+
+    use_scrollbar = True
 
     # used for _restore_defaults button
     prototype = _SimPrototype
