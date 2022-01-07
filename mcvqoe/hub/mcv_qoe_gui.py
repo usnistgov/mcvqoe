@@ -3902,7 +3902,7 @@ def run(root_cfg):
                 cfg['dev_dly'] = float(cfg['dev_dly'])
             except ValueError:
                 #set device delay based on sim settings
-                cfg['dev_dly'] = ap.device_delay
+                cfg['dev_dly'] = float(ap.device_delay)
 
         #--------------------------- Recovery ---------------------------------
         if sel_tst == accesstime:
@@ -4402,6 +4402,17 @@ class RandomDelay:
     def __call__(self):
         f_rand = getattr(self._rng, self.distribution)
         return f_rand(*self.args, **self.kwargs)
+    def get_expected(self):
+        """
+        Get the expected value for the chosen distribution
+        """
+        #TODO : make this better...
+        return self.kwargs["loc"]
+    #convert to int and float as the expected value
+    def __float__(self):
+        return float(self.get_expected())
+    def __int__(self):
+        return int(self.get_expected())
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
