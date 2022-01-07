@@ -4484,6 +4484,24 @@ def get_interfaces(root_cfg):
                                               scale=acc_sigma
                                               )
 
+
+    # check device delay type
+    if sim_cfg['device_delay_type'] == 'constant':
+        sim_cfg['device_delay_delay'] = float(sim_cfg['device_delay_delay'])
+    else:
+        #access delay is using random values
+
+        #TODO : get different values for different distributions
+        val  = float(sim_cfg['device_delay'])
+        sigma  = float(sim_cfg['device_delay_sigma'])
+
+        #set to random delay
+        sim_cfg['device_delay'] = RandomDelay(
+                                              sim_cfg['device_delay_type'].lower(),
+                                              loc=val,
+                                              scale=sigma
+                                              )
+
     #------------------------- set channels -----------------------------------
 
     if sel_tst in (accesstime,):
