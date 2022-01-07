@@ -284,14 +284,39 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
             # stores controls with their keys being their parameter names
             container.controls[c.__class__.__name__] = c
 
+        if self.use_scrollbar:
+            #update things so winfo_width returns good values
+            self.scroll_frame.canvas.update_idletasks()
+            self.bot_frame.update_idletasks()
+            self.bot_frame.update()
 
+            #get scroll region of the canvas, this is the size of the things in it
+            scroll_region = self.scroll_frame.canvas.cget('scrollregion').split()
 
+            #compute size of things in the canvas
+            cwidth = int(scroll_region[2]) - int(scroll_region[0])
+            cheight = int(scroll_region[3]) - int(scroll_region[1])
+
+            #get width of scrollbar
+            bar_width = self.scroll_frame.scrollbar.winfo_width()
+
+            #get width of the bottom frame
+            bot_height = self.bot_frame.winfo_height()
+
+            width = int(cwidth*1.1) + bar_width
+
+            height = cheight + int(bot_height*1.1)
+
+            #get the height of the screen
+            sheight = self.winfo_screenheight()
+
+            #limit maximum height to 80% screen height
+            height = min(height, int(sheight*0.8))
+
+            self.geometry(f"{width}x{height}")
 
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
-
-
-
 
 
 
