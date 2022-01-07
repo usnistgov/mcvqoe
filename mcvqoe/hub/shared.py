@@ -1394,7 +1394,10 @@ class dev_dly(LabeledNumber):
 
 
     def on_button(self):
-        CharDevDly()
+        if _get_master(self, tk.Tk).is_simulation.get():
+            self.btnvar.set("automatic")
+        else:
+            CharDevDly()
 
 
 

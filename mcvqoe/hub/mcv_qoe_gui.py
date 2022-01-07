@@ -3895,6 +3895,15 @@ def run(root_cfg):
             'get_post_notes',
         )
 
+        #---------------------- Set Device delay for Sims ----------------------
+        if 'dev_dly' in cfg and is_sim:
+            #try to use value from config
+            try:
+                cfg['dev_dly'] = float(cfg['dev_dly'])
+            except ValueError:
+                #set device delay based on sim settings
+                cfg['dev_dly'] = ap.device_delay
+
         #--------------------------- Recovery ---------------------------------
         if sel_tst == accesstime:
             #if the program closes between now and end of function,
@@ -4236,7 +4245,7 @@ def param_modify(root_cfg):
 
 
     # device delay should be either entered manually or characterized.
-    if 'dev_dly' in cfg:
+    if 'dev_dly' in cfg and not is_sim:
 
         bad = False
 
