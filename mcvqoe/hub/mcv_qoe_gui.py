@@ -4475,13 +4475,13 @@ def get_interfaces(root_cfg):
 
         #TODO : get different values for different distributions
         acc_val  = float(sim_cfg['access_delay'])
-        acc_sigma  = float(sim_cfg['access_delay'])
+        acc_sigma  = float(sim_cfg['access_delay_sigma'])
 
         #set to random delay
         sim_cfg['access_delay'] = RandomDelay(
                                               sim_cfg['access_delay_type'].lower(),
-                                              loc=m2e_val,
-                                              scale=m2e_sigma
+                                              loc=acc_val,
+                                              scale=acc_sigma
                                               )
 
     #------------------------- set channels -----------------------------------
