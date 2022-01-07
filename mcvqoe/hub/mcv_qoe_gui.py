@@ -2600,6 +2600,8 @@ class ReprocessFrame(ttk.Labelframe):
                                     f"'{process_obj.__module__}'")
             #set test type
             ppf.reprocess_type = mod_parts[1]
+            #set outdir in post processing frame
+            ppf.outdir = path.dirname(path.dirname(path.dirname(out_name)))
             #go to post processing frame
             loader.tk_main.win.set_step('post-process')
         except:
