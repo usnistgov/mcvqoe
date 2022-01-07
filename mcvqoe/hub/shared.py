@@ -217,6 +217,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
 
     """
     text = ''
+    use_scrollbar = False
 
     def __init__(self, master, btnvars, *args, **kwargs):
 
@@ -227,9 +228,21 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         #as soon as possible (after app starts) show again
         self.after(0,self.deiconify)
 
-        # keeps track of tcl variable traces for later destruction
-        # this prevents some errors in the simulation settings window.
-        self.traces_ = []
+        if self.use_scrollbar:
+            self.scroll_frame = ScrollableFrame(master=self)
+            self.bot_frame = ttk.Frame(master=self)
+
+            self.scroll_frame.pack(anchor=tk.N, fill=tk.BOTH, expand=True,
+                                        side=tk.TOP)
+            self.bot_frame.pack(anchor=tk.S, fill=tk.X, side=tk.TOP)
+
+            # keeps track of tcl variable traces for later destruction
+            # this prevents some errors in the simulation settings window.
+            self.scroll_frame.traces_ = []
+        else:
+            # keeps track of tcl variable traces for later destruction
+            # this prevents some errors in the simulation settings window.
+            self.traces_ = []
 
         # sets its title based on class variable 'text'
         self.title(self.text)
@@ -237,10 +250,11 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         #sets the controls in this window
         control_classes = list(self.get_controls())
 
-        # include the OK button to close the window
-        control_classes.append(_advanced_submit)
-
         self.btnvars = btnvars
+
+        if self.use_scrollbar:
+            self.scroll_frame.btnvars = btnvars
+            self.bot_frame.btnvars = btnvars
 
         # take keyboard focus
         self.focus_force()
@@ -248,21 +262,63 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         add_mcv_icon(self)
 
         self.controls = master.controls
+        if self.use_scrollbar:
+            self.scroll_frame.controls = self.controls
+
+            #what to add the controls to
+            container = self.scroll_frame
+
+            # include the OK button to close the window
+            c = _advanced_submit(master=self.bot_frame, row=0)
+            c.action = self.destroy
+            self.controls[c.__class__.__name__] = c
+        else:
+            # include the OK button to close the window
+            control_classes.append(_advanced_submit)
+
+            #what to add the controls to
+            container = self
+
         #initializes controls
         for row in range(len(control_classes)):
-            c = control_classes[row](master=self, row=row)
+            c = control_classes[row](master=container, row=row)
 
             # stores controls with their keys being their parameter names
-            self.controls[c.__class__.__name__] = c
+            container.controls[c.__class__.__name__] = c
 
+        if self.use_scrollbar:
+            #update things so winfo_width returns good values
+            self.scroll_frame.canvas.update_idletasks()
+            self.bot_frame.update_idletasks()
+            self.bot_frame.update()
 
+            #get scroll region of the canvas, this is the size of the things in it
+            scroll_region = self.scroll_frame.canvas.cget('scrollregion').split()
 
+            #compute size of things in the canvas
+            cwidth = int(scroll_region[2]) - int(scroll_region[0])
+            cheight = int(scroll_region[3]) - int(scroll_region[1])
+
+            #get width of scrollbar
+            bar_width = self.scroll_frame.scrollbar.winfo_width()
+
+            #get width of the bottom frame
+            bot_height = self.bot_frame.winfo_height()
+
+            width = int(cwidth*1.1) + bar_width
+
+            height = cheight + int(bot_height*1.1)
+
+            #get the height of the screen
+            sheight = self.winfo_screenheight()
+
+            #limit maximum height to 80% screen height
+            height = min(height, int(sheight*0.8))
+
+            self.geometry(f"{width}x{height}")
 
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
-
-
-
 
 
 
@@ -272,8 +328,13 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     def destroy(self):
         super().destroy()
 
+        if self.use_scrollbar:
+            container = self.scroll_frame
+        else:
+            container = self
+
         # remove tcl variable traces (prevents errors in simulation settings)
-        for var, trace_id in self.traces_:
+        for var, trace_id in container.traces_:
             var.trace_remove('write', trace_id)
 
 class DescriptionBlock:
@@ -1262,11 +1323,13 @@ class bgnoise_file(EntryWithButton):
 
 
 
-class bgnoise_volume(LabeledSlider):
-    """Scale factor for background
-    noise."""
+class bgnoise_snr(LabeledNumber):
+    """Signal to noise ratio for voice vs noise file."""
 
-    text = 'Volume:'
+    text = 'SNR:'
+    min_ = -5
+    max_ = 120
+    increment = 0.1
 
 class ptt_wait(LabeledNumber):
     """The amount of time to wait, in seconds, between pushing the
@@ -1296,7 +1359,10 @@ class _advanced_submit(advanced):
     button_text = 'OK'
 
     def on_button(self):
-        self.master.destroy()
+        if not hasattr(self, 'action'):
+            self.master.destroy()
+        else:
+            self.action()
 
 
 # advanced groups
@@ -1306,7 +1372,7 @@ class BgNoise(SubCfgFrame):
 
     def get_controls(self):
         return (bgnoise_file,
-                bgnoise_volume)
+                bgnoise_snr)
 
 
 
@@ -1330,7 +1396,10 @@ class dev_dly(LabeledNumber):
 
 
     def on_button(self):
-        CharDevDly()
+        if _get_master(self, tk.Tk).is_simulation.get():
+            self.btnvar.set("automatic")
+        else:
+            CharDevDly()
 
 
 
@@ -1496,6 +1565,8 @@ class SimSettings(AdvancedConfigGUI):
 
 
     text = 'Simulation Settings'
+
+    use_scrollbar = True
 
     # used for _restore_defaults button
     prototype = _SimPrototype
@@ -2040,30 +2111,10 @@ class device_delay_range(RangeDisplay):
             #ignore value errors (partially entered number)
             pass
 
-class rec_snr(LabeledControl):
-    """Signal to noise ratio for audio channel."""
-    text = 'Channel SNR:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':1.0}
-
-
-class PTT_sig_freq(LabeledControl):
-    """Frequency of the PTT signal from the play_record method."""
-    text = 'PTT Signal Frequency:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
-
-class PTT_sig_aplitude(LabeledControl):
-    """Amplitude of the PTT signal from the play_record method."""
-    text = 'PTT Signal Amplitude:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
-
 
 class ImpairmentSettings(SubCfgFrame):
 
     def __init__(self, master, row, *args, **kwargs):
-
 
         self.text = ''
 

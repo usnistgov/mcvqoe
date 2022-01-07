@@ -1130,8 +1130,8 @@ class MCVQoEGui(tk.Tk):
                 back_btn = lambda : self.set_step(extra)
                 back_btn_txt = 'Ok'
             else:
-                back_btn = None
-                back_btn_txt = None
+                back_btn = lambda : self.set_step('empty')
+                back_btn_txt = 'Back'
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -2588,8 +2588,26 @@ class ReprocessFrame(ttk.Labelframe):
             tk.messagebox.showinfo(title='Success!',message='Data reprocessed '
                                         f'to \'{out_name}\'.')
 
-        finally:
+            #get post processing frame
+            ppf = loader.tk_main.win.frames['PostProcessingFrame']
+            #store name of output file
+            ppf.last_test = out_name
+            #get module parts
+            mod_parts = process_obj.__module__.split('.')
+
+            if not mod_parts[0] == 'mcvqoe':
+                raise RuntimeError("Unable to determine measurement from module"
+                                    f"'{process_obj.__module__}'")
+            #set test type
+            ppf.reprocess_type = mod_parts[1]
+            #go to post processing frame
+            loader.tk_main.win.set_step('post-process')
+        except:
+            #go back to reprocess
             loader.tk_main.win.set_step('reprocess')
+            #re-raise the exception
+            raise
+
 
     def get_file(self):
         initial = self.btnvars['datafile'].get()
@@ -3402,6 +3420,8 @@ class PostProcessingFrame(ttk.Frame):
             test_type = 'psud'
         elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
+        elif selected_test == 'ReprocessFrame':
+            test_type = self.reprocess_type
         else:
             # TODO: Do something here?
             print('uh oh')
@@ -3534,7 +3554,7 @@ class ProcessDataFrame(ttk.LabelFrame):
             message += 'No files selected\n'
 
         # Strip away weird extra characters from file selection
-        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}.csv)')
+        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}(.*).csv)')
         search = capture_search.search(data_files_raw)
         if search is not None:
             data_files = search.group().split("', '")
@@ -3544,6 +3564,7 @@ class ProcessDataFrame(ttk.LabelFrame):
             message += 'No valid files selected'
 
         data_path = self.btnvars['data_path'].get()
+        # TODO: Make a dropdown for test type, autodetect if you can but let user select if they can
         selected_test = os.path.basename(os.path.dirname(os.path.dirname(data_path)))
 
         start_server = True
@@ -3873,6 +3894,15 @@ def run(root_cfg):
             'progress_update',
             'get_post_notes',
         )
+
+        #---------------------- Set Device delay for Sims ----------------------
+        if 'dev_dly' in cfg and is_sim:
+            #try to use value from config
+            try:
+                cfg['dev_dly'] = float(cfg['dev_dly'])
+            except ValueError:
+                #set device delay based on sim settings
+                cfg['dev_dly'] = ap.device_delay
 
         #--------------------------- Recovery ---------------------------------
         if sel_tst == accesstime:
@@ -4215,7 +4245,7 @@ def param_modify(root_cfg):
 
 
     # device delay should be either entered manually or characterized.
-    if 'dev_dly' in cfg:
+    if 'dev_dly' in cfg and not is_sim:
 
         bad = False
 
@@ -4717,7 +4747,7 @@ def load_defaults():
             'audio_files',
             'audio_path',
             'bgnoise_file',
-            'bgnoise_volume',
+            'bgnoise_snr',
             'outdir',
             'ptt_wait',
             'ptt_gap',
@@ -4731,7 +4761,7 @@ def load_defaults():
             'audio_files',
             'audio_path',
             'bgnoise_file',
-            'bgnoise_volume',
+            'bgnoise_snr',
             'outdir',
             'ptt_wait',
             'ptt_gap',
@@ -4749,7 +4779,7 @@ def load_defaults():
             'audio_path',
             'auto_stop',
             'bgnoise_file',
-            'bgnoise_volume',
+            'bgnoise_snr',
             'data_file',
             'outdir',
             'ptt_gap',
@@ -4789,6 +4819,8 @@ def load_defaults():
             'intell_est',
             'save_tx_audio',
             'save_audio',
+            'bgnoise_file',
+            'bgnoise_snr',
         ],
 
         'SimSettings': [
