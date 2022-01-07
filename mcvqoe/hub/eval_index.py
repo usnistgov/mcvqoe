@@ -27,6 +27,7 @@ import mcvqoe.hub.eval_measurement_select as measurement_select
 import mcvqoe.hub.eval_m2e as m2e
 import mcvqoe.hub.eval_psud as psud
 import mcvqoe.hub.eval_access as access
+import mcvqoe.hub.eval_tvo as tvo
 
 import mcvqoe.accesstime
 
@@ -85,6 +86,16 @@ def format_data(fpaths, cutpoint, measurement):
                         'error': e.args,
                     }
             final_json = json.dumps(out_info)
+    elif measurement == 'tvo':
+        try:
+            tvo_obj = mcvqoe.tvo.evaluate(fpaths)
+            final_json = tvo_obj.to_json()
+        except RuntimeError as e:
+            # Store information for later error handling
+            out_info = {'test_info': fpaths,    
+                        'error': e.args,
+                    }
+            final_json = json.dumps(out_info)    
         
     else:
         # TODO: Make the rest of this behave like access does
@@ -197,6 +208,10 @@ def display_page(pathname):
         
     elif test_type in ['/access', '/accesstime']:
         layout = access.layout
+        update_page_data(layout, final_json, measurement)
+    
+    elif test_type in ['/tvo', ]:
+        layout = tvo.layout
         update_page_data(layout, final_json, measurement)
         
     elif test_type in ['/measurement_select', '/']:

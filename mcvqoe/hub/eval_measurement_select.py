@@ -37,6 +37,11 @@ layout = html.Div([
              ),
     html.Br(),
     
+    dcc.Link('Transmit Volume Optimization', href='/tvo',
+             style=eval_shared.style_links,
+             ),
+    html.Br(),
+    
     html.Hr(),
     dcc.Link('Shutdown', href='shutdown',
              style=eval_shared.style_links,

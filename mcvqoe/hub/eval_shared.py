@@ -25,12 +25,14 @@ import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
 import mcvqoe.psud as psud
 import mcvqoe.accesstime as access
+import mcvqoe.tvo as tvo
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
     'intell',
     'psud',
     'access',
+    'tvo',
     ]
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#edeef0'
@@ -59,6 +61,8 @@ def mcv_headers(measurement):
         full_meas = 'Speech intelligibility'
     elif measurement == 'access':
         full_meas = 'Access delay'
+    elif measurement == 'tvo':
+        full_meas = 'Transmit volume optimization'
     else:
         full_meas = 'Undefined measurement'
             
@@ -69,7 +73,7 @@ def mcv_headers(measurement):
         ]
     return children
 #---------------[Parsing Data]----------------------------
-def parse_contents(contents, filename):
+def parse_contents(contents, filename, measurement):
     """
     Parse contents of uploaded data
 
@@ -94,11 +98,26 @@ def parse_contents(contents, filename):
     try:
         if ext == '.csv':
             # Load in data in fpath
-            try:
-                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-            except pd.errors.ParserError:
-                # If parsing failed, access data, skip 3 rows
+            if measurement == 'access':
                 df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
+                
+            elif measurement == 'tvo':
+                
+                df_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')),
+                                      skiprows=2,
+                                      )
+                df_data['name'] = fname
+                df_opt = pd.read_csv(io.StringIO(decoded.decode('utf-8')),
+                                     nrows=1,
+                                     )
+                df = (df_opt, df_data)
+            else:
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            # try:
+            #     df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            # except pd.errors.ParserError:
+            #     # If parsing failed, access data, skip 3 rows
+            #     df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
                 
     except Exception as e:
         print(e)
@@ -131,6 +150,8 @@ def load_json_data(jsonified_data, measurement):
         eval_obj = psud.evaluate(json_data=jsonified_data)
     elif measurement == 'access':
         eval_obj = access.evaluate(json_data=jsonified_data)
+    elif measurement == 'tvo':
+        eval_obj = tvo.evaluate(json_data=jsonified_data)
     else:
         with tempfile.TemporaryDirectory() as tmpdirname:
             # Initialize tmpdir
@@ -324,6 +345,8 @@ for measurement in measurements:
                 filenames = test_dict['test_info']
             elif measurement == 'access':    
                 filenames = json.loads(test_dict['test_info']).keys()
+            elif measurement == 'tvo':
+                filenames = [test_dict['test_name']]
             else:
                 filenames = test_dict
             
@@ -337,8 +360,10 @@ for measurement in measurements:
                     dfs = []
                     # TODO: Figure out a better variable name/place to store this
                     out_json = {}
+                    if measurement == 'tvo' and len(list_of_names) > 1:
+                        raise ValueError('Cannot process more than one TVO csv at a time')
                     for c, filename in zip(list_of_contents, list_of_names):
-                        child, df = parse_contents(c, filename)
+                        child, df = parse_contents(c, filename, measurement)
                         children.append(child)
                         dfs.append(df)
                         
@@ -347,6 +372,14 @@ for measurement in measurements:
                             
                         elif measurement == 'access':
                             out_json[filename] = find_cutpoints(filename, df, measurement)
+                        elif measurement == 'tvo':
+                            opt = df[0]
+                            data = df[1]
+                            out_json = {
+                                'data': data.to_json(),
+                                'optimal': opt.to_json(),
+                                }
+                            
                         else:
                             out_json[filename] =  df.to_json()
                             
@@ -390,7 +423,7 @@ for measurement in measurements:
                     out_info = {'test_info': list_of_names,
                             'error': e.args,
                         }
-                    print(f'e.args: {e.args}')
+                    print(f'e.args: {e.args}\ntest_info: {list_of_names}')
                     final_json = json.dumps(out_info)
                     
             else:
@@ -681,6 +714,23 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'tvo':
+        children = [
+            html.Div([
+                html.Label('X-axis'),
+                dcc.RadioItems(
+                    id=f'{measurement}-x-axis',
+                    options = [{'label': 'Volume', 'value': 'Volume'},
+                               {'label': 'Trial', 'value': 'index'},
+                               {'label': 'Timestamp', 'value': 'Timestamp'},
+                               ],
+                    value='Volume',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -759,6 +809,14 @@ def measurement_plots(measurement):
             # --------------[Intell Scatter Plot]------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-intell',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            ]
+    elif measurement == 'tvo':
+        children = [
+            html.Div([
+                dcc.Graph(id=f'{measurement}-plot',
                           figure=blank_fig(),
                           ),
                 ], className='twelve columns'),
@@ -890,7 +948,7 @@ def failed_process(measurement, msg=('', )):
         msg = default_msg + msg + debug_help
         res = html.Div(msg)
         res_formatting = measurement_digits('none',
-                                                        measurement=measurement)
+                                            measurement=measurement)
         fig_scatter = blank_fig()
         fig_histogram = blank_fig()
         talker_options = none_dropdown
@@ -912,7 +970,7 @@ def failed_process(measurement, msg=('', )):
         msg = default_msg + msg + debug_help
         res = html.Div(msg)
         res_formatting = measurement_digits('none',
-                                                        measurement=measurement)
+                                            measurement=measurement)
         fig_plot = blank_fig()
         fig_scatter = blank_fig()
         fig_histogram = blank_fig()
@@ -934,9 +992,9 @@ def failed_process(measurement, msg=('', )):
         default_msg = ('Intelligibility object could not be processed.\n', )
         debug_help = ('', )
         msg = default_msg + msg + debug_help
-        res = html.Div(default_msg)
+        res = html.Div(msg)
         res_formatting = measurement_digits('none',
-                                                        measurement=measurement)
+                                            measurement=measurement)
         fig_scatter = blank_fig()
         fig_histogram = blank_fig()
         talker_options = none_dropdown
@@ -947,6 +1005,26 @@ def failed_process(measurement, msg=('', )):
                 res_formatting,
                 fig_scatter,
                 fig_histogram,
+                talker_options,
+                session_options
+                )
+    elif measurement == 'tvo':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        default_msg = ('TVO object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                            measurement=measurement)
+        fig_plot = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
                 talker_options,
                 session_options
                 )
