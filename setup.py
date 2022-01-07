@@ -34,10 +34,9 @@ setuptools.setup(
         'dash',
         'flask',
         'plotly',
+        'requests',
+        'pillow',
     ],
-    extras_require={
-        'plots': ['PyQt5'],
-    },
     entry_points={
         'gui_scripts':[
             'mcvqoe=mcvqoe.hub.mcv_qoe_gui:main',

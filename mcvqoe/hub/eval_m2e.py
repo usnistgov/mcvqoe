@@ -98,58 +98,58 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
     """
     
     if jsonified_data is not None:
-    
-        m2e_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-        
-        thinned = thin == 'True'
-        if x == 'index':
-            x = None
-        if talker_select == []:
-            talker_select = None
-        if session_select == []:
-            session_select = None
-        
-        fig_scatter = m2e_eval.plot(
-            x=x,
-            thinned=thinned,
-            talkers=talker_select,
-            test_name=session_select,
-            )
-        fig_histogram = m2e_eval.histogram(
-            thinned=thinned,
-            talkers=talker_select,
-            test_name=session_select,
-            )
-        
-        talkers = np.unique(m2e_eval.data['Filename'])
-        talker_options = [{'label': i, 'value': i} for i in talkers]
-        
-        sessions = m2e_eval.test_names
-        session_options = [{'label': i, 'value': i} for i in sessions]
-        
-        res = format_m2e_results(m2e_eval, meas_digits)
-        res_formatting = eval_shared.measurement_digits('grid', meas_digits,
-                                                        measurement=measurement)
+        try:
+            json_data = json.loads(jsonified_data)
+            if 'error' in json_data:
+                error_out = '. '.join(json_data['error'])
+                raise RuntimeError(error_out)
+            else:
+                m2e_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
+            
+            thinned = thin == 'True'
+            if x == 'index':
+                x = None
+            if talker_select == []:
+                talker_select = None
+            if session_select == []:
+                session_select = None
+            
+            fig_scatter = m2e_eval.plot(
+                x=x,
+                thinned=thinned,
+                talkers=talker_select,
+                test_name=session_select,
+                )
+            fig_histogram = m2e_eval.histogram(
+                thinned=thinned,
+                talkers=talker_select,
+                test_name=session_select,
+                )
+            
+            talkers = np.unique(m2e_eval.data['Filename'])
+            talker_options = [{'label': i, 'value': i} for i in talkers]
+            
+            sessions = m2e_eval.test_names
+            session_options = [{'label': i, 'value': i} for i in sessions]
+            
+            res = format_m2e_results(m2e_eval, meas_digits)
+            res_formatting = eval_shared.measurement_digits('grid', meas_digits,
+                                                            measurement=measurement)
+            return_vals = (
+                res,
+                res_formatting,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+        except Exception as e:
+            print(e)
+            return_vals = eval_shared.failed_process(measurement, msg=e.args)
         
     else:
-        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
-        # return_vals = (
-        res = html.Div('Mouth-to-ear latency object could not be processed.')
-        res_formatting = eval_shared.measurement_digits('none',
-                                                        measurement=measurement)
-        fig_scatter = eval_shared.blank_fig()
-        fig_histogram = eval_shared.blank_fig()
-        talker_options = none_dropdown
-        session_options = none_dropdown
-            # )
-    return_vals = (
-            res,
-            res_formatting,
-            fig_scatter,
-            fig_histogram,
-            talker_options,
-            session_options
-            )
+        return_vals = eval_shared.failed_process(measurement, )
+        
     return return_vals
         
 

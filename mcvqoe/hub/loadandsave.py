@@ -82,18 +82,18 @@ class TkVarDict(dict):
             try:
                 dict_[k] = v.get()
             except _tkinter.TclError:
-                
+
                 message = {
                     tk.BooleanVar: 'Must be either True or False',
                     tk.StringVar : 'Must be a string',
                     tk.DoubleVar : 'Must be a number',
                     tk.IntVar    : 'Must be a whole number',
                     CommaSepList : 'Must be a comma-separated list of strings',
-                    
+
                     }[type(v)]
-                
+
                 raise InvalidParameter(k, message) from None
-                
+
         return dict_
 
     def on_change(self):
@@ -213,19 +213,17 @@ class IntOrInf_OLD(tk.StringVar):
 # ------------------------------------- caches --------------------------------
 
 class BaseCache(Config):
-    
-    file_ = 'cache.json'
-    
+
     default = None
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(self.file_, *args, **kwargs)
+
+    def __init__(self, filename, *args, **kwargs):
+        super().__init__(filename, *args, **kwargs)
 
         try:
             self.load()
         except FileNotFoundError:
             pass
-        
+
         atexit.register(self.dump)
 
     def __getitem__(self, k):
@@ -235,27 +233,16 @@ class BaseCache(Config):
         except KeyError:
             return self.default
 
-
-class HdwSettingsCache(BaseCache):
-    
-    file_ = 'hardware_settings.json'
-
-class WindowDimensionCache(BaseCache):
-    
-    file_ = 'window_cache.json'
-
 class FdlCache(BaseCache):
-    
-    file_ = 'file_dialog_cache.json'
 
-        
     def put(self, key, filepath):
         if os.path.isdir(filepath):
             self[key] = filepath
         elif os.path.isfile(filepath):
             self[key] = os.path.split(filepath)[0]
 
-misc_cache = BaseCache()
-fdl_cache = FdlCache()
-dim_cache = WindowDimensionCache()
-hardware_settings = HdwSettingsCache()
+misc_cache = BaseCache('cache.json')
+fdl_cache = FdlCache('file_dialog_cache.json')
+dim_cache = BaseCache('window_cache.json')
+hardware_settings = BaseCache('hardware_settings.json')
+sync_settings = BaseCache('sync_settings.json')

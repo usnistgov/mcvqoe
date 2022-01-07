@@ -142,81 +142,80 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
     """
     
     if jsonified_data is not None:
-        psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-        # thinned = thin == 'True'
-        if x == 'index':
-            x = None
-        if talker_select == []:
-            talker_select = None
-        if session_select == []:
-            session_select = None
-        
-        # TODO: Implement these
-        # fig_scatter = eval_shared.blank_fig()
-        fig_histogram = eval_shared.blank_fig()
-        fig_plot = psud_eval.plot(methods=method,
-                                       thresholds=threshold,
-                                       )
-        fig_scatter = psud_eval.plot_intelligibility(
-            x=x,
-            data=intell_type,
-            talkers=talker_select,
-            test_name=session_select,
-            )
-        fig_histogram = psud_eval.histogram()
-        # fig_histogram = psud_eval.histogram(
-        #     talkers=talker_select,
-        #     test_name=session_select,
-        #     )
-        
-        
-        
-        filenames = psud_eval.data['Filename']
-        pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
-        talkers = set()
-        for fname in filenames:
-            res = pattern.search(fname)
-            if res is not None:
-                talkers.add(res.groups()[0])
-        talkers = sorted(talkers)
-        talker_options = [{'label': i, 'value': i} for i in talkers]
-        
-        sessions = psud_eval.test_names
-        session_options = [{'label': i, 'value': i} for i in sessions]            
-        
-        if method != [] and threshold != [] and message_length != []:
-            res = format_psud_results(psud_eval,
-                                      digits=meas_digits,
-                                      methods=method,
-                                      thresholds=threshold,
-                                      message_lengths=message_length,
-                                      )
-            res_formatting = eval_shared.measurement_digits('grid', meas_digits,
-                                                            measurement=measurement)
-        else:
-            res = html.Div('Invalid filters selected')
-            res_formatting = eval_shared.measurement_digits('none',
-                                                            measurement=measurement)
+        try:
+            json_data = json.loads(jsonified_data)
+            if 'error' in json_data:
+                error_out = '. '.join(json_data['error'])
+                raise RuntimeError(error_out)
+            else:
+                psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
+            # thinned = thin == 'True'
+            if x == 'index':
+                x = None
+            if talker_select == []:
+                talker_select = None
+            if session_select == []:
+                session_select = None
+            
+            # TODO: Implement these
+            # fig_scatter = eval_shared.blank_fig()
+            fig_histogram = eval_shared.blank_fig()
+            fig_plot = psud_eval.plot(methods=method,
+                                           thresholds=threshold,
+                                           )
+            fig_scatter = psud_eval.plot_intelligibility(
+                x=x,
+                data=intell_type,
+                talkers=talker_select,
+                test_name=session_select,
+                )
+            fig_histogram = psud_eval.histogram()
+            # fig_histogram = psud_eval.histogram(
+            #     talkers=talker_select,
+            #     test_name=session_select,
+            #     )
+            
+            
+            
+            filenames = psud_eval.data['Filename']
+            pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
+            talkers = set()
+            for fname in filenames:
+                res = pattern.search(fname)
+                if res is not None:
+                    talkers.add(res.groups()[0])
+            talkers = sorted(talkers)
+            talker_options = [{'label': i, 'value': i} for i in talkers]
+            
+            sessions = psud_eval.test_names
+            session_options = [{'label': i, 'value': i} for i in sessions]            
+            
+            if method != [] and threshold != [] and message_length != []:
+                res = format_psud_results(psud_eval,
+                                          digits=meas_digits,
+                                          methods=method,
+                                          thresholds=threshold,
+                                          message_lengths=message_length,
+                                          )
+                res_formatting = eval_shared.measurement_digits('grid', meas_digits,
+                                                                measurement=measurement)
+            else:
+                res = html.Div('Invalid filters selected')
+                res_formatting = eval_shared.measurement_digits('none',
+                                                                measurement=measurement)
+            return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+        except Exception as e:
+            print(e)
+            return_vals = eval_shared.failed_process(measurement, msg=e.args)
         
     else:
-        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
-        # return_vals = (
-        res = html.Div('PSuD object could not be processed.')
-        res_formatting = eval_shared.measurement_digits('none',
-                                                        measurement=measurement)
-        fig_plot = eval_shared.blank_fig()
-        fig_scatter = eval_shared.blank_fig()
-        fig_histogram = eval_shared.blank_fig()
-        talker_options = none_dropdown
-        session_options = none_dropdown
-            # )
-    return_vals = (
-            res,
-            res_formatting,
-            fig_plot,
-            fig_scatter,
-            fig_histogram,
-            talker_options,
-            session_options
-            )
+        return_vals = eval_shared.failed_process(measurement, )
     return return_vals

@@ -24,12 +24,13 @@ from mcvqoe.hub.common import save_dir as default_data_dir
 import mcvqoe.mouth2ear as mouth2ear
 import mcvqoe.intelligibility as intell
 import mcvqoe.psud as psud
+import mcvqoe.accesstime as access
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
     'intell',
     'psud',
-    # TODO: Add rest of measurements
+    'access',
     ]
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#edeef0'
@@ -92,9 +93,12 @@ def parse_contents(contents, filename):
     fname, ext = os.path.splitext(filename)
     try:
         if ext == '.csv':
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8'))
-                )
+            # Load in data in fpath
+            try:
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            except pd.errors.ParserError:
+                # If parsing failed, access data, skip 3 rows
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
                 
     except Exception as e:
         print(e)
@@ -125,6 +129,8 @@ def load_json_data(jsonified_data, measurement):
     test_dict = json.loads(jsonified_data)
     if measurement == 'psud':
         eval_obj = psud.evaluate(json_data=jsonified_data)
+    elif measurement == 'access':
+        eval_obj = access.evaluate(json_data=jsonified_data)
     else:
         with tempfile.TemporaryDirectory() as tmpdirname:
             # Initialize tmpdir
@@ -147,6 +153,7 @@ def load_json_data(jsonified_data, measurement):
         
     return eval_obj
 
+# TODO: Make these leverage evaluate classes better, rather than redoing work...
 def find_cutpoints(fname, df, measurement):
     '''
     Try to find cutpoints based on fname.
@@ -170,7 +177,6 @@ def find_cutpoints(fname, df, measurement):
    
     # Construct wav folder path based off capture id
     wav_dir = os.path.join(data_dir, 'wav', session_id)
-    
     # Determine if wav directory exists
     if os.path.exists(wav_dir):        
         # Initialize cutpoints dictionary
@@ -219,7 +225,55 @@ def find_cutpoints(fname, df, measurement):
                 else:
                     # TODO: Figure out how to flag this for users
                     raise RuntimeError('Cannot find cutpoints, say something to user')
-                
+        if measurement == 'access':
+            print('Trying to find default cps for access')
+            # Get default audio sets and audio path
+            default_audio_path = access.measure.included_audio_path()
+            default_files = os.listdir(default_audio_path)
+            
+            # Extract talker word combo from file name
+            tw_search_str = r'([FM]\d)(_b\d{1,2}_w\d_)(\w+)(?:.csv)'
+            tw_search_var = re.compile(tw_search_str)
+            tw_search = tw_search_var.search(fname)
+            if tw_search is None:
+                raise RuntimeError(f'Unable to determine talker word from filename {fname}')
+            
+            # Get talker word identifier for cutpoitns
+            talker_word_name = tw_search.group()
+            
+            # Get talker word combo for storing
+            talker, bw_index, word = tw_search.groups()
+            talker_word = talker + ' ' +  word
+            
+            # Get matching cutpoitn file name from defaults
+            cp_name = [x for x in default_files if talker_word_name in x]
+            if len(cp_name) == 1:
+                cp_name = cp_name[0]
+            else:
+                # TODO: Figure out how to flag this for users
+                raise RuntimeError('Cannot find cuptpoints, say something to user')
+            cp_path = os.path.join(default_audio_path, cp_name)
+            
+            # Load cutpoints file
+            cp = pd.read_csv(cp_path)
+            
+            # Save in dict as json
+            cps = {talker_word: cp.to_json()}
+            
+            # Extract session id from file name
+            name = fname.replace('_' + talker_word_name, '')
+            # TODO: fs hardcoded...not ideal
+            fs = 48000
+            
+            # Determine length of T from cutpoints
+            T = cp.loc[0]['End']/fs
+            
+            # Store PTT time relative to start of P1 
+            df['time_to_P1'] = T - df['PTT_time']
+            # Store session name
+            df['name'] = name
+            # Store talker word combo
+            df['talker_word'] = talker_word
         # Store all measurement data and cutpoints for this session file
     
     out_json = {
@@ -261,41 +315,84 @@ for measurement in measurements:
             DESCRIPTION.
     
         """
+        # TODO: Add comments for this stuff
         if initial_data_flag == 'True':
             final_json = initial_data
             test_dict = json.loads(final_json)
             children = []
+            if 'error' in test_dict:
+                filenames = test_dict['test_info']
+            elif measurement == 'access':    
+                filenames = json.loads(test_dict['test_info']).keys()
+            else:
+                filenames = test_dict
             
-            for filename in test_dict:
+            for filename in filenames:
                 children.append(format_data_filename(filename))
         else:
             # TODO: Figure out what to do with cutpoints here...
             if list_of_contents is not None:
-                children = []
-                dfs = []
-                # TODO: Figure out a better variable name/place to store this
-                
-                out_json = {}
-                for c, filename in zip(list_of_contents, list_of_names):
-                    child, df = parse_contents(c, filename)
-                    children.append(child)
-                    dfs.append(df)
-                    
-                    if measurement == 'psud':
+                try:
+                    children = []
+                    dfs = []
+                    # TODO: Figure out a better variable name/place to store this
+                    out_json = {}
+                    for c, filename in zip(list_of_contents, list_of_names):
+                        child, df = parse_contents(c, filename)
+                        children.append(child)
+                        dfs.append(df)
                         
-                        out_json[filename] = find_cutpoints(filename, df, measurement)
-                        # TODO: Think working up to here...
-                    elif measurement == 'access':
-                        # TODO: Do something here
-                        print('I need to handle ACCESS cutpoints here...')
+                        if measurement == 'psud':
+                            out_json[filename] = find_cutpoints(filename, df, measurement)
+                            
+                        elif measurement == 'access':
+                            out_json[filename] = find_cutpoints(filename, df, measurement)
+                        else:
+                            out_json[filename] =  df.to_json()
+                            
+                    
+                    if measurement == 'access':
+                        # Initialize dataframe for storing all data
+                        access_df = pd.DataFrame()
+                        # Initialize cutpoints dict
+                        cps = dict()
+                        for sesh, sesh_dict in out_json.items():
+                            # Load data frame
+                            df = pd.read_json(sesh_dict['measurement'])
+                            # Add to main dataframe
+                            access_df = access_df.append(df)
+                            
+                            # Merge talker word cutpoints into main cutpoints dict
+                            cps = {**cps, **sesh_dict['cutpoints']}
+                        
+                        # Make unique index for each trial
+                        nrow, _ = access_df.shape
+                        access_df.index = np.arange(nrow)
+                        
+                        # Make a dummy test_info (required by access.load_json just not super relevant here)
+                        test_info = {'uploaded-access-data': {
+                            'data_path': 'unknown-upload',
+                            'data_file': list_of_names,
+                            'cp_path': 'unknown-upload'
+                            }
+                                     }
+                        # Store in dictionary used by access.load_json()
+                        prep_json = {
+                            'measurement': access_df.to_json(),
+                            'cps': cps,
+                            'test_info': json.dumps(test_info)
+                                }
+                        # Dump dict to json
+                        final_json = json.dumps(prep_json)
                     else:
-                        out_json[filename] =  df.to_json()
-                        
-                
-                # for filename, df in zip(list_of_names, dfs):
-                #     out_json[filename] = df.to_json()
+                        final_json = json.dumps(out_json)
+                except Exception as e:
+                    out_info = {'test_info': list_of_names,
+                            'error': e.args,
+                        }
+                    print(f'e.args: {e.args}')
+                    final_json = json.dumps(out_info)
                     
-                final_json = json.dumps(out_json)
             else:
                 children = None
                 final_json = None
@@ -389,6 +486,23 @@ def measurement_results_filters(measurement):
                 style=style_result_filters_dropdown,
                 )
             ])
+    elif measurement == 'access':
+        raw_alpha_options = np.arange(0.5, 1, 0.01)
+        alpha_options = [{'label': np.round(x, 2), 'value': np.round(x, 2)} for x in raw_alpha_options]
+        default_alpha_options = [0.9,]
+        children = html.Div([
+            html.Div([
+                html.Label('Alpha'),
+                dcc.Dropdown(
+                    id=f'{measurement}-alpha',
+                    options=alpha_options,
+                    multi=True,
+                    value=default_alpha_options,
+                    ),
+                ],
+                style=style_result_filters_dropdown,
+                )
+            ])
     else:
         children = None
     return children
@@ -431,7 +545,16 @@ radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
 
 def dropdown_filters(measurement):
-    if measurement == 'm2e' or measurement == 'intell' or measurement == 'psud':
+    if measurement == 'access':
+        children = [html.Div([
+                    html.Label('Talker Select'),
+                    dcc.Dropdown(
+                        id=f'{measurement}-talker-select',
+                        multi=True,
+                        )
+                    ], style=dropdown_style),
+                ]
+    elif measurement in measurements:
         children = [html.Div([
                     html.Label('Session Select'),
                     dcc.Dropdown(
@@ -527,6 +650,37 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'access':
+        children = [
+            # TODO: Generalize this
+            html.Div([
+                html.Label('Intelligibility'),
+                dcc.RadioItems(
+                    id=f'{measurement}-intell-type',
+                    options = [
+                        {'label': 'Relative to asymptotic', 'value': 'relative'},
+                        {'label': 'Raw Intelligibility', 'value': 'intelligibility'},
+                        ],
+                    value='relative',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style,
+                ),
+            html.Div([
+                html.Label('Plot raw data points'),
+                dcc.RadioItems(
+                    id=f'{measurement}-show-raw',
+                    options = [{'label': 'True', 'value': 'True'},
+                               {'label': 'False', 'value': 'False'},
+                               ],
+                    value='True',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
+            ]
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -590,6 +744,21 @@ def measurement_plots(measurement):
             # ----------------[Test chain histogram]-------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            ]
+    elif measurement == 'access':
+        children = [
+            # --------------[Access plot] ---------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-plot',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # --------------[Intell Scatter Plot]------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-intell',
                           figure=blank_fig(),
                           ),
                 ], className='twelve columns'),
@@ -688,3 +857,97 @@ def layout_template(measurement):
             ),
         ])
     return layout
+
+def failed_process(measurement, msg=('', )):
+    if measurement == 'access':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        
+        default_msg = ('Access object could not be processed.\n', )
+        if msg[0] == 'Optimal parameters not found: Number of calls to function has reached maxfev = 600.':
+            debug_help = ('This measurement is invalid. Try rerunning the test with a smaller Time Increase per Step to increase resolution.', )
+        else:
+            debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                            measurement=measurement,
+                                            )
+        fig_plot = blank_fig()
+        fig_intell = blank_fig()
+        talker_options = none_dropdown
+        
+        return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_intell,
+                talker_options,
+                )
+    elif measurement == 'm2e':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        default_msg = ('Mouth-to-ear latency object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    elif measurement == 'psud':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        default_msg = ('PSuD object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_plot = blank_fig()
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_plot,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    elif measurement == 'intell':
+        none_dropdown = [{'label': 'N/A', 'value': 'None'}]
+        # return_vals = (
+        default_msg = ('Intelligibility object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(default_msg)
+        res_formatting = measurement_digits('none',
+                                                        measurement=measurement)
+        fig_scatter = blank_fig()
+        fig_histogram = blank_fig()
+        talker_options = none_dropdown
+        session_options = none_dropdown
+            # )
+        return_vals = (
+                res,
+                res_formatting,
+                fig_scatter,
+                fig_histogram,
+                talker_options,
+                session_options
+                )
+    return return_vals
