@@ -22,6 +22,7 @@ if hasattr(ctypes, 'windll'):
 
 import importlib.resources
 import mcvqoe.utilities.test_copy
+import mcvqoe.base
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
@@ -2342,10 +2343,10 @@ class ReprocessFrame(ttk.Labelframe):
 
 
         self.meas_types = {'autodetect':'auto detect',
-                           'mouth2ear':'Mouth to Ear',
-                           'accesstime':'Access Delay',
-                           'psud':'PSuD',
-                           'intelligibility':'Intelligibility',
+                           'mcvqoe.mouth2ear':'Mouth-to-Ear',
+                           'mcvqoe.accesstime':'Access Delay',
+                           'mcvqoe.psud':'PSuD',
+                           'mcvqoe.intelligibility':'Intelligibility',
                            }
 
         self.pretty_type = tk.StringVar()
@@ -2623,6 +2624,15 @@ class ReprocessFrame(ttk.Labelframe):
                                         filetypes=(('csv','*.csv'),))
         if file:
             self.btnvars['datafile'].set(path.normpath(file))
+            # Detect measurement type
+            meas_type = mcvqoe.base.get_measurement_from_file(file, module=True)
+            
+            if meas_type is None:
+                raise RuntimeError(f'Unable to determine measurement type for selected file: \'{file}\'')
+            
+            # Update detected measurement type
+            self.btnvars['measurement_type'].set(meas_type)
+            self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
 
     def save_file(self):
         initial = self.btnvars['savefile'].get()
@@ -3501,109 +3511,177 @@ class ProcessDataFrame(ttk.LabelFrame):
             'mcvqoe-eval',
             '--port', '8050',
             ]
+    
+    padx = 10
+    pady = 10
     def __init__(self, master, btnvars, **kwargs):
-
-        kwargs['text'] = 'Process Data'
-
-        # kwargs['text'] = self.text
-        super().__init__(**kwargs)
+        super().__init__(text='Process Data', **kwargs)
 
 
         #option functions will get and store their values in here
         self.btnvars = btnvars
+        
+        #row in frame
+        self.r = 0
 
-        # ttk.Label(self, text='Process Data').pack(padx=10, pady=10, fill=tk.X)
+        # === Reprocess file ===
 
-        #sets what controls will be in this frame
-        controls = self.get_controls()
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datafile'])
 
-        #initializes controls
-        self.controls = {}
-        for row in range(len(controls)):
-            c = controls[row](master=self, row=row)
+        fold_button = ttk.Button(self, text='Browse', command=self.get_file)
 
-            self.controls[c.__class__.__name__] = c
-        row = len(controls) + 1
-        ttk.Button(self,
-                   text="Show Plots",
-                   command = self.plot,
-                   ).grid(row=row, column=3)
-        row += 1
-        self.help_message = tk.StringVar()
-        self.help_message.set('')
-        tk.Message(self,
-                  textvariable=self.help_message,
-                  ).grid(row=row, column=2)
-        row += 1
-        # self.controls['Plot button'] = plot_button
+        self.add_widgets('Data File', (fold_entry, fold_button),
+                            help_txt='Data file to process.')
 
-        ttk.Button(self,
-                   text='Evaluation homepage',
-                   command=self.start_server,
-                   ).grid(row=row, column=3)
-        row += 1
-    def get_controls(self):
-        return (
-            shared.data_files,
-            shared.data_path,
-            )
+        
+        # === Measurement Type/Plot button ===
 
+
+        self.meas_types = {'autodetect':'auto detect',
+                           'm2e':'Mouth to Ear',
+                           'access':'Access Delay',
+                           'psud':'PSuD',
+                           'intell':'Intelligibility',
+                           }
+
+        self.pretty_type = tk.StringVar()
+
+        #set based on measurement_type
+        self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+
+        dropdown = ttk.Menubutton(self, textvariable=self.pretty_type)
+
+        menu = tk.Menu(dropdown, tearoff=False)
+
+        for v, l in self.meas_types.items():
+            def get_command(choice):
+                def set_choice():
+                    self.btnvars['measurement_type'].set(choice)
+                    self.pretty_type.set(self.meas_types[choice])
+                return set_choice
+            menu.add_command(label=l,
+                            command=get_command(v))
+
+        dropdown.configure(menu=menu)
+
+        plot_button = ttk.Button(self,
+                                 text='Show Plots',
+                                 command=self.plot,
+                                 )
+
+        self.add_widgets('Measurement Type', (dropdown, plot_button),
+                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+        
+        # === Evaluation server homepage ===
+        home_button = ttk.Button(self,
+                                 text='Evaluation homepage',
+                                 command=self.start_server,
+                                 )
+        self.add_widget(home_button, column=2, pady=50, padx=150)
+    
+    def add_widget(self, w, column=0, padx=None, pady=None):
+        '''
+        Add a single widget that spans 4 columnspan
+        '''
+        if padx is None:
+            padx = self.padx
+        if pady is None:
+            pady = self.pady
+        w.grid(column=column, row=self.r, columnspan=4, sticky='NSW',
+                        padx=padx, pady=pady)
+
+        #move to next row
+        self.r += 1
+    
+    def add_widgets(self,  l_text, widgets ,group=None , help_txt=None):
+        '''
+        Add a row of widgets in the grid.
+
+        With label and optional help.
+        '''
+        #add label
+        label = ttk.Label(self, text=l_text)
+        label.grid(column=0, row=self.r, sticky='NSEW',
+                    padx=self.padx, pady=self.pady)
+        if group:
+            self.widgets[group].append(label)
+        #add text
+        if help_txt:
+            h_icon = shared.HelpIcon(self, tooltext=help_txt)
+            h_icon.grid(column=1, row=self.r, padx=0, pady=self.pady, sticky='NW')
+            if group:
+                self.widgets[group].append(label)
+
+        #add widgets
+        for c, w in enumerate(widgets, 2):
+            w.grid(column=c, row=self.r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+            if group:
+                self.widgets[group].append(w)
+
+        #move to next row
+        self.r += 1
+        
+    def get_file(self):
+        initial = self.btnvars['datafile'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            initial = save_dir
+
+        files = fdl.askopenfilenames(parent=self.master, initialdir=initial,
+                                        filetypes=(('csv','*.csv'),))
+        
+        if files:
+            paths = []
+            meas_types = []
+            for file in files:
+                paths.append(path.normpath(file))
+                # self.btnvars['datafile'].set(path.normpath(file))
+                # Detect measurement type
+                meas_type = mcvqoe.base.get_measurement_from_file(file, module=False)
+                
+                if meas_type is None:
+                    raise RuntimeError(f'Unable to determine measurement type for selected file: \'{file}\'')
+                meas_types.append(meas_type)
+            
+            if len(set(meas_types)) > 1:
+                raise RuntimeError(f'Selected files were of multiple types:\n[{set(meas_types)}]\nOnly one type of measurement can be processed at a time.')
+            
+            
+            self.btnvars['datafile'].set(', '.join(paths))
+            # Update detected measurement type
+            self.btnvars['measurement_type'].set(meas_type)
+            self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+    
     def plot(self):
 
-        message=''
-        data_files_raw = self.btnvars['data_files'].get()
-        if data_files_raw == '':
-            message += 'No files selected\n'
-
-        # Strip away weird extra characters from file selection
-        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}(.*).csv)')
-        search = capture_search.search(data_files_raw)
-        if search is not None:
-            data_files = search.group().split("', '")
-        else:
-            data_files = []
-            start_server = False
-            message += 'No valid files selected'
-
-        data_path = self.btnvars['data_path'].get()
-        # TODO: Make a dropdown for test type, autodetect if you can but let user select if they can
-        selected_test = os.path.basename(os.path.dirname(os.path.dirname(data_path)))
-
+        data_files_raw = self.btnvars['datafile'].get()
+        data_files = data_files_raw.split(', ')
+        
         start_server = True
-        if selected_test == 'Mouth_2_Ear':
-            test_type = 'm2e'
-        elif selected_test == 'Access_Time':
-            test_type = 'access'
-        elif selected_test == 'PSuD':
-            test_type = 'psud'
-        elif selected_test == 'Intelligibility':
-            test_type = 'intell'
+        test_type = self.btnvars['measurement_type'].get()
+        
+        if test_type == 'autodetect':
+            data_url = self.data_url()
         else:
-            # TODO: Do something here?
-            test_type = ''
-            message += f'Invalid test directory, unrecognized measurement: \'{test_type}\''
-            start_server = False
-
-        if isinstance(data_files, str):
-            data_files = [data_files]
-
-        # test_files = [os.path.join(data_path, x) for x in data_files]
-        test_files = []
-        for df in data_files:
-            test_files.append(os.path.join(data_path, df))
-
-        url_files = [urllib.request.pathname2url(x) for x in test_files]
-        url_file_str = ';'.join(url_files)
-
-
-        data_url = self.data_url(test_type, url_file_str)
+            if isinstance(data_files, str):
+                data_files = [data_files]
+    
+            url_files = [urllib.request.pathname2url(x) for x in data_files]
+            url_file_str = ';'.join(url_files)
+    
+    
+            data_url = self.data_url(test_type, url_file_str)
+        
         # message += f'Data will be viewable at {data_url}\n'
         if start_server and not hasattr(self.master, 'eval_server'):
             self.master.eval_server = start_evaluation_server(self.gui_call,
                                                               data_url)
         elif start_server:
             webbrowser.open(data_url)
-        self.help_message.set(message)
+        
 
     def data_url(self, test_type=None, url_file_str=None):
         if test_type is None:
@@ -4823,7 +4901,6 @@ def load_defaults():
         intelligibility: loader.intelligibility_gui.igtiby.measure(),
         'SimSettings': shared._SimPrototype(),
         'HdwSettings': shared._HdwPrototype(),
-        'ProcessSettings': shared.ProcessSettings(),
         }
 
     # ----------------------load default values from objects-----------------------
@@ -4916,16 +4993,19 @@ def load_defaults():
 
     # Set Intelligibility wrapper class defaults
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
-
+    
+    # ---Processing Frame---
     DEFAULTS[process]['data_files'] = ''
+    DEFAULTS[process]['measurement_type'] = 'autodetect'
+    DEFAULTS[process]['datafile'] = ''
+    # data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
 
-    data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
-
-    if data_path is None:
-        # Use default hub
-        DEFAULTS[process]['data_path'] = save_dir
-    else:
-        DEFAULTS[process]['data_path'] = data_path
+    # if data_path is None:
+    #     # Use default hub
+    #     DEFAULTS[process]['data_path'] = save_dir
+    # else:
+    #     DEFAULTS[process]['data_path'] = data_path
+    
 
     #add settings for sync
 
