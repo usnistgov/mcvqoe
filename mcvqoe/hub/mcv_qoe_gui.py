@@ -3944,6 +3944,15 @@ def run(root_cfg):
         psud : loader.psud_gui.PSuD_fromGui,
         intelligibility: loader.intelligibility_gui.Igtiby_from_Gui,
             }
+    
+    evaluators = {
+        dev_dly_char : loader.m2e_gui.M2E_Eval_from_GUI,
+
+        m2e: loader.m2e_gui.M2E_Eval_from_GUI,
+        accesstime: loader.accesstime_gui.Access_Eval_from_GUI,
+        psud : loader.psud_gui.PSuD_Eval_from_GUI,
+        intelligibility: loader.intelligibility_gui.Intell_eval_from_GUI,
+        }
 
     # extract test configuration:
 
@@ -4084,24 +4093,78 @@ def run(root_cfg):
 
         # intelligibility estimate
         if sel_tst == intelligibility:
-            ppf.add_element(f'Intelligibility Estimate: {result}')
+            # ppf.add_element(f'Intelligibility Estimate: {result}')
+            outname = my_obj.data_filename
+            
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            mean, ci = eval_obj.eval()
+            ppf.add_element(f'Intelligibility Estimate: {mean}')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
 
         # M2e: mean, std, and plots
         elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
             #show mean and std_dev
-
-            mean, std = my_obj.get_mean_and_std()
-
-            # TODO: Kill the gui call when finish button pressed
-
-            ppf.add_element("Mean: %.5fs" % mean)
-            ppf.add_element("StD: %.2fus" % std)
-
+            outname = my_obj.data_filename
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            mean, ci = eval_obj.eval()
+            ppf.add_element(f'Mouth-to-ear Latency Estimate: {mean} seconds')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")} seconds')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
+            
         # M2e: 2-loc-tx prompt to stop rx
         elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
             ppf.add_element('Data collection complete, you may now stop data\n' +
                             'collection on the receiving end')
-
+        
+        elif sel_tst == psud:
+            outname = my_obj.data_filename
+            
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            threshold = 0.5
+            msg_len = 3
+            method = 'EWC'
+            mean, ci = eval_obj.eval(threshold=threshold,
+                                     msg_len=msg_len,
+                                     method=method
+                                     )
+            
+            ppf.add_element(f'{method} PSuD Estimate for a message of length {msg_len} seconds\nwith intelligibility threshold of {threshold}:\n{mean}')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
+        elif sel_tst == accesstime:
+            outname = my_obj.data_filenames
+            try:
+                # Initialize evaluation object
+                eval_obj = evaluators[sel_tst](outname)
+                
+                alpha = 0.9
+                # Display mean and confidence interval
+                mean, ci = eval_obj.eval(alpha=0.9)
+                ppf.add_element(f'Access time Estimate for alpha={alpha}:\n{mean} seconds')
+                ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+                ppf.add_element('Click Show Plots to see more details on measurement.')
+            except Exception as e:
+                default_msg = ('Access object could not be processed.\n')
+                if e.args[0] == 'Optimal parameters not found: Number of calls to function has reached maxfev = 600.':
+                    debug_help = ('This measurement is invalid. Try rerunning '
+                                  'the test with a smaller Time Increase per '
+                                  'Step to increase resolution.')
+                else:
+                    debug_help = ''
+                msg = default_msg + debug_help
+                ppf.add_element('Access time evaluation object could not be processed')
+                ppf.add_element(msg)
+            
         # device delay characterization: show new device delay
         if sel_tst == dev_dly_char:
 

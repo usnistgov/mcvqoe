@@ -214,4 +214,12 @@ class Access_fromGui(SignalOverride, adly.measure):
     
 
 
+class Access_Eval_from_GUI(SignalOverride, adly.evaluate):
+    
+    def param_check(self):
+        # future-proofing this param-check override
+        if hasattr(super(), 'param_check'):
+            super().param_check()
+    
+
 

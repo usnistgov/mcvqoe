@@ -6,6 +6,7 @@ Created on Wed Jun  2 08:52:09 2021
 """
 
 import mcvqoe.mouth2ear.m2e as m2e
+import mcvqoe.mouth2ear
 
 from .shared import TestCfgFrame
 from .shared import advanced as shared_advanced
@@ -144,7 +145,11 @@ class M2E_fromGui(SignalOverride, m2e.measure):
 
 
 
-
+class M2E_Eval_from_GUI(SignalOverride, mcvqoe.mouth2ear.evaluate):
+    def param_check(self):
+        # future proof
+        if hasattr(super(), 'param_check'):
+            super().param_check()
 
 
 
@@ -206,5 +211,5 @@ class DevChar_Defaults(m2e.measure):
 
 class DevChar_fromGui(M2E_fromGui): pass
     
-    
+
 

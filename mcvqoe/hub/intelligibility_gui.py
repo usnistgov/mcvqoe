@@ -93,3 +93,9 @@ class Igtiby_from_Gui(SignalOverride, igtiby.measure):
         # future proof
         if hasattr(super(), 'param_check'):
             super().param_check()
+
+class Intell_eval_from_GUI(SignalOverride, igtiby.evaluate):
+    def param_check(self):
+        # future proof
+        if hasattr(super(), 'param_check'):
+            super().param_check()
