@@ -1,6 +1,6 @@
 # Summary
 The purpose of this software is to make quality of expirence (QoE) measurements 
-for push-to-talk (PTT) communications systems. This python package develoved by NIST’s PSCR division contains a 
+for push-to-talk (PTT) communications systems. This Python package develoved by NIST’s PSCR division contains a 
 GUI for making these measurements. This GUI is the recommended way to run the 
 following QoE measurements:
 
