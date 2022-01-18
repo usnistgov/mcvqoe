@@ -55,11 +55,8 @@ python -m mcvqoe.hub
 
 ## Evaluation GUI
 
-The evaluation GUI can be run using the evaluation GUI entry point:
+Data can be evaluated by using the Process Data menu from the GUI. Here users can select data they wish to process and a separate, browser-based interface will initialize.
 
-```
-mcvqoe-evaluation
-```
 
 # License
 
