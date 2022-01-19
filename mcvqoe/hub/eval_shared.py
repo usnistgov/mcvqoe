@@ -338,9 +338,6 @@ for measurement in measurements:
                                 }
                         test_info[filename] = 'uploaded-data'
                         
-                                                   
-                            
-                    # if measurement == 'access' or measurement == 'psud':
                     # Initialize dataframe for storing all data
                     data_df = pd.DataFrame()
                     # Initialize cutpoints dict
@@ -353,20 +350,11 @@ for measurement in measurements:
                         data_df = data_df.append(df)
                         if 'cutpoints' in sesh_dict:
                             cps[sesh] = sesh_dict['cutpoints']
-                        # Merge talker word cutpoints into main cutpoints dict
-                        # cps = {**cps, **sesh_dict['cutpoints']}
                     
                     # Make unique index for each trial
                     nrow, _ = data_df.shape
                     data_df.index = np.arange(nrow)
-                    
-                    # Make a dummy test_info (required by mcvqoe.accesstime.load_json just not super relevant here)
-                    # test_info = {'uploaded-access-data': {
-                    #     'data_path': 'unknown-upload',
-                    #     'data_file': list_of_names,
-                    #     'cp_path': 'unknown-upload'
-                    #     }
-                                 # }
+
                     # Store in dictionary used by mcvqoe.accesstime.load_json()
                     prep_json = {
                         'measurement': data_df.to_json(),
@@ -376,17 +364,7 @@ for measurement in measurements:
                     # Dump dict to json
                     
                     final_json = json.dumps(prep_json)
-                    # else:
-                    #     # Make a dummy test_info (required by mcvqoe.accesstime.load_json just not super relevant here)
-                    #     test_info = {'uploaded-access-data': {
-                    #         'data_path': 'unknown-upload',
-                    #         'data_file': list_of_names,
-                    #         'cp_path': 'unknown-upload'
-                    #         }
-                    #     prep_json = {'measurement': df.to_json(),
-                    #                  'test_info': test_info,
-                    #                  }
-                    #     final_json = json.dumps(prep_json)
+
                 except Exception as e:
                     out_info = {'test_info': list_of_names,
                             'error': e.args,
