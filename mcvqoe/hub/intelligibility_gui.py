@@ -11,7 +11,7 @@ import tkinter.ttk as ttk
 
 from .shared import LabeledSlider, TestCfgFrame, SignalOverride, MultiChoice
 from .shared import advanced as shared_advanced
-from .shared import AdvancedConfigGUI
+from .shared import AdvancedConfigGUI, test
 
 #--------------------------Controls-------------------------------------------
 
@@ -83,6 +83,7 @@ class IgtibyFrame(TestCfgFrame):
             SaveAudio,
             RadioCheck,
             intell_est,
+            test,
             advanced,
             )
 

@@ -887,9 +887,9 @@ class MultiChoice(LabeledControl):
         associates the internal option with its user-friendly name. i.e.:
 
             {
-            'm2e_1loc'   : '1 Location',
-            'm2e_2loc_tx': '2 Location (transmit)',
-            'm2e_2loc_rx': '2 Location (receive)'
+            '1loc'   : '1 Location',
+            '2loc_tx': '2 Location (transmit)',
+            '2loc_rx': '2 Location (receive)'
             }
 
 
@@ -2072,3 +2072,14 @@ def format_audio_files(path_= '', files=[]):
 
     return newpath, newfiles
 
+class test(MultiChoice):
+    """M2E test to perform. Options are: 1 Location (m2e_1loc),
+    2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
+
+    text = 'Location Type:'
+
+    association = {
+            '1loc'   : '1 Location',
+            '2loc_tx': '2 Location (transmit)',
+            '2loc_rx': '2 Location (receive)'
+            }

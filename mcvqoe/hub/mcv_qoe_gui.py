@@ -1069,7 +1069,7 @@ class MCVQoEGui(tk.Tk):
         extra : ANY, optional
             extra info about the step.
 
-            Example: rec_stop object for m2e_2loc_rx, which overrides the abort button
+            Example: rec_stop object for 2loc_rx, which overrides the abort button
             to become a stop recording button
         """
         self.step = step
@@ -4091,8 +4091,14 @@ def run(root_cfg):
 
         """
 
+        if 'test' in cfg and cfg['test'] != '1loc':
+            #skip post processing for 2 location tests
+            # 2-loc-tx prompt to stop rx
+            if my_obj.test == '2loc_tx':
+                ppf.add_element('Data collection complete, you may now stop data\n' +
+                            'collection on the receiving end')
         # intelligibility estimate
-        if sel_tst == intelligibility:
+        elif sel_tst == intelligibility:
             # ppf.add_element(f'Intelligibility Estimate: {result}')
             outname = my_obj.data_filename
             
@@ -4106,7 +4112,7 @@ def run(root_cfg):
             ppf.add_element('Click Show Plots to see more details on measurement.')
 
         # M2e: mean, std, and plots
-        elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
+        elif sel_tst in (m2e, dev_dly_char):
             #show mean and std_dev
             outname = my_obj.data_filename
             # Initialize evaluation object
@@ -4117,11 +4123,6 @@ def run(root_cfg):
             ppf.add_element(f'Mouth-to-ear Latency Estimate: {mean} seconds')
             ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")} seconds')
             ppf.add_element('Click Show Plots to see more details on measurement.')
-            
-        # M2e: 2-loc-tx prompt to stop rx
-        elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
-            ppf.add_element('Data collection complete, you may now stop data\n' +
-                            'collection on the receiving end')
         
         elif sel_tst == psud:
             outname = my_obj.data_filename
@@ -4585,7 +4586,7 @@ def get_interfaces(root_cfg):
             'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
             }
 
-    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_tx':
+    elif 'test' in cfg and cfg['test'] == '2loc_tx':
 
         if is_sim:
             # 2loc_rx test not allowed in simulated
@@ -4596,7 +4597,7 @@ def get_interfaces(root_cfg):
             'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
             }
 
-    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
+    elif 'test' in cfg and cfg['test'] == '2loc_rx':
 
         if is_sim:
             # 2loc_rx test not allowed in simulated
@@ -4897,6 +4898,7 @@ def load_defaults():
             'outdir',
             'ptt_wait',
             'ptt_gap',
+            'test',
             'm2e_min_corr',
             'intell_est',
             'save_tx_audio',
@@ -4908,6 +4910,7 @@ def load_defaults():
             'outdir',
             'ptt_wait',
             'ptt_gap',
+            'test',
             'pause_trials',
             'intell_est',
             'save_tx_audio',
