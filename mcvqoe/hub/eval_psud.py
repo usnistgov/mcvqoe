@@ -16,7 +16,6 @@ import numpy as np
 import os
 import pandas as pd
 import re
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 
@@ -148,7 +147,9 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
                 error_out = '. '.join(json_data['error'])
                 raise RuntimeError(error_out)
             else:
+                print('trying eval')
                 psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
+            
             # thinned = thin == 'True'
             if x == 'index':
                 x = None
@@ -156,9 +157,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
                 talker_select = None
             if session_select == []:
                 session_select = None
-            
-            # TODO: Implement these
-            # fig_scatter = eval_shared.blank_fig()
+
             fig_histogram = eval_shared.blank_fig()
             fig_plot = psud_eval.plot(methods=method,
                                            thresholds=threshold,
@@ -170,12 +169,6 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
                 test_name=session_select,
                 )
             fig_histogram = psud_eval.histogram()
-            # fig_histogram = psud_eval.histogram(
-            #     talkers=talker_select,
-            #     test_name=session_select,
-            #     )
-            
-            
             
             filenames = psud_eval.data['Filename']
             pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
@@ -187,7 +180,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
             talkers = sorted(talkers)
             talker_options = [{'label': i, 'value': i} for i in talkers]
             
-            sessions = psud_eval.test_names
+            sessions = np.unique(psud_eval.data['name'])
             session_options = [{'label': i, 'value': i} for i in sessions]            
             
             if method != [] and threshold != [] and message_length != []:

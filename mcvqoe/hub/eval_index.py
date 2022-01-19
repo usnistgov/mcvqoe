@@ -6,6 +6,7 @@ Created on Tue Oct  5 14:59:05 2021
 """
 import argparse
 import base64
+import importlib
 import json
 import os
 import re
@@ -73,75 +74,96 @@ def format_data(fpaths, cutpoint, measurement):
 
     """
     # Initialize dictionary for json info
-    out_json = {}
+    modules = {'access': 'mcvqoe.accesstime',
+               'intell': 'mcvqoe.intelligibility',
+               'm2e': 'mcvqoe.mouth2ear',
+               'psud': 'mcvqoe.psud',
+               }
+    try:
+        eval_obj = importlib.import_module(modules[measurement]).evaluate(fpaths)
+        # eval_obj = eval(modules[measurement]).evaluate(fpaths)
+        final_json = eval_obj.to_json()
+    except Exception as e:
+        out_info = {'test_info': fpaths,
+                    'error': e.args,
+                    }
+        final_json = json.dumps(out_info)
     
-    if measurement == 'access':
-        try:
-            acc_obj = mcvqoe.accesstime.evaluate(fpaths)
-            final_json = acc_obj.to_json()
-        except RuntimeError as e:
-            # Store information for later error handling
-            out_info = {'test_info': fpaths,    
-                        'error': e.args,
-                    }
-            final_json = json.dumps(out_info)
+    
+    # if measurement == 'access':
+    #     try:
+    #         acc_obj = mcvqoe.accesstime.evaluate(fpaths)
+    #         final_json = acc_obj.to_json()
+    #     except RuntimeError as e:
+    #         # Store information for later error handling
+    #         out_info = {'test_info': fpaths,    
+    #                     'error': e.args,
+    #                 }
+    #         final_json = json.dumps(out_info)
+    # elif measurement == 'm2e':
+    #     try:
+    #         m2e_obj = mcvqoe.mouth2ear.evaluate(fpaths)
+    #         final_json = m2e_obj.to_json()
+    #     except RuntimeError as e:
+    #         out_info = {'test_info': fpaths,
+    #                     'error': e.args}
         
-    else:
-        # TODO: Make the rest of this behave like access does
-        for fpath in fpaths:
-            # Get base file name
-            fname = os.path.basename(fpath)
+    # else:
+    #     # TODO: Make the rest of this behave like access does
+    #     for fpath in fpaths:
+    #         # Get base file name
+    #         fname = os.path.basename(fpath)
             
-            # Load in data in fpath
-            try:
-                df = pd.read_csv(fpath)
-            except pd.errors.ParserError:
-                # If parsing failed, access data, skip 3 rows
-                df = pd.read_csv(fpath, skiprows=3)
-            # Find cutpoints here...
-            if cutpoint and measurement == 'psud':
-                # If cutpoints exist we assume that mcvqoe measurement directory structure is followed
-                # data
-                # # csv - directory with csv files
-                # # wav - directory with folders of wav files and cutpoints, matches names of csv files
+    #         # Load in data in fpath
+    #         try:
+    #             df = pd.read_csv(fpath)
+    #         except pd.errors.ParserError:
+    #             # If parsing failed, access data, skip 3 rows
+    #             df = pd.read_csv(fpath, skiprows=3)
+    #         # Find cutpoints here...
+    #         if cutpoint and measurement == 'psud':
+    #             # If cutpoints exist we assume that mcvqoe measurement directory structure is followed
+    #             # data
+    #             # # csv - directory with csv files
+    #             # # wav - directory with folders of wav files and cutpoints, matches names of csv files
                 
-                # Get two level up directory name
-                data_dir = os.path.dirname(os.path.dirname(fpath))
+    #             # Get two level up directory name
+    #             data_dir = os.path.dirname(os.path.dirname(fpath))
                 
-                # Identify session identification string
-                session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
-                session_search = session_pattern.search(fpath)
-                if session_search is not None:
-                    session_id = session_search.groups()[0]
-                else:
-                    # TODO: Be smarter than this
-                    raise RuntimeError('No valid session id found in uploaded data')
-                # Construct wav folder path based off capture id
-                wav_dir = os.path.join(data_dir, 'wav', session_id)
+    #             # Identify session identification string
+    #             session_pattern = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2})(?:.*\.csv)')
+    #             session_search = session_pattern.search(fpath)
+    #             if session_search is not None:
+    #                 session_id = session_search.groups()[0]
+    #             else:
+    #                 # TODO: Be smarter than this
+    #                 raise RuntimeError('No valid session id found in uploaded data')
+    #             # Construct wav folder path based off capture id
+    #             wav_dir = os.path.join(data_dir, 'wav', session_id)
                 
-                # Initialize cutpoints dictionary
-                cps = dict()
-                # TODO: This logic only works for PSuD, extract from access data file
-                for file in np.unique(df['Filename']):
-                    # Construct path to cutpoint file
-                    cp_name = f'Tx_{file}.csv'
-                    cp_path = os.path.join(wav_dir, cp_name)
+    #             # Initialize cutpoints dictionary
+    #             cps = dict()
+    #             # TODO: This logic only works for PSuD, extract from access data file
+    #             for file in np.unique(df['Filename']):
+    #                 # Construct path to cutpoint file
+    #                 cp_name = f'Tx_{file}.csv'
+    #                 cp_path = os.path.join(wav_dir, cp_name)
                     
-                    # Load cutpoints
-                    cp = pd.read_csv(cp_path)
+    #                 # Load cutpoints
+    #                 cp = pd.read_csv(cp_path)
                     
-                    # Store as json in dict
-                    cps[file] = cp.to_json()
-                # Store all measurement data and cutpoints for this session file
-                out_json[fname] = {
-                    'measurement': df.to_json(),
-                    'cutpoints': cps,
-                    }
-            else:
-                out_json[fname] = df.to_json()
+    #                 # Store as json in dict
+    #                 cps[file] = cp.to_json()
+    #             # Store all measurement data and cutpoints for this session file
+    #             out_json[fname] = {
+    #                 'measurement': df.to_json(),
+    #                 'cutpoints': cps,
+    #                 }
+    #         else:
+    #             out_json[fname] = df.to_json()
             
-        # Final json representation of all data
-        final_json = json.dumps(out_json)
+        # # Final json representation of all data
+        # final_json = json.dumps(out_json)
 
     return final_json
 
