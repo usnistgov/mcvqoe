@@ -9,6 +9,7 @@ from dash import html
 from dash.dependencies import Input, Output, State
 
 import base64
+import importlib
 import io
 import json
 import numpy as np
@@ -21,10 +22,10 @@ import tempfile
 from mcvqoe.hub.eval_app import app
 from mcvqoe.hub.common import save_dir as default_data_dir
 
-import mcvqoe.mouth2ear as mouth2ear
-import mcvqoe.intelligibility as intell
-import mcvqoe.psud as psud
-import mcvqoe.accesstime as access
+import mcvqoe.mouth2ear
+import mcvqoe.intelligibility
+import mcvqoe.psud
+import mcvqoe.accesstime
 # --------------[Measurement Globals]-----------------------------------
 measurements = [
     'm2e',
@@ -112,44 +113,30 @@ def parse_contents(contents, filename):
 
 def load_json_data(jsonified_data, measurement):
     """
-    Load json data as mouth2ear.evaluate object
+    Load json data as evaluate object for given measurement
 
     Parameters
     ----------
     jsonified_data : str
-        Jsonified dict of jsonified dataframes.
+        Jsonified dict of jsonified dataframes. See evaluate.to_json() for any
+        measurement evaluate class.
+    
+    measurement : str
+        One of psud, access, m2e, intell
 
     Returns
     -------
-    m2e_eval : mcvqoe.mouth2ear.evaluate
+    eval_obj : mcvqoe.mouth2ear.evaluate, mcvqoe.accesstime.evaluate, mcvqoe.psud.evaluate, mcvqoe.intelligibility.evaluate
         Evaluate object of all stored data.
 
     """
-    # Parse dict of dataframes
-    test_dict = json.loads(jsonified_data)
-    if measurement == 'psud':
-        eval_obj = psud.evaluate(json_data=jsonified_data)
-    elif measurement == 'access':
-        eval_obj = access.evaluate(json_data=jsonified_data)
-    else:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            # Initialize tmpdir
-            os.makedirs(os.path.join(tmpdirname, 'csv'))
-            outpaths = []
-            for test_name in test_dict:
-                # Read json of dict element as a dataframe
-                test_df = pd.read_json(test_dict[test_name])
-                tmpname = os.path.join(tmpdirname, 'csv', test_name)
-                # Store temporary file
-                test_df.to_csv(tmpname, index=False)
-                outpaths.append(tmpname)
-            if measurement == 'm2e':
-                # Load temporary files
-                eval_obj = mouth2ear.evaluate(outpaths)
-            elif measurement == 'intell':
-                eval_obj = intell.evaluate(outpaths)
-            elif measurement == 'psud':
-                eval_obj = psud.evaluate(outpaths)
+    modules = {'access': 'mcvqoe.accesstime',
+               'intell': 'mcvqoe.intelligibility',
+               'm2e': 'mcvqoe.mouth2ear',
+               'psud': 'mcvqoe.psud',
+               }
+    eval_obj = importlib.import_module(modules[measurement]).evaluate(json_data=jsonified_data)
+    # eval_obj = eval(modules[measurement]).evaluate(json_data=jsonified_data)
         
     return eval_obj
 
@@ -195,9 +182,8 @@ def find_cutpoints(fname, df, measurement):
     else:
         # Try to find the cutpoints from the defaults included in the package
         if measurement == 'psud':
-            print('Trying to find default cps')
             # Get default audio sets and audio path
-            [default_audio_sets, default_audio_path] = psud.measure.included_audio_sets()
+            [default_audio_sets, default_audio_path] = mcvqoe.psud.measure.included_audio_sets()
             # Initialize cutpoints dictionary
             cps = dict()
             
@@ -225,10 +211,9 @@ def find_cutpoints(fname, df, measurement):
                 else:
                     # TODO: Figure out how to flag this for users
                     raise RuntimeError('Cannot find cutpoints, say something to user')
-        if measurement == 'access':
-            print('Trying to find default cps for access')
+        elif measurement == 'access':
             # Get default audio sets and audio path
-            default_audio_path = access.measure.included_audio_path()
+            default_audio_path = mcvqoe.accesstime.measure.included_audio_path()
             default_files = os.listdir(default_audio_path)
             
             # Extract talker word combo from file name
@@ -322,11 +307,9 @@ for measurement in measurements:
             children = []
             if 'error' in test_dict:
                 filenames = test_dict['test_info']
-            elif measurement == 'access':    
-                filenames = json.loads(test_dict['test_info']).keys()
-            else:
-                filenames = test_dict
-            
+            else:    
+                filenames = test_dict['test_info'].keys()
+                
             for filename in filenames:
                 children.append(format_data_filename(filename))
         else:
@@ -337,8 +320,10 @@ for measurement in measurements:
                     dfs = []
                     # TODO: Figure out a better variable name/place to store this
                     out_json = {}
+                    test_info = {}
                     for c, filename in zip(list_of_contents, list_of_names):
                         child, df = parse_contents(c, filename)
+                        df['name'] = filename
                         children.append(child)
                         dfs.append(df)
                         
@@ -348,44 +333,60 @@ for measurement in measurements:
                         elif measurement == 'access':
                             out_json[filename] = find_cutpoints(filename, df, measurement)
                         else:
-                            out_json[filename] =  df.to_json()
-                            
-                    
-                    if measurement == 'access':
-                        # Initialize dataframe for storing all data
-                        access_df = pd.DataFrame()
-                        # Initialize cutpoints dict
-                        cps = dict()
-                        for sesh, sesh_dict in out_json.items():
-                            # Load data frame
-                            df = pd.read_json(sesh_dict['measurement'])
-                            # Add to main dataframe
-                            access_df = access_df.append(df)
-                            
-                            # Merge talker word cutpoints into main cutpoints dict
-                            cps = {**cps, **sesh_dict['cutpoints']}
-                        
-                        # Make unique index for each trial
-                        nrow, _ = access_df.shape
-                        access_df.index = np.arange(nrow)
-                        
-                        # Make a dummy test_info (required by access.load_json just not super relevant here)
-                        test_info = {'uploaded-access-data': {
-                            'data_path': 'unknown-upload',
-                            'data_file': list_of_names,
-                            'cp_path': 'unknown-upload'
-                            }
-                                     }
-                        # Store in dictionary used by access.load_json()
-                        prep_json = {
-                            'measurement': access_df.to_json(),
-                            'cps': cps,
-                            'test_info': json.dumps(test_info)
+                            out_json[filename] =  {
+                                'measurement': df.to_json()
                                 }
-                        # Dump dict to json
-                        final_json = json.dumps(prep_json)
-                    else:
-                        final_json = json.dumps(out_json)
+                        test_info[filename] = 'uploaded-data'
+                        
+                                                   
+                            
+                    # if measurement == 'access' or measurement == 'psud':
+                    # Initialize dataframe for storing all data
+                    data_df = pd.DataFrame()
+                    # Initialize cutpoints dict
+                    cps = dict()
+
+                    for sesh, sesh_dict in out_json.items():
+                        # Load data frame
+                        df = pd.read_json(sesh_dict['measurement'])
+                        # Add to main dataframe
+                        data_df = data_df.append(df)
+                        if 'cutpoints' in sesh_dict:
+                            cps[sesh] = sesh_dict['cutpoints']
+                        # Merge talker word cutpoints into main cutpoints dict
+                        # cps = {**cps, **sesh_dict['cutpoints']}
+                    
+                    # Make unique index for each trial
+                    nrow, _ = data_df.shape
+                    data_df.index = np.arange(nrow)
+                    
+                    # Make a dummy test_info (required by mcvqoe.accesstime.load_json just not super relevant here)
+                    # test_info = {'uploaded-access-data': {
+                    #     'data_path': 'unknown-upload',
+                    #     'data_file': list_of_names,
+                    #     'cp_path': 'unknown-upload'
+                    #     }
+                                 # }
+                    # Store in dictionary used by mcvqoe.accesstime.load_json()
+                    prep_json = {
+                        'measurement': data_df.to_json(),
+                        'cps': cps,
+                        'test_info': test_info
+                            }
+                    # Dump dict to json
+                    
+                    final_json = json.dumps(prep_json)
+                    # else:
+                    #     # Make a dummy test_info (required by mcvqoe.accesstime.load_json just not super relevant here)
+                    #     test_info = {'uploaded-access-data': {
+                    #         'data_path': 'unknown-upload',
+                    #         'data_file': list_of_names,
+                    #         'cp_path': 'unknown-upload'
+                    #         }
+                    #     prep_json = {'measurement': df.to_json(),
+                    #                  'test_info': test_info,
+                    #                  }
+                    #     final_json = json.dumps(prep_json)
                 except Exception as e:
                     out_info = {'test_info': list_of_names,
                             'error': e.args,
@@ -396,8 +397,8 @@ for measurement in measurements:
             else:
                 children = None
                 final_json = None
-        
         initial_data_flag = html.Div('False')
+
         return children, final_json, initial_data_flag
 # --------------[Data Filename Formattting]-----------------------
 style_data_filename = {

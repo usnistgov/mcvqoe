@@ -20,8 +20,7 @@ import io
 import json
 import numpy as np
 import os
-import pandas as pd
-import tempfile 
+import pandas as pd 
 
 from mcvqoe.hub.eval_app import app
 

@@ -15,7 +15,6 @@ import numpy as np
 import os
 import pandas as pd
 import re
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 

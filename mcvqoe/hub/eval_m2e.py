@@ -12,7 +12,6 @@ import json
 import numpy as np
 import os
 import pandas as pd
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 
@@ -105,7 +104,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
                 raise RuntimeError(error_out)
             else:
                 m2e_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-            
+
             thinned = thin == 'True'
             if x == 'index':
                 x = None
