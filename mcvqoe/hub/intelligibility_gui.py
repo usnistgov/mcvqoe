@@ -18,26 +18,6 @@ from .shared import AdvancedConfigGUI, test
 from .shared import BgNoise, trials, outdir, ptt_wait
 from .shared import ptt_gap, RadioCheck, SaveAudio
 
-
-class intell_est(MultiChoice):
-    """Control when, and how, intelligibility and mouth to ear estimations are
-        done.
-
-        During Test:
-            Compute intelligibility estimation for audio at end of each trial
-        After Test:
-            Compute intelligibility on audio after test is complete
-        Never:
-            don't compute intelligibility for audio
-
-    """
-
-    text = 'Compute Intelligibility:'
-    association = {'trial': 'During Test',
-                   'aggregate': 'After Test',
-                   'none': 'Never',
-                   }
-
 class intell_trials(trials):
     """
 Estimated errors and test time for different number of tests.
@@ -82,7 +62,6 @@ class IgtibyFrame(TestCfgFrame):
             ptt_gap,
             SaveAudio,
             RadioCheck,
-            intell_est,
             test,
             advanced,
             )
