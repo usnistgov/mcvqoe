@@ -302,12 +302,12 @@ class MCVQoEGui(tk.Tk):
                 # set control's state
                 frame.controls[key].m_ctrl.configure(state=state)
 
-        # disables m2e location in simulation
+        # disables 2 location in simulation
 
         if state == 'disabled':
 
             # make it a 1-loc test
-            self.frames[m2e].btnvars['test'].set('m2e_1loc')
+            self.frames[m2e].btnvars['test'].set('1loc')
 
     def init_frames(self):
         """Consructs the test-specific frames.

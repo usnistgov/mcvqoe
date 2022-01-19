@@ -170,7 +170,7 @@ class DevChar_Defaults(m2e.measure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.test     = 'm2e_1loc'
+        self.test     = '1loc'
         self.trials   = 400
         self.ptt_wait = 0.001
         self.ptt_gap  = 0.31
