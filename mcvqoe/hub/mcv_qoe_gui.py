@@ -302,12 +302,10 @@ class MCVQoEGui(tk.Tk):
                 # set control's state
                 frame.controls[key].m_ctrl.configure(state=state)
 
-        # disables 2 location in simulation
-
-        if state == 'disabled':
-
-            # make it a 1-loc test
-            self.frames[m2e].btnvars['test'].set('1loc')
+                # force 1 loc for simulation
+                if state == 'disabled' and key == 'test':
+                    # make it a 1-loc test
+                    frame.btnvars['test'].set('1loc')
 
     def init_frames(self):
         """Consructs the test-specific frames.
@@ -4578,6 +4576,10 @@ def get_interfaces(root_cfg):
         sim_cfg['m2e_latency'] = None
 
 
+    #--------------------- Check for 2 location simulation ---------------------
+    if is_sim and 'test' in cfg and cfg['test'] != '1loc':
+        # 2loc_rx test not allowed in simulated
+        raise ValueError('A 2-location test cannot be simulated.')
     #------------------------- set channels -----------------------------------
 
     if sel_tst in (accesstime,):
@@ -4588,21 +4590,12 @@ def get_interfaces(root_cfg):
 
     elif 'test' in cfg and cfg['test'] == '2loc_tx':
 
-        if is_sim:
-            # 2loc_rx test not allowed in simulated
-            raise ValueError('A 2-location test cannot be simulated.')
-
         channels = {
             'playback_chans' : {"tx_voice": 0},
             'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
             }
 
     elif 'test' in cfg and cfg['test'] == '2loc_rx':
-
-        if is_sim:
-            # 2loc_rx test not allowed in simulated
-            raise ValueError('A 2-location test cannot be simulated.')
-
 
         channels = {
             'playback_chans' : {},
