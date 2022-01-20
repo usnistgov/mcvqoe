@@ -208,9 +208,7 @@ class advanced(shared_advanced):
 
 
 class Access_fromGui(SignalOverride, adly.measure):
-    
-    def run(self, recovery = False):
-        super().run(recovery)
+    pass
     
 
 
