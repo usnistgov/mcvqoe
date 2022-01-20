@@ -4870,6 +4870,7 @@ def load_defaults():
             'data_file',
             'outdir',
             'ptt_gap',
+            'test',
             'ptt_rep',
             'ptt_step',
             's_thresh',

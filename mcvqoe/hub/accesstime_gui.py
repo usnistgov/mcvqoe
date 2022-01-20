@@ -12,7 +12,7 @@ import mcvqoe.accesstime as adly
 import tkinter as tk
 
 from .shared import TestCfgFrame, SubCfgFrame
-from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride
+from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride, test
 from .shared import advanced as shared_advanced
 from .loadandsave import Vec1Or2Var
 
@@ -174,6 +174,8 @@ class AccssDFrame(TestCfgFrame):
             RadioCheck,
             dev_dly,
             data_file,
+            #uncomment to add two location selector
+            #test,
             advanced,
             )
 
