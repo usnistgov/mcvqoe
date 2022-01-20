@@ -22,6 +22,7 @@ if hasattr(ctypes, 'windll'):
 
 import importlib.resources
 import mcvqoe.utilities.test_copy
+import mcvqoe.base
 import tkinter.messagebox as msb
 import tkinter.filedialog as fdl
 import tkinter.font as font
@@ -301,12 +302,10 @@ class MCVQoEGui(tk.Tk):
                 # set control's state
                 frame.controls[key].m_ctrl.configure(state=state)
 
-        # disables m2e location in simulation
-
-        if state == 'disabled':
-
-            # make it a 1-loc test
-            self.frames[m2e].btnvars['test'].set('m2e_1loc')
+                # force 1 loc for simulation
+                if state == 'disabled' and key == 'test':
+                    # make it a 1-loc test
+                    frame.btnvars['test'].set('1loc')
 
     def init_frames(self):
         """Consructs the test-specific frames.
@@ -1068,7 +1067,7 @@ class MCVQoEGui(tk.Tk):
         extra : ANY, optional
             extra info about the step.
 
-            Example: rec_stop object for m2e_2loc_rx, which overrides the abort button
+            Example: rec_stop object for 2loc_rx, which overrides the abort button
             to become a stop recording button
         """
         self.step = step
@@ -2342,10 +2341,10 @@ class ReprocessFrame(ttk.Labelframe):
 
 
         self.meas_types = {'autodetect':'auto detect',
-                           'mouth2ear':'Mouth to Ear',
-                           'accesstime':'Access Delay',
-                           'psud':'PSuD',
-                           'intelligibility':'Intelligibility',
+                           'mcvqoe.mouth2ear':'Mouth-to-Ear',
+                           'mcvqoe.accesstime':'Access Delay',
+                           'mcvqoe.psud':'PSuD',
+                           'mcvqoe.intelligibility':'Intelligibility',
                            }
 
         self.pretty_type = tk.StringVar()
@@ -2600,6 +2599,8 @@ class ReprocessFrame(ttk.Labelframe):
                                     f"'{process_obj.__module__}'")
             #set test type
             ppf.reprocess_type = mod_parts[1]
+            #set outdir in post processing frame
+            ppf.outdir = path.dirname(path.dirname(path.dirname(out_name)))
             #go to post processing frame
             loader.tk_main.win.set_step('post-process')
         except:
@@ -2621,6 +2622,15 @@ class ReprocessFrame(ttk.Labelframe):
                                         filetypes=(('csv','*.csv'),))
         if file:
             self.btnvars['datafile'].set(path.normpath(file))
+            # Detect measurement type
+            meas_type = mcvqoe.base.get_measurement_from_file(file, module=True)
+            
+            if meas_type is None:
+                raise RuntimeError(f'Unable to determine measurement type for selected file: \'{file}\'')
+            
+            # Update detected measurement type
+            self.btnvars['measurement_type'].set(meas_type)
+            self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
 
     def save_file(self):
         initial = self.btnvars['savefile'].get()
@@ -3499,109 +3509,177 @@ class ProcessDataFrame(ttk.LabelFrame):
             'mcvqoe-eval',
             '--port', '8050',
             ]
+    
+    padx = 10
+    pady = 10
     def __init__(self, master, btnvars, **kwargs):
-
-        kwargs['text'] = 'Process Data'
-
-        # kwargs['text'] = self.text
-        super().__init__(**kwargs)
+        super().__init__(text='Process Data', **kwargs)
 
 
         #option functions will get and store their values in here
         self.btnvars = btnvars
+        
+        #row in frame
+        self.r = 0
 
-        # ttk.Label(self, text='Process Data').pack(padx=10, pady=10, fill=tk.X)
+        # === Reprocess file ===
 
-        #sets what controls will be in this frame
-        controls = self.get_controls()
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datafile'])
 
-        #initializes controls
-        self.controls = {}
-        for row in range(len(controls)):
-            c = controls[row](master=self, row=row)
+        fold_button = ttk.Button(self, text='Browse', command=self.get_file)
 
-            self.controls[c.__class__.__name__] = c
-        row = len(controls) + 1
-        ttk.Button(self,
-                   text="Show Plots",
-                   command = self.plot,
-                   ).grid(row=row, column=3)
-        row += 1
-        self.help_message = tk.StringVar()
-        self.help_message.set('')
-        tk.Message(self,
-                  textvariable=self.help_message,
-                  ).grid(row=row, column=2)
-        row += 1
-        # self.controls['Plot button'] = plot_button
+        self.add_widgets('Data File', (fold_entry, fold_button),
+                            help_txt='Data file to process.')
 
-        ttk.Button(self,
-                   text='Evaluation homepage',
-                   command=self.start_server,
-                   ).grid(row=row, column=3)
-        row += 1
-    def get_controls(self):
-        return (
-            shared.data_files,
-            shared.data_path,
-            )
+        
+        # === Measurement Type/Plot button ===
 
+
+        self.meas_types = {'autodetect':'auto detect',
+                           'm2e':'Mouth to Ear',
+                           'access':'Access Delay',
+                           'psud':'PSuD',
+                           'intell':'Intelligibility',
+                           }
+
+        self.pretty_type = tk.StringVar()
+
+        #set based on measurement_type
+        self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+
+        dropdown = ttk.Menubutton(self, textvariable=self.pretty_type)
+
+        menu = tk.Menu(dropdown, tearoff=False)
+
+        for v, l in self.meas_types.items():
+            def get_command(choice):
+                def set_choice():
+                    self.btnvars['measurement_type'].set(choice)
+                    self.pretty_type.set(self.meas_types[choice])
+                return set_choice
+            menu.add_command(label=l,
+                            command=get_command(v))
+
+        dropdown.configure(menu=menu)
+
+        plot_button = ttk.Button(self,
+                                 text='Show Plots',
+                                 command=self.plot,
+                                 )
+
+        self.add_widgets('Measurement Type', (dropdown, plot_button),
+                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+        
+        # === Evaluation server homepage ===
+        home_button = ttk.Button(self,
+                                 text='Evaluation homepage',
+                                 command=self.start_server,
+                                 )
+        self.add_widget(home_button, column=2, pady=50, padx=150)
+    
+    def add_widget(self, w, column=0, padx=None, pady=None):
+        '''
+        Add a single widget that spans 4 columnspan
+        '''
+        if padx is None:
+            padx = self.padx
+        if pady is None:
+            pady = self.pady
+        w.grid(column=column, row=self.r, columnspan=4, sticky='NSW',
+                        padx=padx, pady=pady)
+
+        #move to next row
+        self.r += 1
+    
+    def add_widgets(self,  l_text, widgets ,group=None , help_txt=None):
+        '''
+        Add a row of widgets in the grid.
+
+        With label and optional help.
+        '''
+        #add label
+        label = ttk.Label(self, text=l_text)
+        label.grid(column=0, row=self.r, sticky='NSEW',
+                    padx=self.padx, pady=self.pady)
+        if group:
+            self.widgets[group].append(label)
+        #add text
+        if help_txt:
+            h_icon = shared.HelpIcon(self, tooltext=help_txt)
+            h_icon.grid(column=1, row=self.r, padx=0, pady=self.pady, sticky='NW')
+            if group:
+                self.widgets[group].append(label)
+
+        #add widgets
+        for c, w in enumerate(widgets, 2):
+            w.grid(column=c, row=self.r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+            if group:
+                self.widgets[group].append(w)
+
+        #move to next row
+        self.r += 1
+        
+    def get_file(self):
+        initial = self.btnvars['datafile'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            initial = save_dir
+
+        files = fdl.askopenfilenames(parent=self.master, initialdir=initial,
+                                        filetypes=(('csv','*.csv'),))
+        
+        if files:
+            paths = []
+            meas_types = []
+            for file in files:
+                paths.append(path.normpath(file))
+                # self.btnvars['datafile'].set(path.normpath(file))
+                # Detect measurement type
+                meas_type = mcvqoe.base.get_measurement_from_file(file, module=False)
+                
+                if meas_type is None:
+                    raise RuntimeError(f'Unable to determine measurement type for selected file: \'{file}\'')
+                meas_types.append(meas_type)
+            
+            if len(set(meas_types)) > 1:
+                raise RuntimeError(f'Selected files were of multiple types:\n[{set(meas_types)}]\nOnly one type of measurement can be processed at a time.')
+            
+            
+            self.btnvars['datafile'].set(', '.join(paths))
+            # Update detected measurement type
+            self.btnvars['measurement_type'].set(meas_type)
+            self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+    
     def plot(self):
 
-        message=''
-        data_files_raw = self.btnvars['data_files'].get()
-        if data_files_raw == '':
-            message += 'No files selected\n'
-
-        # Strip away weird extra characters from file selection
-        capture_search = re.compile(r'(capture_.+_\d{2}-\w{3}-\d{4}_\d{2}-\d{2}-\d{2}(.*).csv)')
-        search = capture_search.search(data_files_raw)
-        if search is not None:
-            data_files = search.group().split("', '")
-        else:
-            data_files = []
-            start_server = False
-            message += 'No valid files selected'
-
-        data_path = self.btnvars['data_path'].get()
-        # TODO: Make a dropdown for test type, autodetect if you can but let user select if they can
-        selected_test = os.path.basename(os.path.dirname(os.path.dirname(data_path)))
-
+        data_files_raw = self.btnvars['datafile'].get()
+        data_files = data_files_raw.split(', ')
+        
         start_server = True
-        if selected_test == 'Mouth_2_Ear':
-            test_type = 'm2e'
-        elif selected_test == 'Access_Time':
-            test_type = 'access'
-        elif selected_test == 'PSuD':
-            test_type = 'psud'
-        elif selected_test == 'Intelligibility':
-            test_type = 'intell'
+        test_type = self.btnvars['measurement_type'].get()
+        
+        if test_type == 'autodetect':
+            data_url = self.data_url()
         else:
-            # TODO: Do something here?
-            test_type = ''
-            message += f'Invalid test directory, unrecognized measurement: \'{test_type}\''
-            start_server = False
-
-        if isinstance(data_files, str):
-            data_files = [data_files]
-
-        # test_files = [os.path.join(data_path, x) for x in data_files]
-        test_files = []
-        for df in data_files:
-            test_files.append(os.path.join(data_path, df))
-
-        url_files = [urllib.request.pathname2url(x) for x in test_files]
-        url_file_str = ';'.join(url_files)
-
-
-        data_url = self.data_url(test_type, url_file_str)
+            if isinstance(data_files, str):
+                data_files = [data_files]
+    
+            url_files = [urllib.request.pathname2url(x) for x in data_files]
+            url_file_str = ';'.join(url_files)
+    
+    
+            data_url = self.data_url(test_type, url_file_str)
+        
         # message += f'Data will be viewable at {data_url}\n'
         if start_server and not hasattr(self.master, 'eval_server'):
             self.master.eval_server = start_evaluation_server(self.gui_call,
                                                               data_url)
         elif start_server:
             webbrowser.open(data_url)
-        self.help_message.set(message)
+        
 
     def data_url(self, test_type=None, url_file_str=None):
         if test_type is None:
@@ -3864,6 +3942,15 @@ def run(root_cfg):
         psud : loader.psud_gui.PSuD_fromGui,
         intelligibility: loader.intelligibility_gui.Igtiby_from_Gui,
             }
+    
+    evaluators = {
+        dev_dly_char : loader.m2e_gui.M2E_Eval_from_GUI,
+
+        m2e: loader.m2e_gui.M2E_Eval_from_GUI,
+        accesstime: loader.accesstime_gui.Access_Eval_from_GUI,
+        psud : loader.psud_gui.PSuD_Eval_from_GUI,
+        intelligibility: loader.intelligibility_gui.Intell_eval_from_GUI,
+        }
 
     # extract test configuration:
 
@@ -4002,26 +4089,81 @@ def run(root_cfg):
 
         """
 
+        if 'test' in cfg and cfg['test'] != '1loc':
+            #skip post processing for 2 location tests
+            # 2-loc-tx prompt to stop rx
+            if my_obj.test == '2loc_tx':
+                ppf.add_element('Data collection complete, you may now stop data\n' +
+                            'collection on the receiving end')
         # intelligibility estimate
-        if sel_tst == intelligibility:
-            ppf.add_element(f'Intelligibility Estimate: {result}')
+        elif sel_tst == intelligibility:
+            # ppf.add_element(f'Intelligibility Estimate: {result}')
+            outname = my_obj.data_filename
+            
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            mean, ci = eval_obj.eval()
+            ppf.add_element(f'Intelligibility Estimate: {mean}')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
 
         # M2e: mean, std, and plots
-        elif sel_tst in (m2e, dev_dly_char) and cfg['test'] == 'm2e_1loc':
+        elif sel_tst in (m2e, dev_dly_char):
             #show mean and std_dev
-
-            mean, std = my_obj.get_mean_and_std()
-
-            # TODO: Kill the gui call when finish button pressed
-
-            ppf.add_element("Mean: %.5fs" % mean)
-            ppf.add_element("StD: %.2fus" % std)
-
-        # M2e: 2-loc-tx prompt to stop rx
-        elif sel_tst == m2e and my_obj.test == 'm2e_2loc_tx':
-            ppf.add_element('Data collection complete, you may now stop data\n' +
-                            'collection on the receiving end')
-
+            outname = my_obj.data_filename
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            mean, ci = eval_obj.eval()
+            ppf.add_element(f'Mouth-to-ear Latency Estimate: {mean} seconds')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")} seconds')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
+        
+        elif sel_tst == psud:
+            outname = my_obj.data_filename
+            
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Display mean and confidence interval
+            threshold = 0.5
+            msg_len = 3
+            method = 'EWC'
+            mean, ci = eval_obj.eval(threshold=threshold,
+                                     msg_len=msg_len,
+                                     method=method
+                                     )
+            
+            ppf.add_element(f'{method} PSuD Estimate for a message of length {msg_len} seconds\nwith intelligibility threshold of {threshold}:\n{mean}')
+            ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+            ppf.add_element('Click Show Plots to see more details on measurement.')
+        elif sel_tst == accesstime:
+            outname = my_obj.data_filenames
+            try:
+                # Initialize evaluation object
+                eval_obj = evaluators[sel_tst](outname)
+                
+                alpha = 0.9
+                # Display mean and confidence interval
+                mean, ci = eval_obj.eval(alpha=0.9)
+                ppf.add_element(f'Access time Estimate for alpha={alpha}:\n{mean} seconds')
+                ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
+                ppf.add_element('Click Show Plots to see more details on measurement.')
+            except Exception as e:
+                default_msg = ('Access object could not be processed.\n')
+                if e.args[0] == 'Optimal parameters not found: Number of calls to function has reached maxfev = 600.':
+                    debug_help = ('This measurement is invalid. Try rerunning '
+                                  'the test with a smaller Time Increase per '
+                                  'Step to increase resolution.')
+                else:
+                    debug_help = ''
+                msg = default_msg + debug_help
+                ppf.add_element('Access time evaluation object could not be processed')
+                ppf.add_element(msg)
+            
         # device delay characterization: show new device delay
         if sel_tst == dev_dly_char:
 
@@ -4498,7 +4640,7 @@ def get_interfaces(root_cfg):
 
     # check device delay type
     if sim_cfg['device_delay_type'] == 'constant':
-        sim_cfg['device_delay_delay'] = float(sim_cfg['device_delay_delay'])
+        sim_cfg['device_delay'] = float(sim_cfg['device_delay'])
     else:
         #access delay is using random values
 
@@ -4513,6 +4655,10 @@ def get_interfaces(root_cfg):
                                               scale=sigma
                                               )
 
+    #--------------------- Check for 2 location simulation ---------------------
+    if is_sim and 'test' in cfg and cfg['test'] != '1loc':
+        # 2loc_rx test not allowed in simulated
+        raise ValueError('A 2-location test cannot be simulated.')
     #------------------------- set channels -----------------------------------
 
     if sel_tst in (accesstime,):
@@ -4521,23 +4667,14 @@ def get_interfaces(root_cfg):
             'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
             }
 
-    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_tx':
-
-        if is_sim:
-            # 2loc_rx test not allowed in simulated
-            raise ValueError('A 2-location test cannot be simulated.')
+    elif 'test' in cfg and cfg['test'] == '2loc_tx':
 
         channels = {
             'playback_chans' : {"tx_voice": 0},
             'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
             }
 
-    elif 'test' in cfg and cfg['test'] == 'm2e_2loc_rx':
-
-        if is_sim:
-            # 2loc_rx test not allowed in simulated
-            raise ValueError('A 2-location test cannot be simulated.')
-
+    elif 'test' in cfg and cfg['test'] == '2loc_rx':
 
         channels = {
             'playback_chans' : {},
@@ -4812,6 +4949,7 @@ def load_defaults():
             'data_file',
             'outdir',
             'ptt_gap',
+            'test',
             'ptt_rep',
             'ptt_step',
             's_thresh',
@@ -4833,8 +4971,8 @@ def load_defaults():
             'outdir',
             'ptt_wait',
             'ptt_gap',
+            'test',
             'm2e_min_corr',
-            'intell_est',
             'save_tx_audio',
             'save_audio',
         ],
@@ -4844,8 +4982,8 @@ def load_defaults():
             'outdir',
             'ptt_wait',
             'ptt_gap',
+            'test',
             'pause_trials',
-            'intell_est',
             'save_tx_audio',
             'save_audio',
             'bgnoise_file',
@@ -4900,7 +5038,6 @@ def load_defaults():
         intelligibility: loader.intelligibility_gui.igtiby.measure(),
         'SimSettings': shared._SimPrototype(),
         'HdwSettings': shared._HdwPrototype(),
-        'ProcessSettings': shared.ProcessSettings(),
         }
 
     # ----------------------load default values from objects-----------------------
@@ -5000,16 +5137,19 @@ def load_defaults():
 
     # Set Intelligibility wrapper class defaults
     DEFAULTS[intelligibility]['intell_trials'] = DEFAULTS[intelligibility]['trials']
-
+    
+    # ---Processing Frame---
     DEFAULTS[process]['data_files'] = ''
+    DEFAULTS[process]['measurement_type'] = 'autodetect'
+    DEFAULTS[process]['datafile'] = ''
+    # data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
 
-    data_path = loadandsave.fdl_cache['ProcessDataFrame.data_path']
-
-    if data_path is None:
-        # Use default hub
-        DEFAULTS[process]['data_path'] = save_dir
-    else:
-        DEFAULTS[process]['data_path'] = data_path
+    # if data_path is None:
+    #     # Use default hub
+    #     DEFAULTS[process]['data_path'] = save_dir
+    # else:
+    #     DEFAULTS[process]['data_path'] = data_path
+    
 
     #add settings for sync
 

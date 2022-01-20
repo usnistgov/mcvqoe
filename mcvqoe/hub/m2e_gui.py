@@ -6,10 +6,11 @@ Created on Wed Jun  2 08:52:09 2021
 """
 
 import mcvqoe.mouth2ear.m2e as m2e
+import mcvqoe.mouth2ear
 
 from .shared import TestCfgFrame
 from .shared import advanced as shared_advanced
-from .shared import AdvancedConfigGUI,MultiChoice,SignalOverride
+from .shared import AdvancedConfigGUI, MultiChoice, SignalOverride, test
 
 
 import csv
@@ -20,24 +21,6 @@ import numpy as np
 from .shared import audio_files, audio_path
 from .shared import BgNoise, SaveAudio
 from .shared import trials, ptt_wait, ptt_gap, outdir
-
-
-
-class test(MultiChoice):
-    """M2E test to perform. Options are: 1 Location (m2e_1loc), 
-    2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
-
-    text = 'Location Type:'
-    
-    association = {
-            'm2e_1loc'   : '1 Location',
-            'm2e_2loc_tx': '2 Location (transmit)',
-            'm2e_2loc_rx': '2 Location (receive)'
-            }
-    
-   
-
-
 
 
 class M2EAdvancedConfigGUI(AdvancedConfigGUI):
@@ -95,20 +78,7 @@ class M2eFrame(TestCfgFrame):
 # --------------------- using the m2e measure class ---------------------------
 
 class M2E_fromGui(SignalOverride, m2e.measure):
-    
-    def run(self):
-              
-        
-        # Run chosen M2E test
-        if (self.test == "m2e_1loc"):
-            self.m2e_1loc()
-        elif (self.test == "m2e_2loc_tx"):
-            self.m2e_2loc_tx()
-        elif (self.test == "m2e_2loc_rx"):
-            self.m2e_2loc_rx()
-        else:
-            raise ValueError("\nIncorrect test type")
-            
+
         
     def get_mean_and_std(self,name=None):
         
@@ -144,7 +114,11 @@ class M2E_fromGui(SignalOverride, m2e.measure):
 
 
 
-
+class M2E_Eval_from_GUI(SignalOverride, mcvqoe.mouth2ear.evaluate):
+    def param_check(self):
+        # future proof
+        if hasattr(super(), 'param_check'):
+            super().param_check()
 
 
 
@@ -196,7 +170,7 @@ class DevChar_Defaults(m2e.measure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.test     = 'm2e_1loc'
+        self.test     = '1loc'
         self.trials   = 400
         self.ptt_wait = 0.001
         self.ptt_gap  = 0.31
@@ -206,5 +180,5 @@ class DevChar_Defaults(m2e.measure):
 
 class DevChar_fromGui(M2E_fromGui): pass
     
-    
+
 

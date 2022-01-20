@@ -12,7 +12,7 @@ import mcvqoe.accesstime as adly
 import tkinter as tk
 
 from .shared import TestCfgFrame, SubCfgFrame
-from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride
+from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride, test
 from .shared import advanced as shared_advanced
 from .loadandsave import Vec1Or2Var
 
@@ -174,6 +174,8 @@ class AccssDFrame(TestCfgFrame):
             RadioCheck,
             dev_dly,
             data_file,
+            #uncomment to add two location selector
+            #test,
             advanced,
             )
 
@@ -208,10 +210,16 @@ class advanced(shared_advanced):
 
 
 class Access_fromGui(SignalOverride, adly.measure):
-    
-    def run(self, recovery = False):
-        super().run(recovery)
+    pass
     
 
+
+class Access_Eval_from_GUI(SignalOverride, adly.evaluate):
+    
+    def param_check(self):
+        # future-proofing this param-check override
+        if hasattr(super(), 'param_check'):
+            super().param_check()
+    
 
 
