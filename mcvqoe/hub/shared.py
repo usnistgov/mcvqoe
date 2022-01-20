@@ -1846,7 +1846,9 @@ class m2e_latency(LabeledControl):
 
 class m2e_latency_sigma(LabeledControl):
     """
-    Sigma value for m2e latency
+    Sigma value for m2e latency.
+    
+    If Normal distribution it is standard deviation
     """
 
     text = '\u03C3:'
@@ -1880,7 +1882,7 @@ class RangeDisplay:
 class m2e_latency_range(RangeDisplay):
     """display of the range of the mouth to ear latency"""
 
-    text = 'm2e range:'
+    text = 'M2E Latency range\n(roughly 95% of values):'
 
     def __init__(self, master, row, *args, **kwargs):
 
@@ -1925,8 +1927,8 @@ class m2e_latency_range(RangeDisplay):
                 m2e_val = float(m2e_val)
                 m2e_sigma = float(m2e_sigma)
 
-                lower = round(m2e_val - m2e_sigma, 4)
-                upper = round(m2e_val + m2e_sigma, 4)
+                lower = round(m2e_val - 1.96*m2e_sigma, 4)
+                upper = round(m2e_val + 1.96*m2e_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
             except ValueError:
@@ -1967,7 +1969,9 @@ class access_delay_type(DistributionType):
 
 class access_delay_sigma(LabeledControl):
     """
-    Sigma value for m2e latency
+    Sigma value for access delay.
+    
+    If Normal distribution it is standard deviation
     """
 
     text = '\u03C3:'
@@ -1977,7 +1981,7 @@ class access_delay_sigma(LabeledControl):
 class access_delay_range(RangeDisplay):
     """display of the range of access delay"""
 
-    text = 'range:'
+    text = 'Access delay range\n(roughly 95% of values):'
 
     def __init__(self, master, row, *args, **kwargs):
 
@@ -2016,8 +2020,8 @@ class access_delay_range(RangeDisplay):
                 acc_val = float(acc_val)
                 acc_sigma = float(acc_sigma)
 
-                lower = round(acc_val - acc_sigma, 4)
-                upper = round(acc_val + acc_sigma, 4)
+                lower = round(acc_val - 1.96*acc_sigma, 4)
+                upper = round(acc_val + 1.96*acc_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
         except (ValueError,_tkinter.TclError):
