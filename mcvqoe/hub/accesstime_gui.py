@@ -148,14 +148,10 @@ class DetectFailure(SubCfgFrame):
             s_tries,
             )
 
+class zip_audio(LabeledCheckbox):
+    """ If checked audio will be zipped after test completes."""
 
-
-
-
-
-
-
-
+    middle_text = "Zip Audio"
 
 # ------------------------ The main configuration frame -----------------------
 
@@ -188,6 +184,7 @@ class AccDlyAdvanced(AdvancedConfigGUI):
         return (
             
             ptt_rep,
+            zip_audio,
             ptt_delay,
             
             AutoStop,

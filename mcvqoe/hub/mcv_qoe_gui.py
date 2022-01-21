@@ -4879,6 +4879,7 @@ def load_defaults():
             'pause_trials',
             'save_tx_audio',
             'save_audio',
+            'zip_audio',
         ],
 
         psud: [
