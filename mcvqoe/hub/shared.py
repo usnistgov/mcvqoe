@@ -1965,6 +1965,7 @@ class access_delay_cfg(SubCfgFrame):
 
 class access_delay_type(DistributionType):
     """Type of access delay"""
+    # TODO: Add exponential + constant
     pass
 
 class access_delay_sigma(LabeledControl):
@@ -2024,6 +2025,8 @@ class access_delay_range(RangeDisplay):
                 upper = round(acc_val + 1.96*acc_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
+                
+                # TODO: Add exponential + constant distribution
         except (ValueError,_tkinter.TclError):
             #ignore value errors (partially entered number)
             pass
@@ -2051,7 +2054,9 @@ class device_delay_type(DistributionType):
 
 class device_delay_sigma(LabeledControl):
     """
-    Sigma value for m2e latency
+    Sigma value for device latency.
+    
+    If Normal distribution it is standard deviation.
     """
 
     text = '\u03C3:'
@@ -2068,7 +2073,7 @@ class device_delay(LabeledControl):
 class device_delay_range(RangeDisplay):
     """display of the range of the mouth to ear latency"""
 
-    text = 'device delay range:'
+    text = 'Device delay range\n(roughly 95% of values):'
 
     def __init__(self, master, row, *args, **kwargs):
 
@@ -2106,9 +2111,9 @@ class device_delay_range(RangeDisplay):
                 #convert values to float
                 dly_val = float(dly_val)
                 dly_sigma = float(dly_sigma)
-
-                lower = round(dly_val - dly_sigma, 4)
-                upper = round(dly_val + dly_sigma, 4)
+                
+                lower = round(dly_val - 1.96*dly_sigma, 4)
+                upper = round(dly_val + 1.96*dly_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
         except (ValueError,_tkinter.TclError):
