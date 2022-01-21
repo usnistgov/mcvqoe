@@ -69,10 +69,7 @@ class IgtibyFrame(TestCfgFrame):
 # ---------------------- Extending the measure class --------------------------
 
 class Igtiby_from_Gui(SignalOverride, igtiby.measure):
-    def param_check(self):
-        # future proof
-        if hasattr(super(), 'param_check'):
-            super().param_check()
+    pass
 
 class Intell_eval_from_GUI(SignalOverride, igtiby.evaluate):
     def param_check(self):
