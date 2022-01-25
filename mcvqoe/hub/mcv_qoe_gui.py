@@ -2556,7 +2556,8 @@ class ReprocessFrame(ttk.Labelframe):
                 in_file = two_loc_process.twoloc_process(
                                             in_file, extra_play=extraplay,
                                             rx_name=rx_name,
-                                            progress_update=gui_progress_update
+                                            progress_update=gui_progress_update,
+                                            outdir=outdir,
                                                         )
 
                 #when we reprocess, overwrite file
