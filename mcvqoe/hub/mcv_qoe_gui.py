@@ -1774,17 +1774,9 @@ class TestTypeFrame(tk.Frame):
         ttk.Separator(self).pack(fill=tk.X, pady=15)
 
         ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
-
-        # Find umc device if it exists
-        umc_flag = False
-        for ad in self.valid_devices:
-            if 'UMC' in ad['name']:
-                dev = ad
-                umc_flag = True
-        # Otherwise grab first valid device
-        if not umc_flag:
-            dev = self.valid_devices[0]
-
+        
+        dev = self.initial_device()
+        
         self.audio_device.set(dev['name'])
 
         self.audio_select = ttk.OptionMenu(
@@ -1881,14 +1873,21 @@ class TestTypeFrame(tk.Frame):
     def update_audio_devices(self):
         """Update audio device list with valid devices"""
         valid_devices = self.valid_devices
+        valid_devices.append({'name': 'refresh device list'})
         menu = self.audio_select['menu']
         for dev in valid_devices:
             menu.add_command(
                 label=dev['name'],
                 command=lambda val=dev['name']: self.select_audio_device(val))
+        
 
     def select_audio_device(self, val):
-        self.audio_device.set(val)
+        if val == 'refresh device list':
+            self.refresh_audio_devices()
+            dev = self.initial_device()
+            self.audio_device.set(dev['name'])
+        else:
+            self.audio_device.set(val)
 
     @property
     def valid_devices(self):
@@ -1903,7 +1902,17 @@ class TestTypeFrame(tk.Frame):
             valid_devices.append({'name': '<no valid audio devices>'})
         return valid_devices
 
-
+    def initial_device(self):
+        # Find umc device if it exists
+        umc_flag = False
+        for ad in self.valid_devices:
+            if 'UMC' in ad['name']:
+                dev = ad
+                umc_flag = True
+        # Otherwise grab first valid device
+        if not umc_flag:
+            dev = self.valid_devices[0]
+        return dev
 class LogoFrame(tk.Canvas):
 
     def __init__(self, master, width=150, height=170, *args, **kwargs):
