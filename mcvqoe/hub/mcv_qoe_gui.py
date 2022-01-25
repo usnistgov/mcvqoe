@@ -3421,6 +3421,13 @@ class PostProcessingFrame(ttk.Frame):
 
     @in_thread('MainThread', wait=False)
     def plot(self):
+        
+        test_files = self.last_test
+        if isinstance(test_files, str):
+            test_files = [test_files]
+        url_files = [urllib.request.pathname2url(x) for x in test_files]
+        url_file_str = ';'.join(url_files)
+        
         selected_test = self.master.selected_test.get()
         if selected_test == 'M2eFrame':
             test_type = 'm2e'
@@ -3431,16 +3438,18 @@ class PostProcessingFrame(ttk.Frame):
         elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
         elif selected_test == 'ReprocessFrame':
-            test_type = self.reprocess_type
+            # test_type = self.reprocess_type
+            test_types = [mcvqoe.base.get_measurement_from_file(x, module=False) for x in test_files]
+            
+            if len(set(test_types)) > 1:
+                raise RuntimeError(f'Selected files were of multiple types:\n[{set(test_types)}]\nOnly one type of measurement can be processed for plotting at a time.')
+            else:
+                test_type = test_types[0]
         else:
             # TODO: Do something here?
             print('uh oh')
             test_type = ''
-        test_files = self.last_test
-        if isinstance(test_files, str):
-            test_files = [test_files]
-        url_files = [urllib.request.pathname2url(x) for x in test_files]
-        url_file_str = ';'.join(url_files)
+        
         gui_call = [
             'mcvqoe-eval',
             '--port', '8050',
@@ -3451,42 +3460,6 @@ class PostProcessingFrame(ttk.Frame):
 
         if not hasattr(self.master, 'eval_server'):
             self.master.eval_server = start_evaluation_server(gui_call, data_url)
-            # # webbrowser.open('http://127.0.0.1:8050/shutdown')
-            # eval_config = {
-            #     'stderr' : sp.PIPE,
-            #     'stdout' : sp.PIPE,
-            #     'stdin'  : sp.DEVNULL,
-            #     'bufsize': 1,
-            #     'universal_newlines': True
-            # }
-
-            # #only for windows, prevent windows from appearing
-            # if os.name == 'nt':
-            #     startupinfo = sp.STARTUPINFO()
-            #     startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
-            #     eval_config['startupinfo'] = startupinfo
-
-            # self.master.eval_server = sp.Popen(gui_call,
-            #                                    **eval_config
-            #                                    )
-
-            # open_flag = False
-            # for line in self.master.eval_server.stdout:
-            #     print(line, end='') # process line here
-
-            #     if 'Dash is running' in line:
-            #         print('Starting server')
-            #         open_flag = True
-            #         webbrowser.open(data_url)
-            #         break
-            # if not open_flag:
-            #     last_line = ''
-            #     for line in self.master.eval_server.stderr:
-            #         print(line, end='')
-            #         # Ensure last line is not empty
-            #         if line.strip():
-            #             last_line = line
-            #     raise RuntimeError(last_line.strip())
 
         else:
             # TODO: Consider checking server status here in case errored out at some point
