@@ -8,6 +8,7 @@ Created on Wed Jun  9 11:03:39 2021
 from os import path
 
 import importlib.resources
+import sys
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
@@ -16,6 +17,7 @@ from PIL import Image, ImageTk
 import mcvqoe.hub.loadandsave as loadandsave
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
+from _tkinter import TclError
 
 from mcvqoe.simulation import QoEsim
 
@@ -26,10 +28,18 @@ FONT_SIZE = 10
 
 #find MCV icon and add set as window icon
 def add_mcv_icon(win):
-    with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+    img_ext = 'ico' if sys.platform.startswith('win') else 'png'
+    with importlib.resources.path('mcvqoe.hub','MCV-sm.'+img_ext) as icon:
         if icon:
-            #set the title- and taskbar icon
-            win.iconbitmap(icon)
+            try:
+                if img_ext == 'ico':
+                    #set the title- and taskbar icon
+                    win.iconbitmap(icon)
+                else:
+                    logo = tk.PhotoImage(file=icon)
+                    win.call('wm', 'iconphoto', win._w, logo)
+            except TclError as e:
+                print(f'failed to add icon : {icon}, {e}')
         else:
             print('Could not find icon file')
 
@@ -284,14 +294,39 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
             # stores controls with their keys being their parameter names
             container.controls[c.__class__.__name__] = c
 
+        if self.use_scrollbar:
+            #update things so winfo_width returns good values
+            self.scroll_frame.canvas.update_idletasks()
+            self.bot_frame.update_idletasks()
+            self.bot_frame.update()
 
+            #get scroll region of the canvas, this is the size of the things in it
+            scroll_region = self.scroll_frame.canvas.cget('scrollregion').split()
 
+            #compute size of things in the canvas
+            cwidth = int(scroll_region[2]) - int(scroll_region[0])
+            cheight = int(scroll_region[3]) - int(scroll_region[1])
+
+            #get width of scrollbar
+            bar_width = self.scroll_frame.scrollbar.winfo_width()
+
+            #get width of the bottom frame
+            bot_height = self.bot_frame.winfo_height()
+
+            width = int(cwidth*1.1) + bar_width
+
+            height = cheight + int(bot_height*1.1)
+
+            #get the height of the screen
+            sheight = self.winfo_screenheight()
+
+            #limit maximum height to 80% screen height
+            height = min(height, int(sheight*0.8))
+
+            self.geometry(f"{width}x{height}")
 
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
-
-
-
 
 
 
@@ -862,9 +897,9 @@ class MultiChoice(LabeledControl):
         associates the internal option with its user-friendly name. i.e.:
 
             {
-            'm2e_1loc'   : '1 Location',
-            'm2e_2loc_tx': '2 Location (transmit)',
-            'm2e_2loc_rx': '2 Location (receive)'
+            '1loc'   : '1 Location',
+            '2loc_tx': '2 Location (transmit)',
+            '2loc_rx': '2 Location (receive)'
             }
 
 
@@ -1369,7 +1404,10 @@ class dev_dly(LabeledNumber):
 
 
     def on_button(self):
-        CharDevDly()
+        if _get_master(self, tk.Tk).is_simulation.get():
+            self.btnvar.set("automatic")
+        else:
+            CharDevDly()
 
 
 
@@ -2044,74 +2082,14 @@ def format_audio_files(path_= '', files=[]):
 
     return newpath, newfiles
 
-class ProcessSettings():
-    def get_controls(self):
-        return (
-            data_files,
-            data_path,
-            )
+class test(MultiChoice):
+    """M2E test to perform. Options are: 1 Location (m2e_1loc),
+    2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
 
-class data_path(EntryWithButton):
-    """The default source folder containing all measurements."""
+    text = 'Location Type:'
 
-
-    text = 'Data Folder:'
-
-    button_text = 'Browse Folder'
-
-
-    def on_button(self):
-
-        initpath = self.btnvar.get()
-        if not initpath or not path.isdir(initpath):
-
-            # load cached folder
-            initpath = loadandsave.fdl_cache[
-                f'{self.master.__class__.__name__}.data_path']
-
-
-        fp = fdl.askdirectory(initialdir = initpath)
-        if fp:
-
-            fp = path.normpath(fp)
-
-            path_, files = format_audio_files(path_=fp)
-
-            self.master.btnvars['data_path'].set(files)
-
-            self.btnvar.set(path_)
-
-            loadandsave.fdl_cache.put(
-                f'{self.master.__class__.__name__}.data_path',
-                path_,
-                )
-class data_files(EntryWithButton):
-
-    text = 'Data Files:'
-    button_text = 'Browse Files'
-
-    def on_button(self):
-        initpath = self.master.btnvars['data_path'].get()
-        if not initpath or not path.isdir(initpath):
-
-            # load cached folder
-            initpath = loadandsave.fdl_cache[
-                f'{self.master.__class__.__name__}.data_path']
-
-
-        fp = fdl.askopenfilenames(parent=self.master,
-                initialdir=initpath,
-                filetypes=[('CSV files', '*.csv')])
-        if fp:
-            # normalize paths (prevents mixing of / and \ on windows)
-            fp = [path.normpath(f) for f in fp]
-
-            path_, files = format_audio_files('', fp)
-            self.btnvar.set(files)
-            self.master.btnvars['data_path'].set(path_)
-
-            # cache folder
-            loadandsave.fdl_cache.put(
-                f'{self.master.__class__.__name__}.data_path',
-                 path_,
-                 )
+    association = {
+            '1loc'   : '1 Location',
+            '2loc_tx': '2 Location (transmit)',
+            '2loc_rx': '2 Location (receive)'
+            }

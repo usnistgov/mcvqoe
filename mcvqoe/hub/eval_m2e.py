@@ -12,7 +12,6 @@ import json
 import numpy as np
 import os
 import pandas as pd
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 
@@ -42,6 +41,10 @@ def format_m2e_results(m2e_eval, digits=6):
         DESCRIPTION.
 
     """
+    if np.isnan(m2e_eval.common_thinning):
+        thin_msg = f'No common thinning factor identified, statistics displayed for unthinned data'
+    else:
+        thin_msg = f'{m2e_eval.common_thinning}'
     pretty_mean = eval_shared.pretty_numbers(m2e_eval.mean, digits)
     pretty_ci = eval_shared.pretty_numbers(m2e_eval.ci, digits)
     children = html.Div([
@@ -50,8 +53,7 @@ def format_m2e_results(m2e_eval, digits=6):
         html.H6('95% Confidence Interval'),
         html.Div(f'{pretty_ci} seconds'),
         html.H6('Thinning factor'),
-        html.Div(f'{m2e_eval.common_thinning}'),
-        html.Div('TODO: Do something smarter when common thinning factor is not found'),
+        html.Div(thin_msg),
         ],
         style=eval_shared.style_results,
         # className='six columns',
@@ -105,7 +107,7 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
                 raise RuntimeError(error_out)
             else:
                 m2e_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
-            
+
             thinned = thin == 'True'
             if x == 'index':
                 x = None

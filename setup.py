@@ -11,7 +11,7 @@ setuptools.setup(
     description="Graphical interface for mcvqoe measurements",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gitlab.nist.gov/gitlab/PSCR/MCV/mcv-qoe-gui",
+    url="https://github.com/usnistgov/mcvqoe",
     packages=setuptools.find_namespace_packages(include=['mcvqoe.*']),
     include_package_data=True,
     use_scm_version={'write_to' : 'mcvqoe/hub/version.py'},

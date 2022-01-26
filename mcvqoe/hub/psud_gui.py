@@ -11,7 +11,7 @@ import tkinter.filedialog as fdl
 
 from .shared import LabeledSlider, TestCfgFrame, AdvancedConfigGUI, SignalOverride
 from .shared import Audio_Set
-from .shared import format_audio_files
+from .shared import format_audio_files, test
 from .shared import advanced as shared_advanced
 
 #----------------------------controls-----------------------------------------
@@ -24,23 +24,6 @@ from .shared import SaveAudio, MultiChoice
 class m2e_min_corr(LabeledSlider):
     """Minimum correlation value for acceptable mouth 2 ear measurement"""
     text = 'Min Corr. for Success:'
-    
-    
-class intell_est(MultiChoice):
-    """Compute Intelligibility estimation on audio:
-    At the end of each trial,
-    After test is complete,
-    OR
-    Don't compute intelligibility."""
-    
-    text = 'Compute Intelligibility:'
-    
-    association = {
-        'trial' : 'During Test',
-        'post'  : 'After Test',
-        'none'  : 'Never',
-        }
-
 
 class audio_set(Audio_Set):
     """Included PSuD Audio set to use."""
@@ -136,7 +119,7 @@ class PSuDFrame(TestCfgFrame):
             SaveAudio,
             ptt_wait,
             ptt_gap,
-            intell_est,
+            test,
             advanced,
             )
     
@@ -156,6 +139,9 @@ class advanced(shared_advanced):
 #-------------------------Running the test------------------------------------
 
 class PSuD_fromGui(SignalOverride, psud.measure):
+    pass
+
+class PSuD_Eval_from_GUI(SignalOverride, psud.evaluate):
     
     def param_check(self):
         # future-proofing this param-check override
