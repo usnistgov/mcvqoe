@@ -75,7 +75,7 @@ def mcv_headers(measurement):
         ]
     return children
 #---------------[Parsing Data]----------------------------
-def parse_contents(contents, filename, measurement):
+def parse_contents(contents, filename):
     """
     Parse contents of uploaded data
 
@@ -100,27 +100,18 @@ def parse_contents(contents, filename, measurement):
     try:
         if ext == '.csv':
             # Load in data in fpath
-            if measurement == 'access':
-                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
-                
-            elif measurement == 'tvo':
-                
-                df_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')),
-                                      skiprows=2,
-                                      )
-                df_data['name'] = fname
-                df_opt = pd.read_csv(io.StringIO(decoded.decode('utf-8')),
-                                     nrows=1,
-                                     )
-                df = (df_opt, df_data)
-            else:
+            try:
                 df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-            # try:
-            #     df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-            # except pd.errors.ParserError:
-            #     # If parsing failed, access data, skip 3 rows
-            #     df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
-                
+            except pd.errors.ParserError:
+                # If parsing failed, access data, skip 2 rows (TVO)
+                df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=2)
+                if len(df.columns) == 1:
+                    # If everything got squished into one column it is access
+                    df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), skiprows=3)
+                else:
+                    # Actually is TVO, store opt
+                    df_opt = pd.read_csv(io.StringIO(decoded.decode('utf-8')), nrows=1)
+                    df = (df, df_opt)
     except Exception as e:
         print(e)
         children =  html.Div([
@@ -130,6 +121,7 @@ def parse_contents(contents, filename, measurement):
     children = format_data_filename(filename)
     
     return children, df
+
 
 def load_json_data(jsonified_data, measurement):
     """
@@ -340,28 +332,34 @@ for measurement in measurements:
             if list_of_contents is not None:
                 try:
                     children = []
-                    dfs = []
                     # TODO: Figure out a better variable name/place to store this
                     out_json = {}
                     test_info = {}
+                    
+                    if measurement == 'tvo' and len(list_of_names) > 1:
+                        raise ValueError('Cannot process more than one TVO csv at a time')
                     for c, filename in zip(list_of_contents, list_of_names):
                         child, df = parse_contents(c, filename)
+                        
+                        if isinstance(df, tuple) and len(df) == 2:
+                            # Grab extra dataframe if there (right now just for TVO)
+                            df_extra = df[1]
+                            df = df[0]
+                            
                         df['name'] = filename
 
                         children.append(child)
-                        dfs.append(df)
                         
                         if measurement == 'psud':
                             out_json[filename] = find_cutpoints(filename, df, measurement)
                             
                         elif measurement == 'access':
                             out_json[filename] = find_cutpoints(filename, df, measurement)
+                        
                         elif measurement == 'tvo':
-                            opt = df[0]
-                            data = df[1]
-                            out_json = {
-                                'data': data.to_json(),
-                                'optimal': opt.to_json(),
+                            out_json[filename] = {
+                                'measurement': df.to_json(),
+                                'optimal': df_extra.to_json(),
                                 }
                             
                         else:
@@ -374,7 +372,7 @@ for measurement in measurements:
                     data_df = pd.DataFrame()
                     # Initialize cutpoints dict
                     cps = dict()
-
+                    optimal_list = []
                     for sesh, sesh_dict in out_json.items():
                         # Load data frame
                         df = pd.read_json(sesh_dict['measurement'])
@@ -382,7 +380,14 @@ for measurement in measurements:
                         data_df = data_df.append(df)
                         if 'cutpoints' in sesh_dict:
                             cps[sesh] = sesh_dict['cutpoints']
-                    
+                        if 'optimal' in sesh_dict:
+                            
+                            optimal_list.append(pd.read_json(sesh_dict['optimal']))
+                    if len(optimal_list) > 0:
+                        optimal = pd.concat(optimal_list)
+                        optimal = optimal.to_json()
+                    else:
+                        optimal = None
                     # Make unique index for each trial
                     nrow, _ = data_df.shape
                     data_df.index = np.arange(nrow)
@@ -391,7 +396,8 @@ for measurement in measurements:
                     prep_json = {
                         'measurement': data_df.to_json(),
                         'cps': cps,
-                        'test_info': test_info
+                        'test_info': test_info,
+                        'optimal': optimal,
                             }
                     # Dump dict to json
                     

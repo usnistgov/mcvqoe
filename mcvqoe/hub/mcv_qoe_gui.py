@@ -1419,12 +1419,6 @@ class ImportLoader():
                 'tvo_gui': 'mcvqoe.hub.tvo_gui',
                 'TVOFrame': ('mcvqoe.hub.tvo_gui', 'TVOFrame'),
                 },
-            
-            'Plotting' : {
-                            'Figure' : ('matplotlib.figure','Figure'),
-                            'FigureCanvasTkAgg' : ('matplotlib.backends.backend_tkagg','FigureCanvasTkAgg'),
-                         },
-
         }
 
         try:
@@ -3538,6 +3532,7 @@ class ProcessDataFrame(ttk.LabelFrame):
                            'access':'Access Delay',
                            'psud':'PSuD',
                            'intell':'Intelligibility',
+                           'tvo': 'TVO',
                            }
 
         self.pretty_type = tk.StringVar()
