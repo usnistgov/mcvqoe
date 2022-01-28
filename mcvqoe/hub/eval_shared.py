@@ -659,6 +659,19 @@ def radio_filters(measurement):
                 ],
                 style=radio_button_style
                 ),
+            html.Div([
+                html.Label('Use start-of-word correction (recommended)'),
+                dcc.RadioItems(
+                    id=f'{measurement}-sowc',
+                    options = [{'label': 'True', 'value': 'True'},
+                               {'label': 'False', 'value': 'False'},
+                               ],
+                    value='True',
+                    labelStyle=radio_labels_style,
+                    ),
+                ],
+                style=radio_button_style
+                ),
             ]
     else:
          children = [html.Div('Undefined measurement')]   
