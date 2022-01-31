@@ -3460,16 +3460,12 @@ class PostProcessingFrame(ttk.Frame):
             print('uh oh')
             test_type = ''
         
-        gui_call = [
-            'mcvqoe-eval',
-            '--port', '8050',
-            ]
         data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
 
 
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(gui_call, data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
 
         else:
             # TODO: Consider checking server status here in case errored out at some point
@@ -3486,21 +3482,10 @@ class PostProcessingFrame(ttk.Frame):
             except (FileNotFoundError, OSError):
                 pass
 
-# try to get path to python
-py_path = sys.executable
 
-if not py_path:
-    # couldn't get path, try 'python' and hope for the best
-    py_path = "python"
 
 class ProcessDataFrame(ttk.LabelFrame):
     """Frame for finding data to process and starting evaluation server"""
-    gui_call = [
-            py_path,
-            '-m',
-            'mcvqoe.hub.eval_index',
-            '--port', '8050',
-            ]
     
     padx = 10
     pady = 10
@@ -3667,8 +3652,7 @@ class ProcessDataFrame(ttk.LabelFrame):
         
         # message += f'Data will be viewable at {data_url}\n'
         if start_server and not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         elif start_server:
             webbrowser.open(data_url)
         
@@ -3686,15 +3670,28 @@ class ProcessDataFrame(ttk.LabelFrame):
         data_url = self.data_url()
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         else:
             # TODO: Consider checking server status here in case errored out at some point
             webbrowser.open(data_url)
 
 @in_thread('MainThread', wait=False)
-def start_evaluation_server(gui_call, data_url):
+def start_evaluation_server(data_url):
+    
+    # try to get path to python
+    py_path = sys.executable
 
+    if not py_path:
+        # couldn't get path, try 'python' and hope for the best
+        py_path = "python"
+
+    gui_call = [
+            py_path,
+            '-m',
+            'mcvqoe.hub.eval_index',
+            '--port', '8050',
+            ]
+    
     eval_config = {
         'stderr' : sp.PIPE,
         'stdout' : sp.PIPE,
