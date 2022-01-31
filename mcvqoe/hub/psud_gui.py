@@ -139,11 +139,7 @@ class advanced(shared_advanced):
 #-------------------------Running the test------------------------------------
 
 class PSuD_fromGui(SignalOverride, psud.measure):
-    
-    def param_check(self):
-        # future-proofing this param-check override
-        if hasattr(super(), 'param_check'):
-            super().param_check()
+    pass
 
 class PSuD_Eval_from_GUI(SignalOverride, psud.evaluate):
     

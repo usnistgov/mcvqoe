@@ -264,17 +264,33 @@ class Main():
 
 
 class SingletonWindow(type):
-    # no idea how tf this works by the way
+    """
+    A meta class to ensure one instance of window classes.
+
+    This class keeps track of each class that uses it as a metaclass and will
+    return the existing instance of a class that has already been created.
+
+    Examples
+    --------
+
+    Create a new window class that can only be opened once
+    >>>class MyWin(tk.Toplevel, metaclass = SingletonWindow):
+    >>>    pass
+    """
+    
+    #dict to hold existing class instances
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
-
+        #check if class is in list and still exists
         if cls not in cls._instances or not cls._instances[cls].winfo_exists():
-
+            #create new instance of the class
             cls._instances[cls] = super(SingletonWindow, cls).__call__(*args, **kwargs)
         else:
+            #already exists, focus window
             cls._instances[cls].focus_force()
             cls._instances[cls].bell()
+        #Return class instance, either old or newly created
         return cls._instances[cls]
 
 @in_thread('GuiThread')

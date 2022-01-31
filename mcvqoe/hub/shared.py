@@ -8,6 +8,7 @@ Created on Wed Jun  9 11:03:39 2021
 from os import path
 
 import importlib.resources
+import sys
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
@@ -18,6 +19,7 @@ import _tkinter
 import mcvqoe.hub.loadandsave as loadandsave
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
+from _tkinter import TclError
 
 from mcvqoe.simulation import QoEsim
 
@@ -28,10 +30,18 @@ FONT_SIZE = 10
 
 #find MCV icon and add set as window icon
 def add_mcv_icon(win):
-    with importlib.resources.path('mcvqoe.hub','MCV-sm.ico') as icon:
+    img_ext = 'ico' if sys.platform.startswith('win') else 'png'
+    with importlib.resources.path('mcvqoe.hub','MCV-sm.'+img_ext) as icon:
         if icon:
-            #set the title- and taskbar icon
-            win.iconbitmap(icon)
+            try:
+                if img_ext == 'ico':
+                    #set the title- and taskbar icon
+                    win.iconbitmap(icon)
+                else:
+                    logo = tk.PhotoImage(file=icon)
+                    win.call('wm', 'iconphoto', win._w, logo)
+            except TclError as e:
+                print(f'failed to add icon : {icon}, {e}')
         else:
             print('Could not find icon file')
 

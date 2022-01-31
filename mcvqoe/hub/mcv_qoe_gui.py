@@ -1774,17 +1774,9 @@ class TestTypeFrame(tk.Frame):
         ttk.Separator(self).pack(fill=tk.X, pady=15)
 
         ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
-
-        # Find umc device if it exists
-        umc_flag = False
-        for ad in self.valid_devices:
-            if 'UMC' in ad['name']:
-                dev = ad
-                umc_flag = True
-        # Otherwise grab first valid device
-        if not umc_flag:
-            dev = self.valid_devices[0]
-
+        
+        dev = self.initial_device()
+        
         self.audio_device.set(dev['name'])
 
         self.audio_select = ttk.OptionMenu(
@@ -1881,14 +1873,21 @@ class TestTypeFrame(tk.Frame):
     def update_audio_devices(self):
         """Update audio device list with valid devices"""
         valid_devices = self.valid_devices
+        valid_devices.append({'name': 'refresh device list'})
         menu = self.audio_select['menu']
         for dev in valid_devices:
             menu.add_command(
                 label=dev['name'],
                 command=lambda val=dev['name']: self.select_audio_device(val))
+        
 
     def select_audio_device(self, val):
-        self.audio_device.set(val)
+        if val == 'refresh device list':
+            self.refresh_audio_devices()
+            dev = self.initial_device()
+            self.audio_device.set(dev['name'])
+        else:
+            self.audio_device.set(val)
 
     @property
     def valid_devices(self):
@@ -1903,7 +1902,17 @@ class TestTypeFrame(tk.Frame):
             valid_devices.append({'name': '<no valid audio devices>'})
         return valid_devices
 
-
+    def initial_device(self):
+        # Find umc device if it exists
+        umc_flag = False
+        for ad in self.valid_devices:
+            if 'UMC' in ad['name']:
+                dev = ad
+                umc_flag = True
+        # Otherwise grab first valid device
+        if not umc_flag:
+            dev = self.valid_devices[0]
+        return dev
 class LogoFrame(tk.Canvas):
 
     def __init__(self, master, width=150, height=170, *args, **kwargs):
@@ -2556,7 +2565,8 @@ class ReprocessFrame(ttk.Labelframe):
                 in_file = two_loc_process.twoloc_process(
                                             in_file, extra_play=extraplay,
                                             rx_name=rx_name,
-                                            progress_update=gui_progress_update
+                                            progress_update=gui_progress_update,
+                                            outdir=outdir,
                                                         )
 
                 #when we reprocess, overwrite file
@@ -3421,6 +3431,13 @@ class PostProcessingFrame(ttk.Frame):
 
     @in_thread('MainThread', wait=False)
     def plot(self):
+        
+        test_files = self.last_test
+        if isinstance(test_files, str):
+            test_files = [test_files]
+        url_files = [urllib.request.pathname2url(x) for x in test_files]
+        url_file_str = ';'.join(url_files)
+        
         selected_test = self.master.selected_test.get()
         if selected_test == 'M2eFrame':
             test_type = 'm2e'
@@ -3431,62 +3448,24 @@ class PostProcessingFrame(ttk.Frame):
         elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
         elif selected_test == 'ReprocessFrame':
-            test_type = self.reprocess_type
+            # test_type = self.reprocess_type
+            test_types = [mcvqoe.base.get_measurement_from_file(x, module=False) for x in test_files]
+            
+            if len(set(test_types)) > 1:
+                raise RuntimeError(f'Selected files were of multiple types:\n[{set(test_types)}]\nOnly one type of measurement can be processed for plotting at a time.')
+            else:
+                test_type = test_types[0]
         else:
             # TODO: Do something here?
             print('uh oh')
             test_type = ''
-        test_files = self.last_test
-        if isinstance(test_files, str):
-            test_files = [test_files]
-        url_files = [urllib.request.pathname2url(x) for x in test_files]
-        url_file_str = ';'.join(url_files)
-        gui_call = [
-            'mcvqoe-eval',
-            '--port', '8050',
-            ]
+        
         data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
 
 
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(gui_call, data_url)
-            # # webbrowser.open('http://127.0.0.1:8050/shutdown')
-            # eval_config = {
-            #     'stderr' : sp.PIPE,
-            #     'stdout' : sp.PIPE,
-            #     'stdin'  : sp.DEVNULL,
-            #     'bufsize': 1,
-            #     'universal_newlines': True
-            # }
-
-            # #only for windows, prevent windows from appearing
-            # if os.name == 'nt':
-            #     startupinfo = sp.STARTUPINFO()
-            #     startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
-            #     eval_config['startupinfo'] = startupinfo
-
-            # self.master.eval_server = sp.Popen(gui_call,
-            #                                    **eval_config
-            #                                    )
-
-            # open_flag = False
-            # for line in self.master.eval_server.stdout:
-            #     print(line, end='') # process line here
-
-            #     if 'Dash is running' in line:
-            #         print('Starting server')
-            #         open_flag = True
-            #         webbrowser.open(data_url)
-            #         break
-            # if not open_flag:
-            #     last_line = ''
-            #     for line in self.master.eval_server.stderr:
-            #         print(line, end='')
-            #         # Ensure last line is not empty
-            #         if line.strip():
-            #             last_line = line
-            #     raise RuntimeError(last_line.strip())
+            self.master.eval_server = start_evaluation_server(data_url)
 
         else:
             # TODO: Consider checking server status here in case errored out at some point
@@ -3503,12 +3482,10 @@ class PostProcessingFrame(ttk.Frame):
             except (FileNotFoundError, OSError):
                 pass
 
+
+
 class ProcessDataFrame(ttk.LabelFrame):
     """Frame for finding data to process and starting evaluation server"""
-    gui_call = [
-            'mcvqoe-eval',
-            '--port', '8050',
-            ]
     
     padx = 10
     pady = 10
@@ -3675,8 +3652,7 @@ class ProcessDataFrame(ttk.LabelFrame):
         
         # message += f'Data will be viewable at {data_url}\n'
         if start_server and not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         elif start_server:
             webbrowser.open(data_url)
         
@@ -3694,15 +3670,28 @@ class ProcessDataFrame(ttk.LabelFrame):
         data_url = self.data_url()
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         else:
             # TODO: Consider checking server status here in case errored out at some point
             webbrowser.open(data_url)
 
 @in_thread('MainThread', wait=False)
-def start_evaluation_server(gui_call, data_url):
+def start_evaluation_server(data_url):
+    
+    # try to get path to python
+    py_path = sys.executable
 
+    if not py_path:
+        # couldn't get path, try 'python' and hope for the best
+        py_path = "python"
+
+    gui_call = [
+            py_path,
+            '-m',
+            'mcvqoe.hub.eval_index',
+            '--port', '8050',
+            ]
+    
     eval_config = {
         'stderr' : sp.PIPE,
         'stdout' : sp.PIPE,
@@ -3730,6 +3719,7 @@ def start_evaluation_server(gui_call, data_url):
             open_flag = True
             webbrowser.open(data_url)
             break
+    eval_server.stdout = sp.DEVNULL
     if not open_flag:
         last_line = ''
         for line in eval_server.stderr:
@@ -3738,7 +3728,7 @@ def start_evaluation_server(gui_call, data_url):
             if line.strip():
                 last_line = line
         raise RuntimeError(last_line.strip())
-
+    eval_server.stderr = sp.DEVNULL
     return eval_server
 # class ProcessPlotButton():
 #     """I'm not sure what I'm doing here"""
@@ -4958,6 +4948,7 @@ def load_defaults():
             'pause_trials',
             'save_tx_audio',
             'save_audio',
+            'zip_audio',
         ],
 
         psud: [

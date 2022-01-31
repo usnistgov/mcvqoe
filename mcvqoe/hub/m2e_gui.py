@@ -115,27 +115,9 @@ class M2E_fromGui(SignalOverride, m2e.measure):
 
 
 class M2E_Eval_from_GUI(SignalOverride, mcvqoe.mouth2ear.evaluate):
-    def param_check(self):
-        # future proof
-        if hasattr(super(), 'param_check'):
-            super().param_check()
-
-
-
-
-
+    pass
 
 #-----------------------------Dev dly characterization------------------------
-
-        
-
-
-
-
-
-
-
-
 
 class DevDlyCharFrame(M2eFrame):
     
