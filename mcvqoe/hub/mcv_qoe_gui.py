@@ -3722,6 +3722,7 @@ def start_evaluation_server(gui_call, data_url):
             open_flag = True
             webbrowser.open(data_url)
             break
+    eval_server.stdout = sp.DEVNULL
     if not open_flag:
         last_line = ''
         for line in eval_server.stderr:
@@ -3730,7 +3731,7 @@ def start_evaluation_server(gui_call, data_url):
             if line.strip():
                 last_line = line
         raise RuntimeError(last_line.strip())
-
+    eval_server.stderr = sp.DEVNULL
     return eval_server
 # class ProcessPlotButton():
 #     """I'm not sure what I'm doing here"""
