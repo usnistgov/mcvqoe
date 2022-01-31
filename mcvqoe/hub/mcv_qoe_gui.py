@@ -3486,10 +3486,19 @@ class PostProcessingFrame(ttk.Frame):
             except (FileNotFoundError, OSError):
                 pass
 
+# try to get path to python
+py_path = sys.executable
+
+if not py_path:
+    # couldn't get path, try 'python' and hope for the best
+    py_path = "python"
+
 class ProcessDataFrame(ttk.LabelFrame):
     """Frame for finding data to process and starting evaluation server"""
     gui_call = [
-            'mcvqoe-eval',
+            py_path,
+            '-m',
+            'mcvqoe.hub.eval_index',
             '--port', '8050',
             ]
     
