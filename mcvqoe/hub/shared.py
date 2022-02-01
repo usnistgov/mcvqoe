@@ -1676,28 +1676,6 @@ class channel_rate(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
 
-class m2e_latency(LabeledControl):
-    """Simulated mouth to ear latency for the channel in seconds.
-
-    Defaults to the minimum latency allowed by the channel tech."""
-
-    text = 'Mouth-to-ear Latency:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
-
-
-class access_delay(LabeledControl):
-    """Delay between the time that the simulated push to talk button is pushed
-    and when audio starts coming through the channel. If the 'ptt_delay'
-    method is called before play_record is called, then the time given to
-    'ptt_delay' is added to access_delay to get the time when access is
-    granted. Otherwise access is granted 'access_delay' seconds after the
-    clip starts."""
-
-    text = 'Access Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
-
 
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
@@ -1798,6 +1776,23 @@ class ChannelImpairment(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('None')
 
+# BUG: Garbage collection issue in these delay controls
+# ---Reproduce---
+# * Open Simulation Settings
+# * Set an invalid delay (e.g. '100e-')
+# * Close Simulation Settings
+# * Reopen Simulation Settings
+# * Close Simulation Settings
+# * Close the GUI
+# ---Trace---
+# lib\tkinter\__init__.py", line 388, in __del__
+#    if self._tk.getboolean(self._tk.call("info", "exists", self._name)):
+# RuntimeError: main thread is not in main loop
+# ---Hypotheses---
+# Somehow when the default delay is an invalid delay we just lose track of the control
+# When it gets garbage collected later, its thread is gone and python complains
+# ---Notes---
+# This affects all the below delay controls (m2e latency, access delay, device delay)
 
 class m2e_latency_cfg(SubCfgFrame):
     '''
