@@ -36,6 +36,7 @@ setuptools.setup(
         'plotly',
         'requests',
         'pillow',
+        'scipy',
     ],
     entry_points={
         'gui_scripts':[

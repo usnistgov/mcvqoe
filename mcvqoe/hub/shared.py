@@ -21,6 +21,7 @@ from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from _tkinter import TclError
 
+import scipy.stats as sps
 from mcvqoe.simulation import QoEsim
 
 PADX = 10
@@ -1829,7 +1830,7 @@ class DistributionType(LabeledControl):
 
     def update(self, *args, **kwargs):
 
-        for t in ('constant', 'Normal'):
+        for t in ('constant', 'Normal', 'Exponential'):
             #add a drop down list option
             self.menu.add_command(label=t,
                         command=tk._setit(self.btnvar, t))
@@ -1914,7 +1915,7 @@ class RangeDisplay:
 
         if dist_type == 'constant':
             self.update_rng(f'{dly_val}')
-        elif dist_type == 'Normal':
+        elif dist_type in ['Normal', 'Exponential']:
 
             if dly_val == 'minimum':
                 dly_val = 0
@@ -1926,15 +1927,20 @@ class RangeDisplay:
                 #convert values to float
                 dly_val = float(dly_val)
                 dist_sigma = float(dist_sigma)
+                if dist_type == 'Normal':
+                    dist = sps.norm(loc=dly_val, scale=dist_sigma)
+                elif dist_type == 'Exponential':
+                    dist = sps.expon(loc=dly_val, scale=dist_sigma)
 
-                lower = round(dly_val - 1.96*dist_sigma, 4)
-                upper = round(dly_val + 1.96*dist_sigma, 4)
+                lower = round(dist.ppf(0.025), 4)
+                upper = round(dist.ppf(0.975), 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
             except ValueError:
                 #ignore value errors (partially entered number)
                 #clear range
                 self.update_rng('')
+
 
 class m2e_latency_range(RangeDisplay):
     """display of the range of the mouth to ear latency"""
