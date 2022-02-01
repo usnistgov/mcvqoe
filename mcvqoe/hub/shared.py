@@ -1886,64 +1886,73 @@ class RangeDisplay:
         self.m_ctrl.grid(
             column=2, columnspan=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
 
+        #track selection of type
+        id = self.master.master.btnvars[self.var_base + '_type'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base + '_type'], id))
+
+        #track selection of value
+        id = self.master.master.btnvars[self.var_base].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base], id))
+
+        #track selection of sigma
+        id = self.master.master.btnvars[self.var_base + '_sigma'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base + '_sigma'], id))
+
     def update_rng(self, val):
         self.range_textvar.set(str(val))
 
-class m2e_latency_range(RangeDisplay):
-    """display of the range of the mouth to ear latency"""
-
-    text = 'M2E Latency range\n(roughly 95% of values):'
-
-    def __init__(self, master, row, *args, **kwargs):
-
-        super().__init__(master, row, *args, **kwargs)
-
-        #track selection of m2e type
-        id = self.master.master.btnvars['m2e_latency_type'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['m2e_latency_type'], id))
-
-        #track selection of m2e value
-        id = self.master.master.btnvars['m2e_latency'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['m2e_latency'], id))
-
-        #track selection of m2e value
-        id = self.master.master.btnvars['m2e_latency_sigma'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['m2e_latency_sigma'], id))
-
-        self.update()
-
-
     def update(self, *args):
-        m2e_type = self.master.btnvars['m2e_latency_type'].get()
-        m2e_val  = self.master.btnvars['m2e_latency'].get()
-        m2e_sigma  = self.master.btnvars['m2e_latency_sigma'].get()
+        try:
+            dist_type = self.master.btnvars[self.var_base + '_type'].get()
+            if dist_type != 'constant':
+                #enable sigma control
+                self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='!disabled')
+                dist_sigma  = self.master.btnvars[self.var_base + '_sigma'].get()
+            else:
+                #disable sigma control
+                self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='disabled')
+            dly_val  = self.master.btnvars[self.var_base].get()
+        except TclError:
+            #failed to get values, clear range
+            self.update_rng('')
+            return
 
-        if m2e_type == 'constant':
-            self.update_rng(f'{m2e_val}')
-            #disable sigma
-            self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='disabled')
-        elif m2e_type == 'Normal':
+        if dist_type == 'constant':
+            self.update_rng(f'{dly_val}')
+        elif dist_type == 'Normal':
 
-            self.master.controls['m2e_latency_sigma'].m_ctrl.configure(state='!disabled')
-
-            if m2e_val == 'minimum':
-                m2e_val = 0
+            if dly_val == 'minimum':
+                dly_val = 0
                 #set to zero
                 #TODO : should this be something else?
                 self.master.btnvars['m2e_latency'].set(0)
 
             try:
                 #convert values to float
-                m2e_val = float(m2e_val)
-                m2e_sigma = float(m2e_sigma)
+                dly_val = float(dly_val)
+                dist_sigma = float(dist_sigma)
 
-                lower = round(m2e_val - 1.96*m2e_sigma, 4)
-                upper = round(m2e_val + 1.96*m2e_sigma, 4)
+                lower = round(dly_val - 1.96*dist_sigma, 4)
+                upper = round(dly_val + 1.96*dist_sigma, 4)
                 #update range
                 self.update_rng(f'from {lower} to {upper} sec')
             except ValueError:
                 #ignore value errors (partially entered number)
-                pass
+                #clear range
+                self.update_rng('')
+
+class m2e_latency_range(RangeDisplay):
+    """display of the range of the mouth to ear latency"""
+
+    text = 'M2E Latency range\n(roughly 95% of values):'
+
+    var_base = 'm2e_latency'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.update()
 
 
 class access_delay(LabeledControl):
@@ -1993,53 +2002,13 @@ class access_delay_range(RangeDisplay):
     """display of the range of access delay"""
 
     text = 'Access delay range\n(roughly 95% of values):'
+    var_base = 'access_delay'
 
     def __init__(self, master, row, *args, **kwargs):
 
         super().__init__(master, row, *args, **kwargs)
 
-        #track selection of access delay type
-        id = self.master.master.btnvars['access_delay_type'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['access_delay_type'], id))
-
-        #track selection of access delay value
-        id = self.master.master.btnvars['access_delay'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['access_delay'], id))
-
-        #track selection of access delay value
-        id = self.master.master.btnvars['access_delay_sigma'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['access_delay_sigma'], id))
-
         self.update()
-
-
-    def update(self, *args):
-        try:
-            acc_type = self.master.btnvars['access_delay_type'].get()
-            acc_val  = self.master.btnvars['access_delay'].get()
-            acc_sigma  = self.master.btnvars['access_delay_sigma'].get()
-
-            if acc_type == 'constant':
-                self.update_rng(f'{acc_val}')
-                #disable sigma
-                self.master.controls['access_delay_sigma'].m_ctrl.configure(state='disabled')
-            elif acc_type == 'Normal':
-
-                self.master.controls['access_delay_sigma'].m_ctrl.configure(state='!disabled')
-
-                #convert values to float
-                acc_val = float(acc_val)
-                acc_sigma = float(acc_sigma)
-
-                lower = round(acc_val - 1.96*acc_sigma, 4)
-                upper = round(acc_val + 1.96*acc_sigma, 4)
-                #update range
-                self.update_rng(f'from {lower} to {upper} sec')
-                
-                # TODO: Add exponential + constant distribution
-        except (ValueError,_tkinter.TclError):
-            #ignore value errors (partially entered number)
-            pass
 
 
 class device_delay_cfg(SubCfgFrame):
@@ -2084,51 +2053,13 @@ class device_delay_range(RangeDisplay):
     """display of the range of the mouth to ear latency"""
 
     text = 'Device delay range\n(roughly 95% of values):'
+    var_base = 'device_delay'
 
     def __init__(self, master, row, *args, **kwargs):
 
         super().__init__(master, row, *args, **kwargs)
 
-        #track selection of m2e type
-        id = self.master.master.btnvars['device_delay_type'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['device_delay_type'], id))
-
-        #track selection of m2e value
-        id = self.master.master.btnvars['device_delay'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['device_delay'], id))
-
-        #track selection of m2e value
-        id = self.master.master.btnvars['device_delay_sigma'].trace_add('write', self.update)
-        self.master.master.traces_.append((self.master.btnvars['device_delay_sigma'], id))
-
         self.update()
-
-
-    def update(self, *args):
-        try:
-            dly_type = self.master.btnvars['device_delay_type'].get()
-            dly_val  = self.master.btnvars['device_delay'].get()
-            dly_sigma  = self.master.btnvars['device_delay_sigma'].get()
-
-            if dly_type == 'constant':
-                self.update_rng(f'{dly_val}')
-                #disable sigma
-                self.master.controls['device_delay_sigma'].m_ctrl.configure(state='disabled')
-            elif dly_type == 'Normal':
-
-                self.master.controls['device_delay_sigma'].m_ctrl.configure(state='!disabled')
-
-                #convert values to float
-                dly_val = float(dly_val)
-                dly_sigma = float(dly_sigma)
-                
-                lower = round(dly_val - 1.96*dly_sigma, 4)
-                upper = round(dly_val + 1.96*dly_sigma, 4)
-                #update range
-                self.update_rng(f'from {lower} to {upper} sec')
-        except (ValueError,_tkinter.TclError):
-            #ignore value errors (partially entered number)
-            pass
 
 
 class ImpairmentSettings(SubCfgFrame):
