@@ -4532,8 +4532,12 @@ class RandomDelay:
         #add class name
         return f'{type(self).__name__}('+ f_args +')'
     def __call__(self):
-        f_rand = getattr(self._rng, self.distribution)
-        return f_rand(*self.args, **self.kwargs)
+       f_rand = getattr(self._rng, self.distribution)
+       #copy of kwargs, so we can modify
+       call_kwargs = self.kwargs.copy()
+       #get loc, not in all distributions, so handle here
+       loc = call_kwargs.pop('loc',0)
+       return f_rand(*self.args, **call_kwargs) + loc
     def get_expected(self):
         """
         Get the expected value for the chosen distribution

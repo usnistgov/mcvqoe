@@ -1854,7 +1854,9 @@ class m2e_latency_sigma(LabeledControl):
     """
     Sigma value for m2e latency.
     
-    If Normal distribution it is standard deviation
+    If Normal distribution it is standard deviation.
+    
+    If Exponential distribution it is the inverse of the rate parameter.
     """
 
     text = '\u03C3:'
@@ -1993,6 +1995,8 @@ class access_delay_sigma(LabeledControl):
     Sigma value for access delay.
     
     If Normal distribution it is standard deviation
+    
+    If Exponential distribution it is the inverse of the rate parameter.
     """
 
     text = '\u03C3:'
@@ -2037,6 +2041,8 @@ class device_delay_sigma(LabeledControl):
     Sigma value for device latency.
     
     If Normal distribution it is standard deviation.
+    
+    If Exponential distribution it is the inverse of the rate parameter.
     """
 
     text = '\u03C3:'
