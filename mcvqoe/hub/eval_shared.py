@@ -339,7 +339,7 @@ for measurement in measurements:
                         test_info[filename] = 'uploaded-data'
                         
                     # Initialize dataframe for storing all data
-                    data_df = pd.DataFrame()
+                    data_df = []
                     # Initialize cutpoints dict
                     cps = dict()
 
@@ -347,13 +347,11 @@ for measurement in measurements:
                         # Load data frame
                         df = pd.read_json(sesh_dict['measurement'])
                         # Add to main dataframe
-                        data_df = data_df.append(df)
+                        data_df.append(df)
                         if 'cutpoints' in sesh_dict:
                             cps[sesh] = sesh_dict['cutpoints']
                     
-                    # Make unique index for each trial
-                    nrow, _ = data_df.shape
-                    data_df.index = np.arange(nrow)
+                    data_df = pd.concat(data_df, ignore_index=True)
 
                     # Store in dictionary used by mcvqoe.accesstime.load_json()
                     prep_json = {
