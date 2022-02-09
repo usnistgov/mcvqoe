@@ -4655,21 +4655,9 @@ def get_interfaces(root_cfg):
         raise ValueError('A 2-location test cannot be simulated.')
     #------------------------- set channels -----------------------------------
 
-    if sel_tst in (accesstime,):
-        channels = {
-            'playback_chans' : {'tx_voice':0, 'start_signal':1},
-            'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
-            }
-
-    elif 'test' in cfg and cfg['test'] == '2loc_tx':
-
-        channels = {
-            'playback_chans' : {"tx_voice": 0},
-            'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
-            }
-
-    elif 'test' in cfg and cfg['test'] == '2loc_rx':
-
+    #check for 2 loc Rx first, all are the same
+    if 'test' in cfg and cfg['test'] == '2loc_rx':
+        #only need recording channels
         channels = {
             'playback_chans' : {},
             'rec_chans' : {"rx_voice": 0, root_cfg['HdwSettings']['timecode_type']: 1},
@@ -4678,6 +4666,28 @@ def get_interfaces(root_cfg):
 
         rec_stop = GuiRecStop()
 
+    #check for access time, it needs extra channels
+    elif sel_tst in (accesstime,):
+        if 'test' in cfg and cfg['test'] == '2loc_tx':
+            channels = {
+                'playback_chans' : {'tx_voice':0, 'start_signal':1},
+                'rec_chans' : {
+                            root_cfg['HdwSettings']['timecode_type']:0,
+                            'PTT_signal':1
+                    },
+                }
+        else:
+            channels = {
+                'playback_chans' : {'tx_voice':0, 'start_signal':1},
+                'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
+                }
+
+    elif 'test' in cfg and cfg['test'] == '2loc_tx':
+
+        channels = {
+            'playback_chans' : {"tx_voice": 0},
+            'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
+            }
 
     else:
         # keep defaults
