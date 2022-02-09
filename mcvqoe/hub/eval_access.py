@@ -92,10 +92,11 @@ def format_access_results(access_eval,
     Input(f'{measurement}-talker-select', 'value'),
     Input(f'{measurement}-show-raw', 'value'),
     Input(f'{measurement}-intell-type', 'value'),
+    Input(f'{measurement}-sowc', 'value'),
     Input(f'{measurement}-alpha', 'value'),
     Input(f'{measurement}-measurement-digits', 'value'),
     )
-def update_plots(jsonified_data, talker_select, show_raw, intell_type,
+def update_plots(jsonified_data, talker_select, show_raw, intell_type, sowc,
                  alphas, meas_digits,):
     """
     Update all plots
@@ -145,13 +146,19 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type,
             else:
                 raw_intell = False
             
+            if sowc == 'True':
+                fit_type = 'COR'
+            else:
+                fit_type = 'NoCOR'
             # Make access plot
             fig_plot = access_eval.plot(raw_intell=raw_intell,
                                         talkers=talker_select,
+                                        fit_type=fit_type,
                                         )
             # Make intell plot
             fig_intell = access_eval.plot_intell(talkers=talker_select,
                                                  show_raw=show_raw,
+                                                 fit_type=fit_type,
                                                  )
             
             # Get talker word combos

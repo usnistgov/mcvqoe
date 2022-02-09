@@ -13,12 +13,15 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as fdl
 from PIL import Image, ImageTk
+#used to catch errors from tk
+import _tkinter
 
 import mcvqoe.hub.loadandsave as loadandsave
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from _tkinter import TclError
 
+import scipy.stats as sps
 from mcvqoe.simulation import QoEsim
 
 PADX = 10
@@ -1586,9 +1589,10 @@ class SimSettings(AdvancedConfigGUI):
 
             overplay,
 
-            m2e_latency,
-            access_delay,
-            device_delay,
+            m2e_latency_cfg,
+            access_delay_cfg,
+            device_delay_cfg,
+
             rec_snr,
             PTT_sig_freq,
             PTT_sig_amplitude,
@@ -1673,34 +1677,6 @@ class channel_rate(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('clean')
 
-class m2e_latency(LabeledControl):
-    """Simulated mouth to ear latency for the channel in seconds.
-
-    Defaults to the minimum latency allowed by the channel tech."""
-
-    text = 'Mouth-to-ear Latency:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
-
-
-class access_delay(LabeledControl):
-    """Delay between the time that the simulated push to talk button is pushed
-    and when audio starts coming through the channel. If the 'ptt_delay'
-    method is called before play_record is called, then the time given to
-    'ptt_delay' is added to access_delay to get the time when access is
-    granted. Otherwise access is granted 'access_delay' seconds after the
-    clip starts."""
-
-    text = 'Access Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
-
-class device_delay(LabeledControl):
-    """Simulated device delay in seconds."""
-
-    text = 'Device Delay:'
-    MCtrl = ttk.Spinbox
-    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
 
 class rec_snr(LabeledControl):
     """Signal to noise ratio for audio channel."""
@@ -1800,6 +1776,298 @@ class ChannelImpairment(LabeledControl):
 
         if failed:
             self.master.btnvars['channel_tech'].set('None')
+
+# BUG: Garbage collection issue in these delay controls
+# ---Reproduce---
+# * Open Simulation Settings
+# * Set an invalid delay (e.g. '100e-')
+# * Close Simulation Settings
+# * Reopen Simulation Settings
+# * Close Simulation Settings
+# * Close the GUI
+# ---Trace---
+# lib\tkinter\__init__.py", line 388, in __del__
+#    if self._tk.getboolean(self._tk.call("info", "exists", self._name)):
+# RuntimeError: main thread is not in main loop
+# ---Hypotheses---
+# Somehow when the default delay is an invalid delay we just lose track of the control
+# When it gets garbage collected later, its thread is gone and python complains
+# ---Notes---
+# This affects all the below delay controls (m2e latency, access delay, device delay)
+
+class m2e_latency_cfg(SubCfgFrame):
+    '''
+    Config to control m2e latency
+    '''
+
+    text = 'Mouth to Ear Latency'
+
+    def get_controls(self):
+        return (
+            m2e_latency_type,
+            m2e_latency,
+            m2e_latency_sigma,
+            m2e_latency_range,
+            )
+
+class DistributionType(LabeledControl):
+    """Control to get the type of a distrobution"""
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        self.text = 'Type:'
+        self.MCtrl = ttk.Menubutton
+
+        self.do_font_scaling = False
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.menu = tk.Menu(self.m_ctrl, tearoff=False)
+        self.m_ctrl.configure(menu=self.menu)
+
+        #fill menu with options
+        self.update()
+
+    def update(self, *args, **kwargs):
+
+        for t in ('constant', 'Normal', 'Exponential'):
+            #add a drop down list option
+            self.menu.add_command(label=t,
+                        command=tk._setit(self.btnvar, t))
+
+
+class m2e_latency_type(DistributionType):
+    """Type of mouth to ear latency"""
+    #nothing else needs to be configured
+    pass
+
+
+class m2e_latency(LabeledControl):
+    """Simulated mouth to ear latency for the channel in seconds.
+    'minimum' is the minimum latency for the channel technology."""
+
+    text = 'Value:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class m2e_latency_sigma(LabeledControl):
+    """
+    Sigma value for m2e latency.
+    
+    If Normal distribution it is standard deviation.
+    
+    If Exponential distribution it is the inverse of the rate parameter.
+    """
+
+    text = '\u03C3:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+
+class RangeDisplay:
+
+    text = ''
+
+    padx = PADX
+    pady = PADY
+
+    def __init__(self, master, row):
+        self.master = master
+
+        ttk.Label(master, text=self.text).grid(
+            padx=self.padx, pady=self.pady, column=0, row=row, sticky='E')
+
+        self.range_textvar = tk.StringVar()
+
+        # initialize the control
+        self.m_ctrl = ttk.Label(master, textvariable=self.range_textvar)
+        self.m_ctrl.grid(
+            column=2, columnspan=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
+
+        #track selection of type
+        id = self.master.master.btnvars[self.var_base + '_type'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base + '_type'], id))
+
+        #track selection of value
+        id = self.master.master.btnvars[self.var_base].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base], id))
+
+        #track selection of sigma
+        id = self.master.master.btnvars[self.var_base + '_sigma'].trace_add('write', self.update)
+        self.master.master.traces_.append((self.master.btnvars[self.var_base + '_sigma'], id))
+
+    def update_rng(self, val):
+        self.range_textvar.set(str(val))
+
+    def update(self, *args):
+        try:
+            dist_type = self.master.btnvars[self.var_base + '_type'].get()
+            if dist_type != 'constant':
+                #enable sigma control
+                self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='!disabled')
+                dist_sigma  = self.master.btnvars[self.var_base + '_sigma'].get()
+            else:
+                #disable sigma control
+                self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='disabled')
+            dly_val  = self.master.btnvars[self.var_base].get()
+        except TclError:
+            #failed to get values, clear range
+            self.update_rng('')
+            return
+
+        if dist_type == 'constant':
+            self.update_rng(f'{dly_val}')
+        elif dist_type in ['Normal', 'Exponential']:
+
+            if dly_val == 'minimum':
+                dly_val = 0
+                #set to zero
+                #TODO : should this be something else?
+                self.master.btnvars['m2e_latency'].set(0)
+
+            try:
+                #convert values to float
+                dly_val = float(dly_val)
+                dist_sigma = float(dist_sigma)
+                if dist_type == 'Normal':
+                    dist = sps.norm(loc=dly_val, scale=dist_sigma)
+                elif dist_type == 'Exponential':
+                    dist = sps.expon(loc=dly_val, scale=dist_sigma)
+
+                lower = round(dist.ppf(0.025), 4)
+                upper = round(dist.ppf(0.975), 4)
+                #update range
+                self.update_rng(f'from {lower} to {upper} sec')
+            except ValueError:
+                #ignore value errors (partially entered number)
+                #clear range
+                self.update_rng('')
+
+
+class m2e_latency_range(RangeDisplay):
+    """display of the range of the mouth to ear latency"""
+
+    text = 'M2E Latency range\n(roughly 95% of values):'
+
+    var_base = 'm2e_latency'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.update()
+
+
+class access_delay(LabeledControl):
+    """Delay between the time that the simulated push to talk button is pushed
+    and when audio starts coming through the channel. If the 'ptt_delay'
+    method is called before play_record is called, then the time given to
+    'ptt_delay' is added to access_delay to get the time when access is
+    granted. Otherwise access is granted 'access_delay' seconds after the
+    clip starts."""
+
+    text = 'Value:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
+
+class access_delay_cfg(SubCfgFrame):
+    '''
+    Config to control access delay
+    '''
+
+    text = 'Access Delay'
+
+    def get_controls(self):
+        return (
+            access_delay_type,
+            access_delay,
+            access_delay_sigma,
+            access_delay_range,
+            )
+
+class access_delay_type(DistributionType):
+    """Type of access delay"""
+    # TODO: Add exponential + constant
+    pass
+
+class access_delay_sigma(LabeledControl):
+    """
+    Sigma value for access delay.
+    
+    If Normal distribution it is standard deviation
+    
+    If Exponential distribution it is the inverse of the rate parameter.
+    """
+
+    text = '\u03C3:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class access_delay_range(RangeDisplay):
+    """display of the range of access delay"""
+
+    text = 'Access delay range\n(roughly 95% of values):'
+    var_base = 'access_delay'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.update()
+
+
+class device_delay_cfg(SubCfgFrame):
+    '''
+    Config to control m2e latency
+    '''
+
+    text = 'Device Delay'
+
+    def get_controls(self):
+        return (
+            device_delay_type,
+            device_delay,
+            device_delay_sigma,
+            device_delay_range,
+            )
+
+class device_delay_type(DistributionType):
+    """Type of mouth to ear latency"""
+    #nothing else needs to be configured
+    pass
+
+class device_delay_sigma(LabeledControl):
+    """
+    Sigma value for device latency.
+    
+    If Normal distribution it is standard deviation.
+    
+    If Exponential distribution it is the inverse of the rate parameter.
+    """
+
+    text = '\u03C3:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class device_delay(LabeledControl):
+    """Simulated device delay in seconds."""
+
+    text = 'Device Delay:'
+    MCtrl = ttk.Spinbox
+    MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
+class device_delay_range(RangeDisplay):
+    """display of the range of the mouth to ear latency"""
+
+    text = 'Device delay range\n(roughly 95% of values):'
+    var_base = 'device_delay'
+
+    def __init__(self, master, row, *args, **kwargs):
+
+        super().__init__(master, row, *args, **kwargs)
+
+        self.update()
+
 
 class ImpairmentSettings(SubCfgFrame):
 

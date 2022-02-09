@@ -3469,16 +3469,12 @@ class PostProcessingFrame(ttk.Frame):
             print('uh oh')
             test_type = ''
         
-        gui_call = [
-            'mcvqoe-eval',
-            '--port', '8050',
-            ]
         data_url = f'http://127.0.0.1:8050/{test_type};{url_file_str}'
 
 
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(gui_call, data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
 
         else:
             # TODO: Consider checking server status here in case errored out at some point
@@ -3495,12 +3491,10 @@ class PostProcessingFrame(ttk.Frame):
             except (FileNotFoundError, OSError):
                 pass
 
+
+
 class ProcessDataFrame(ttk.LabelFrame):
     """Frame for finding data to process and starting evaluation server"""
-    gui_call = [
-            'mcvqoe-eval',
-            '--port', '8050',
-            ]
     
     padx = 10
     pady = 10
@@ -3668,8 +3662,7 @@ class ProcessDataFrame(ttk.LabelFrame):
         
         # message += f'Data will be viewable at {data_url}\n'
         if start_server and not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         elif start_server:
             webbrowser.open(data_url)
         
@@ -3687,15 +3680,28 @@ class ProcessDataFrame(ttk.LabelFrame):
         data_url = self.data_url()
 
         if not hasattr(self.master, 'eval_server'):
-            self.master.eval_server = start_evaluation_server(self.gui_call,
-                                                              data_url)
+            self.master.eval_server = start_evaluation_server(data_url)
         else:
             # TODO: Consider checking server status here in case errored out at some point
             webbrowser.open(data_url)
 
 @in_thread('MainThread', wait=False)
-def start_evaluation_server(gui_call, data_url):
+def start_evaluation_server(data_url):
+    
+    # try to get path to python
+    py_path = sys.executable
 
+    if not py_path:
+        # couldn't get path, try 'python' and hope for the best
+        py_path = "python"
+
+    gui_call = [
+            py_path,
+            '-m',
+            'mcvqoe.hub.eval_index',
+            '--port', '8050',
+            ]
+    
     eval_config = {
         'stderr' : sp.PIPE,
         'stdout' : sp.PIPE,
@@ -3723,6 +3729,7 @@ def start_evaluation_server(gui_call, data_url):
             open_flag = True
             webbrowser.open(data_url)
             break
+    eval_server.stdout = sp.DEVNULL
     if not open_flag:
         last_line = ''
         for line in eval_server.stderr:
@@ -3731,7 +3738,7 @@ def start_evaluation_server(gui_call, data_url):
             if line.strip():
                 last_line = line
         raise RuntimeError(last_line.strip())
-
+    eval_server.stderr = sp.DEVNULL
     return eval_server
 # class ProcessPlotButton():
 #     """I'm not sure what I'm doing here"""
@@ -3983,7 +3990,7 @@ def run(root_cfg):
                 cfg['dev_dly'] = float(cfg['dev_dly'])
             except ValueError:
                 #set device delay based on sim settings
-                cfg['dev_dly'] = ap.device_delay
+                cfg['dev_dly'] = float(ap.device_delay)
 
         #--------------------------- Recovery ---------------------------------
         if sel_tst == accesstime:
@@ -4524,8 +4531,44 @@ def param_modify(root_cfg):
             if key in cfg:
                 cfg[key] = 0
 
+class RandomDelay:
+    '''
+    Class used to variable delay times.
 
-
+    This class is used to provide better logging
+    '''
+    def __init__(self, distribution, *args, **kwargs):
+        self.distribution = distribution
+        self.kwargs =  kwargs
+        self.args   =  args
+        self._rng = np.random.default_rng()
+    def __repr__(self):
+        #get a list of strings for args
+        arg_strs   = [repr(v) for v in self.args]
+        #get a list of strings for kwargs
+        kwarg_strs = [f'{k}={repr(v)}' for k, v in self.kwargs.items()]
+        #add them to the distribution argument and join with commas
+        f_args  = ', '.join([repr(self.distribution)] + kwarg_strs + arg_strs)
+        #add class name
+        return f'{type(self).__name__}('+ f_args +')'
+    def __call__(self):
+       f_rand = getattr(self._rng, self.distribution)
+       #copy of kwargs, so we can modify
+       call_kwargs = self.kwargs.copy()
+       #get loc, not in all distributions, so handle here
+       loc = call_kwargs.pop('loc',0)
+       return f_rand(*self.args, **call_kwargs) + loc
+    def get_expected(self):
+        """
+        Get the expected value for the chosen distribution
+        """
+        #TODO : make this better...
+        return self.kwargs["loc"]
+    #convert to int and float as the expected value
+    def __float__(self):
+        return float(self.get_expected())
+    def __int__(self):
+        return int(self.get_expected())
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -4570,14 +4613,61 @@ def get_interfaces(root_cfg):
         # turn str(None) into None
         sim_cfg['channel_rate'] = None
 
+    # check m2e type
+    if sim_cfg['m2e_latency_type'] == 'constant':
+        # convert simulated m2e-latency to optional float
+        try:
+            sim_cfg['m2e_latency'] = float(sim_cfg['m2e_latency'])
+        except ValueError:
+            sim_cfg['m2e_latency'] = None
+    else:
+        #m2e is using random values
 
-    # convert simulated m2e-latency to optional float
-    try:
-        sim_cfg['m2e_latency'] = float(
-                sim_cfg['m2e_latency'])
-    except ValueError:
-        sim_cfg['m2e_latency'] = None
+        #TODO : get different values for different distributions
+        m2e_val  = float(sim_cfg['m2e_latency'])
+        m2e_sigma  = float(sim_cfg['m2e_latency_sigma'])
 
+        #set to random delay
+        sim_cfg['m2e_latency'] = RandomDelay(
+                                             sim_cfg['m2e_latency_type'].lower(),
+                                             loc=m2e_val,
+                                             scale=m2e_sigma
+                                             )
+
+    # check access delay type
+    if sim_cfg['access_delay_type'] == 'constant':
+        sim_cfg['access_delay'] = float(sim_cfg['access_delay'])
+    else:
+        #access delay is using random values
+
+        #TODO : get different values for different distributions
+        acc_val  = float(sim_cfg['access_delay'])
+        acc_sigma  = float(sim_cfg['access_delay_sigma'])
+
+        #set to random delay
+        sim_cfg['access_delay'] = RandomDelay(
+                                              sim_cfg['access_delay_type'].lower(),
+                                              loc=acc_val,
+                                              scale=acc_sigma
+                                              )
+
+
+    # check device delay type
+    if sim_cfg['device_delay_type'] == 'constant':
+        sim_cfg['device_delay'] = float(sim_cfg['device_delay'])
+    else:
+        #access delay is using random values
+
+        #TODO : get different values for different distributions
+        val  = float(sim_cfg['device_delay'])
+        sigma  = float(sim_cfg['device_delay_sigma'])
+
+        #set to random delay
+        sim_cfg['device_delay'] = RandomDelay(
+                                              sim_cfg['device_delay_type'].lower(),
+                                              loc=val,
+                                              scale=sigma
+                                              )
 
     #--------------------- Check for 2 location simulation ---------------------
     if is_sim and 'test' in cfg and cfg['test'] != '1loc':
@@ -4585,21 +4675,9 @@ def get_interfaces(root_cfg):
         raise ValueError('A 2-location test cannot be simulated.')
     #------------------------- set channels -----------------------------------
 
-    if sel_tst in (accesstime,):
-        channels = {
-            'playback_chans' : {'tx_voice':0, 'start_signal':1},
-            'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
-            }
-
-    elif 'test' in cfg and cfg['test'] == '2loc_tx':
-
-        channels = {
-            'playback_chans' : {"tx_voice": 0},
-            'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
-            }
-
-    elif 'test' in cfg and cfg['test'] == '2loc_rx':
-
+    #check for 2 loc Rx first, all are the same
+    if 'test' in cfg and cfg['test'] == '2loc_rx':
+        #only need recording channels
         channels = {
             'playback_chans' : {},
             'rec_chans' : {"rx_voice": 0, root_cfg['HdwSettings']['timecode_type']: 1},
@@ -4608,6 +4686,28 @@ def get_interfaces(root_cfg):
 
         rec_stop = GuiRecStop()
 
+    #check for access time, it needs extra channels
+    elif sel_tst in (accesstime,):
+        if 'test' in cfg and cfg['test'] == '2loc_tx':
+            channels = {
+                'playback_chans' : {'tx_voice':0, 'start_signal':1},
+                'rec_chans' : {
+                            root_cfg['HdwSettings']['timecode_type']:0,
+                            'PTT_signal':1
+                    },
+                }
+        else:
+            channels = {
+                'playback_chans' : {'tx_voice':0, 'start_signal':1},
+                'rec_chans' : {'rx_voice':0, 'PTT_signal':1},
+                }
+
+    elif 'test' in cfg and cfg['test'] == '2loc_tx':
+
+        channels = {
+            'playback_chans' : {"tx_voice": 0},
+            'rec_chans' : {root_cfg['HdwSettings']['timecode_type']: 1},
+            }
 
     else:
         # keep defaults
@@ -5060,10 +5160,17 @@ def load_defaults():
 
     DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
     DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
+    DEFAULTS['SimSettings']['m2e_latency_type'] = 'constant'
+    DEFAULTS['SimSettings']['m2e_latency_sigma'] = 2e-3
 
     # the following should be a float
     DEFAULTS['SimSettings']['access_delay'] = float(DEFAULTS['SimSettings']['access_delay'])
+    DEFAULTS['SimSettings']['access_delay_type'] = 'constant'
+    DEFAULTS['SimSettings']['access_delay_sigma'] =  2e-3
+
     DEFAULTS['SimSettings']['device_delay'] = float(DEFAULTS['SimSettings']['device_delay'])
+    DEFAULTS['SimSettings']['device_delay_type'] = 'constant'
+    DEFAULTS['SimSettings']['device_delay_sigma'] =  2e-3
 
     # the following do not have a default value
     DEFAULTS['SimSettings']['PreImpairment'] = 'None'
