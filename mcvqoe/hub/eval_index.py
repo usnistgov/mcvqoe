@@ -29,6 +29,7 @@ import mcvqoe.hub.eval_m2e as m2e
 import mcvqoe.hub.eval_psud as psud
 import mcvqoe.hub.eval_access as access
 import mcvqoe.hub.eval_tvo as tvo
+import mcvqoe.hub.eval_diagnostics as diag
 
 import mcvqoe.accesstime
 
@@ -80,6 +81,7 @@ def format_data(fpaths, cutpoint, measurement):
                'm2e': 'mcvqoe.mouth2ear',
                'psud': 'mcvqoe.psud',
                'tvo': 'mcvqoe.tvo',
+               'diagnostics': 'mcvqoe.diagnostics',
                }
     try:
         eval_obj = importlib.import_module(modules[measurement]).evaluate(fpaths)
@@ -150,6 +152,10 @@ def display_page(pathname):
     
     elif test_type in ['/tvo', ]:
         layout = tvo.layout
+        update_page_data(layout, final_json, measurement)
+        
+    elif test_type == '/diagnostics':
+        layout = diag.layout
         update_page_data(layout, final_json, measurement)
         
     elif test_type in ['/measurement_select', '/']:

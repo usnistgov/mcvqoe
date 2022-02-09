@@ -35,6 +35,7 @@ measurements = [
     'psud',
     'access',
     'tvo',
+    'diagnostics',
     ]
 # --------------[General Style]--------------------------------------------
 plotly_default_color = '#edeef0'
@@ -65,6 +66,8 @@ def mcv_headers(measurement):
         full_meas = 'Access delay'
     elif measurement == 'tvo':
         full_meas = 'Transmit volume optimization'
+    elif measurement == 'diagnostics':
+        full_meas = 'Measurement diagnostics'
     else:
         full_meas = 'Undefined measurement'
             
@@ -148,6 +151,7 @@ def load_json_data(jsonified_data, measurement):
                'm2e': 'mcvqoe.mouth2ear',
                'psud': 'mcvqoe.psud',
                'tvo': 'mcvqoe.tvo',
+               'diagnostics': 'mcvqoe.diagnostics',
                }
     eval_obj = importlib.import_module(modules[measurement]).evaluate(json_data=jsonified_data)
     # eval_obj = eval(modules[measurement]).evaluate(json_data=jsonified_data)
@@ -572,6 +576,8 @@ def dropdown_filters(measurement):
                         )
                     ], style=dropdown_style),
                 ]
+    elif measurement == 'diagnostics':
+        children = []
     elif measurement in measurements:
         children = [html.Div([
                     html.Label('Session Select'),
@@ -729,6 +735,8 @@ def radio_filters(measurement):
                 style=radio_button_style
                 ),
             ]
+    elif measurement == 'diagnostics':
+        children = []
     else:
          children = [html.Div('Undefined measurement')]   
     return children
@@ -819,6 +827,28 @@ def measurement_plots(measurement):
                           ),
                 ], className='twelve columns'),
             ]
+    elif measurement == 'diagnostics':
+        children = [
+            #-------------[A-weight plot]-----------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-aweight',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            # --------------[Peak dBfs Plot]------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-peak',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            #-------------[FSF plot]--------------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-fsf',
+                          figure=blank_fig(),
+                          ),
+                ], className='twelve columns'),
+            ]
+            
     else:
         
         children = [html.Div('Undefined measurement')]   
