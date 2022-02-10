@@ -29,6 +29,7 @@ setuptools.setup(
         'mcvqoe-intelligibility',
         'mcvqoe-accesstime',
         'mcvqoe-mouth2ear',
+        'mcvqoe-tvo',
         'numpy',
         'pandas',
         'dash',
