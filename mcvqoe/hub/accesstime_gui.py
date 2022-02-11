@@ -152,6 +152,19 @@ class zip_audio(LabeledCheckbox):
     """ If checked audio will be zipped after test completes."""
 
     middle_text = "Zip Audio"
+    
+class bisect_midpoint(LabeledCheckbox):
+    """If checked PTT times will be determined iteratively and will attempt to 
+    converge around the PTT time associated with the intelligibility midpoint
+    of the intelligibility curve. This will generally result in a much faster test,
+    but may be more susceptible to generating an invalid intelligibility curve and
+    access delay result in extreme circumstances.
+    
+    If unchecked PTT times will be uniformly spaced, and are predetermined based on
+    other settings. This is the "safest" option in some ways, but generally 
+    results in much longer tests.
+    """
+    text = "Bisect Midpoint"
 
 # ------------------------ The main configuration frame -----------------------
 
@@ -186,6 +199,8 @@ class AccDlyAdvanced(AdvancedConfigGUI):
             ptt_rep,
             zip_audio,
             ptt_delay,
+            
+            bisect_midpoint,
             
             AutoStop,
             BgNoise,

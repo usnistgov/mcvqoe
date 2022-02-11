@@ -4968,6 +4968,7 @@ def load_defaults():
             'audio_path',
             'audio_path',
             'auto_stop',
+            'bisect_midpoint',
             'bgnoise_file',
             'bgnoise_snr',
             'data_file',
