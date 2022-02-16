@@ -2149,6 +2149,8 @@ class TestProgressFrame(tk.LabelFrame):
 
             'compress' : ('Compressing audio data...',
                           f'Compressing file {current_trial+1} of {num_trials}'),
+            'diagnose': (f'{msg}...',
+                         f'Trial {current_trial+1} of {num_trials}')
             }
 
         if prog_type in messages:
