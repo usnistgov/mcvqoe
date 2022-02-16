@@ -40,7 +40,7 @@ def add_mcv_icon(win):
                     win.iconbitmap(icon)
                 else:
                     logo = tk.PhotoImage(file=icon)
-                    win.call('wm', 'iconphoto', win._w, logo)
+                    win.iconphoto(True, logo)
             except TclError as e:
                 print(f'failed to add icon : {icon}, {e}')
         else:
