@@ -286,6 +286,7 @@ class MCVQoEGui(tk.Tk):
             accesstime,
             psud,
             intelligibility,
+            tvo,
             )
 
         for key in ('test', 'ptt_gap', 'ptt_wait', 'pause_trials', '_limited_trials'):
