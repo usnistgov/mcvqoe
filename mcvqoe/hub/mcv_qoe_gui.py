@@ -3645,6 +3645,8 @@ class PostProcessingFrame(ttk.Frame):
             test_type = 'psud'
         elif selected_test == 'IgtibyFrame':
             test_type = 'intell'
+        elif selected_test == 'TVOFrame':
+            test_type = 'tvo'
         elif selected_test == 'ReprocessFrame':
             # test_type = self.reprocess_type
             test_types = [mcvqoe.base.get_measurement_from_file(x, module=False) for x in test_files]
