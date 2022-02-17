@@ -44,20 +44,26 @@ def format_diagnostic_results(diag_eval, digits=4):
     flagged = df.loc[(df['AW_flag'] == 1) | (df['FSF_flag'] == 1) | (df['Clip_flag'] == 1)]
     
     results = flagged.to_dict(orient='records')
-    
-    children = [
-        html.H3('Flagged Trials'),
-        html.Div([
-        dash_table.DataTable(
-            columns=[{'name': i, 'id': i} for i in results[0].keys()],
-            data=results,
-            page_action='native',
-            page_size=12,
+    if len(results) == 0:
+        children = [
+            html.H3('Flagged Trials'),
+            html.P('No flagged trials detected'),
+            ]
+        
+    else:
+        children = [
+            html.H3('Flagged Trials'),
+            html.Div([
+            dash_table.DataTable(
+                columns=[{'name': i, 'id': i} for i in results[0].keys()],
+                data=results,
+                page_action='native',
+                page_size=12,
+                )
+            ],
+            style=eval_shared.style_results,
             )
-        ],
-        style=eval_shared.style_results,
-        )
-        ]
+            ]
    
  
     return children
