@@ -80,25 +80,18 @@ def format_diagnostic_results(diag_eval, digits=4):
 def update_plots(jsonified_data,
                  meas_digits,):
     """
-    Update all plots
+    Update all output and plots
 
     Parameters
     ----------
     jsonified_data : TYPE
-        DESCRIPTION.
-    thin : TYPE
-        DESCRIPTION.
-    talker_select : TYPE
-        DESCRIPTION.
-    session_select : TYPE
-        DESCRIPTION.
-    x : TYPE
         DESCRIPTION.
 
     Returns
     -------
     return_vals : TYPE
         DESCRIPTION.
+    
 
     """
     
