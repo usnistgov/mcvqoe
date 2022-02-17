@@ -335,6 +335,7 @@ class MCVQoEGui(tk.Tk):
             SyncProgressFrame,
             SyncSetupFrame,
             ReprocessFrame,
+            DiagnosticsFrame,
 
             loader.DevDlyCharFrame,
 
@@ -1099,6 +1100,8 @@ class MCVQoEGui(tk.Tk):
             elif selected_test == 'ReprocessFrame':
                 #change step to reprocess
                 step = 'reprocess'
+            elif selected_test == 'DiagnosticsFrame':
+                step = 'diagnose'
             else:
                 # test configuration
                 self.show_frame(self.selected_test.get())
@@ -1125,6 +1128,17 @@ class MCVQoEGui(tk.Tk):
             rpf = loader.tk_main.win.frames['ReprocessFrame']
             next_btn_txt = 'Reprocess'
             next_btn = lambda : rpf.do_reprocess()
+            if extra:
+                back_btn = lambda : self.set_step(extra)
+                back_btn_txt = 'Ok'
+            else:
+                back_btn = lambda : self.set_step('empty')
+                back_btn_txt = 'Back'
+        elif step == 'diagnose':
+            self.show_frame('DiagnosticsFrame')
+            dpf = loader.tk_main.win.frames['DiagnosticsFrame']
+            next_btn_txt = 'Diagnose'
+            next_btn = lambda : dpf.diagnose()
             if extra:
                 back_btn = lambda : self.set_step(extra)
                 back_btn_txt = 'Ok'
@@ -1419,6 +1433,9 @@ class ImportLoader():
                 'tvo_gui': 'mcvqoe.hub.tvo_gui',
                 'TVOFrame': ('mcvqoe.hub.tvo_gui', 'TVOFrame'),
                 },
+            'Diagnostics': {
+                'mcvqoe_diagnostics': 'mcvqoe.diagnostics',
+                }
         }
 
         try:
@@ -1822,7 +1839,7 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Label(self, text='Post Test:', font=section_font).pack(fill=tk.X)
 
-        ttk.Radiobutton(self, text='Process Data',
+        ttk.Radiobutton(self, text='Evaluate Data',
                    variable=sel_txt, value=process).pack(fill=tk.X)
 
         ttk.Radiobutton(self, text='Sync Data',
@@ -1830,6 +1847,9 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Radiobutton(self, text='Reprocess Data',
                    variable=sel_txt, value='ReprocessFrame').pack(fill=tk.X)
+        
+        ttk.Radiobutton(self, text='Diagnose Data',
+                        variable=sel_txt, value='DiagnosticsFrame').pack(fill=tk.X)
 
         # version information
         ttk.Button(self, text='About', command=McvQoeAbout).pack(
@@ -2152,7 +2172,7 @@ class TestProgressFrame(tk.LabelFrame):
             'diagnose': (f'{msg}...',
                          f'Trial {current_trial+1} of {num_trials}')
             }
-
+        
         if prog_type in messages:
 
             # set text based on above messages
@@ -2171,7 +2191,7 @@ class TestProgressFrame(tk.LabelFrame):
             self.file_.set('')
             self.delay_.set('')
 
-        elif prog_type in ('pre', 'proc', 'test', 'compress'):
+        elif prog_type in ('pre', 'proc', 'test', 'compress', 'diagnose'):
             # show current progress on a determinate progress bar
             self.bar.stop()
             self.bar.configure(value=current_trial, maximum = num_trials,
@@ -2705,6 +2725,173 @@ class ReprocessFrame(ttk.Labelframe):
             for c in w_list:
                 c.configure(state=state)
 
+class DiagnosticsFrame(ttk.Labelframe):
+    """Diagnose data from a prevous test
+
+    """
+
+    padx = 10
+    pady = 10
+
+    def __init__(self, btnvars, *args, **kwargs):
+        super().__init__(*args, text='Run Diagnostics on Data', **kwargs)
+
+        self.btnvars = btnvars
+
+        #row in frame
+        self.r=0
+
+        # === Reprocess file ===
+
+        fold_entry = ttk.Entry(self, width=50, textvariable=self.btnvars['datadir'])
+
+        fold_button = ttk.Button(self, text='Browse', command=self.get_dir)
+        
+        self.add_widgets('Data Directory', (fold_entry, fold_button),
+                            help_txt='Data file from test to reprocess.')
+
+        # === Measurement Type ===
+
+
+        self.meas_types = {'select':'<select measurement type>',
+                           'mcvqoe.mouth2ear':'Mouth-to-Ear',
+                           'mcvqoe.accesstime':'Access Delay',
+                           'mcvqoe.psud':'PSuD',
+                           'mcvqoe.intelligibility':'Intelligibility',
+                           }
+
+        self.pretty_type = tk.StringVar()
+
+        #set based on measurement_type
+        self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
+
+        dropdown = ttk.Menubutton(self, textvariable=self.pretty_type)
+
+        menu = tk.Menu(dropdown, tearoff=False)
+
+        for v, l in self.meas_types.items():
+            def get_command(choice):
+                def set_choice():
+                    self.btnvars['measurement_type'].set(choice)
+                    self.pretty_type.set(self.meas_types[choice])
+                return set_choice
+            menu.add_command(label=l,
+                            command=get_command(v))
+
+        dropdown.configure(menu=menu)
+
+        self.add_widgets('Measurement Type', (dropdown,),
+                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+        
+    def add_widget(self, w, column=0, padx=None, pady=None):
+        '''
+        Add a single widget that spans 4 columnspan
+        '''
+        if padx is None:
+            padx = self.padx
+        if pady is None:
+            pady = self.pady
+        w.grid(column=column, row=self.r, columnspan=4, sticky='NSW',
+                        padx=padx, pady=pady)
+
+        #move to next row
+        self.r += 1
+
+    def add_widgets(self,  l_text, widgets ,group=None , help_txt=None):
+        '''
+        Add a row of widgets in the grid.
+
+        With label and optional help.
+        '''
+        #add label
+        label = ttk.Label(self, text=l_text)
+        label.grid(column=0, row=self.r, sticky='NSEW',
+                    padx=self.padx, pady=self.pady)
+        if group:
+            self.widgets[group].append(label)
+        #add text
+        if help_txt:
+            h_icon = shared.HelpIcon(self, tooltext=help_txt)
+            h_icon.grid(column=1, row=self.r, padx=0, pady=self.pady, sticky='NW')
+            if group:
+                self.widgets[group].append(label)
+
+        #add widgets
+        for c, w in enumerate(widgets, 2):
+            w.grid(column=c, row=self.r, sticky='NSEW',
+                             padx=self.padx, pady=self.pady)
+            if group:
+                self.widgets[group].append(w)
+
+        #move to next row
+        self.r += 1
+        
+    def get_dir(self):
+        initial = self.btnvars['datadir'].get()
+        if initial:
+            #strip filename from path
+            initial = path.dirname(initial)
+        else:
+            initial = save_dir
+
+        file = fdl.askdirectory(parent=self.master, initialdir=initial,)
+        if file:
+            self.btnvars['datadir'].set(path.normpath(file))
+    
+    @in_thread('MainThread', wait=False)
+    def diagnose(self):
+        try:
+            # update the progress screen to say 'Loading...'
+            gui_progress_update('pre', 0, 0)
+
+            loader.tk_main.win.set_step('in-progress')
+
+            wav_dir = self.btnvars['datadir'].get()
+
+            #make sure a file was chosen
+            if not wav_dir:
+                raise RuntimeError('A directory of wav files must be chosen')
+
+            
+            measurement = self.btnvars['measurement_type'].get()
+
+            if measurement == 'select':
+                raise RuntimeError('A measurement type must be selected')
+            # object to diagnose with
+            # TODO: Make this
+            diagnose_obj = loader.mcvqoe_diagnostics.Diagnose(
+                wav_dir,
+                )
+            diagnose_obj.progress_update = gui_progress_update
+            diagnose_obj.load_audio()
+            diagnose_obj.run_diagnostics()
+            out_name = diagnose_obj.outname
+            # out_name = reprocess.reprocess_file(process_obj, in_file, save_file,
+            #                            audio_path=audio_path)
+            
+
+            #print message
+            tk.messagebox.showinfo(title='Success!',message='Data reprocessed '
+                                        f'to \'{out_name}\'.')
+
+            # TODO: Figure out how to get to an post process frame
+            #get post processing frame
+            ppf = loader.tk_main.win.frames['PostProcessingFrame']
+            #store name of output file
+            ppf.last_test = out_name
+            
+            # #set test type
+            ppf.reprocess_type = 'Diagnose'
+            #set outdir in post processing frame
+            ppf.outdir = path.dirname(path.dirname(path.dirname(out_name)))
+            # #go to post processing frame
+            loader.tk_main.win.set_step('post-process')
+        except:
+            #go back to reprocess
+            loader.tk_main.win.set_step('diagnose')
+            #re-raise the exception
+            raise
+            
 class SyncSetupFrame(ttk.Labelframe):
     """Replacement for the TestInfoGui. Collects pre-test notes
 
@@ -3466,6 +3653,8 @@ class PostProcessingFrame(ttk.Frame):
                 raise RuntimeError(f'Selected files were of multiple types:\n[{set(test_types)}]\nOnly one type of measurement can be processed for plotting at a time.')
             else:
                 test_type = test_types[0]
+        elif selected_test == 'DiagnosticsFrame':
+            test_type = 'diagnostics'
         else:
             # TODO: Do something here?
             print('uh oh')
@@ -3496,12 +3685,12 @@ class PostProcessingFrame(ttk.Frame):
 
 
 class ProcessDataFrame(ttk.LabelFrame):
-    """Frame for finding data to process and starting evaluation server"""
+    """Frame for finding data to evaluate and starting evaluation server"""
     
     padx = 10
     pady = 10
     def __init__(self, master, btnvars, **kwargs):
-        super().__init__(text='Process Data', **kwargs)
+        super().__init__(text='Evaluate Data', **kwargs)
 
 
         #option functions will get and store their values in here
@@ -3529,6 +3718,7 @@ class ProcessDataFrame(ttk.LabelFrame):
                            'psud':'PSuD',
                            'intell':'Intelligibility',
                            'tvo': 'TVO',
+                           'diagnostics': 'Diagnostics',
                            }
 
         self.pretty_type = tk.StringVar()
@@ -4934,6 +5124,8 @@ def load_defaults():
         'SyncSetupFrame': [],
 
         'ReprocessFrame': [],
+        
+        'DiagnosticsFrame': [],
 
         dev_dly_char: [
             'audio_files',
@@ -5236,6 +5428,9 @@ def load_defaults():
     DEFAULTS['ReprocessFrame']['rx_name'] = ''
     DEFAULTS['ReprocessFrame']['outdir'] = ''
     DEFAULTS['ReprocessFrame']['extraplay'] = 0
+    
+    DEFAULTS['DiagnosticsFrame']['datadir'] = ''
+    DEFAULTS['DiagnosticsFrame']['measurement_type'] =  'select'
 
 
 def main():
