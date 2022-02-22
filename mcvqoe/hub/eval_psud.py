@@ -158,17 +158,18 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
             if session_select == []:
                 session_select = None
 
-            fig_histogram = eval_shared.blank_fig()
             fig_plot = psud_eval.plot(methods=method,
-                                           thresholds=threshold,
-                                           )
+                                      thresholds=threshold,
+                                      color_palette=eval_shared.plotly_color_palette,
+                                      )
             fig_scatter = psud_eval.plot_intelligibility(
                 x=x,
                 data=intell_type,
                 talkers=talker_select,
                 test_name=session_select,
+                color_palette=eval_shared.plotly_color_palette,
                 )
-            fig_histogram = psud_eval.histogram()
+            fig_histogram = psud_eval.histogram(color_palette=eval_shared.plotly_color_palette,)
             
             filenames = psud_eval.data['Filename']
             pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')

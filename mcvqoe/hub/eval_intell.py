@@ -118,6 +118,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
                 x=x,
                 talkers=talker_select,
                 test_name=session_select,
+                color_palette=eval_shared.plotly_color_palette,
                 )
             fig_histogram = intell_eval.histogram(
                 talkers=talker_select,

@@ -752,6 +752,22 @@ def blank_fig():
     
     return fig
 
+# This color palette was defined to be both colorblind-friendly and meet WCAG AA
+# contrast standards. 
+# See:
+# https://davidmathlogic.com/colorblind/#%23E31A1C-%235E3C99-%23018E79-%23948A00-%23004E79-%23823900-%23000000
+# https://webaim.org/resources/contrastchecker/
+plotly_color_palette = [
+    '#E31A1C', # Red
+    '#5E3C99', # Plum
+    '#018E79', # Blue/green
+    '#948A00', # Gold/sand
+    '#004E79', # Dark Blue
+    '#823900', # Dark orange/red
+    '#000000', # Black
+    ]
+    
+
 def measurement_plots(measurement):
     if measurement == 'm2e':
         children = [

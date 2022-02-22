@@ -121,11 +121,13 @@ def update_plots(jsonified_data, thin, talker_select, session_select, x, meas_di
                 thinned=thinned,
                 talkers=talker_select,
                 test_name=session_select,
+                color_palette=eval_shared.plotly_color_palette,
                 )
             fig_histogram = m2e_eval.histogram(
                 thinned=thinned,
                 talkers=talker_select,
                 test_name=session_select,
+                color_palette=eval_shared.plotly_color_palette,
                 )
             
             talkers = np.unique(m2e_eval.data['Filename'])

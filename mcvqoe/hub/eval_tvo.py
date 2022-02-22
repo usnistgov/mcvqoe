@@ -114,6 +114,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
             fig_plot = tvo_eval.plot(
                 talkers=talker_select,
                 x=x,
+                color_palette=eval_shared.plotly_color_palette,
                 )
             # fig_plot = eval_shared.blank_fig()
             

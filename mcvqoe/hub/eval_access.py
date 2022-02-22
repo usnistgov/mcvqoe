@@ -159,6 +159,7 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type, sowc,
             fig_intell = access_eval.plot_intell(talkers=talker_select,
                                                  show_raw=show_raw,
                                                  fit_type=fit_type,
+                                                 color_palette=eval_shared.plotly_color_palette,
                                                  )
             
             # Get talker word combos
