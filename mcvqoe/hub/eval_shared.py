@@ -1072,4 +1072,21 @@ def failed_process(measurement, msg=('', )):
                 talker_options,
                 session_options
                 )
+    elif measurement == 'diagnostics':
+        default_msg = ('Diagnostics object could not be processed.\n', )
+        debug_help = ('', )
+        msg = default_msg + msg + debug_help
+        res = html.Div(msg)
+        res_formatting = measurement_digits('none',
+                                            measurement=measurement)
+        fig_aweight = blank_fig()
+        fig_peak = blank_fig()
+        fig_fsf= blank_fig()
+        return_vals = (
+            res,
+            res_formatting,
+            fig_aweight,
+            fig_peak,
+            fig_fsf,
+            )
     return return_vals
