@@ -148,7 +148,6 @@ def update_plots(jsonified_data, talker_select, session_select, x, intell_type,
                 error_out = '. '.join(json_data['error'])
                 raise RuntimeError(error_out)
             else:
-                print('trying eval')
                 psud_eval = eval_shared.load_json_data(jsonified_data, f'{measurement}')
             
             # thinned = thin == 'True'

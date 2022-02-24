@@ -40,7 +40,6 @@ def format_tvo_results(tvo_eval, digits=2):
         DESCRIPTION.
 
     """
-    print(f'Opt keys: {tvo_eval.optimal.keys()}')
     pretty_opt = eval_shared.pretty_numbers(tvo_eval.optimal.loc[0, 'Optimum [dB]'], digits)
     pretty_low = eval_shared.pretty_numbers(tvo_eval.optimal.loc[0, 'Lower_Interval [dB]'], digits)
     pretty_up = eval_shared.pretty_numbers(tvo_eval.optimal.loc[0, 'Upper_Interval [dB]'], digits)
