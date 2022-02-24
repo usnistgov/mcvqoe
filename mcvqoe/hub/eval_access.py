@@ -69,6 +69,7 @@ def format_access_results(access_eval,
         
 
     children = html.Div([
+        html.P('Uncertainty is expressed with 95% confidence intervals.'),
         dash_table.DataTable(
             columns=[{'name': i, 'id': i} for i in results[0].keys()],
             data=results,
