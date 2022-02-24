@@ -80,6 +80,7 @@ def format_psud_results(psud_eval,
     # pretty_mean = eval_shared.pretty_numbers(psud_v, digits)
     # pretty_ci = eval_shared.pretty_numbers(psud_ci, digits)
     children = html.Div([
+        html.P('Uncertainty is expressed with 95% confidence intervals.'),
         dash_table.DataTable(
             columns=[{'name': i, 'id': i} for i in results[0].keys()],
             data=results,
