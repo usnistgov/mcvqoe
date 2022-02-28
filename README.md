@@ -36,7 +36,13 @@ be downloaded automatically, if needed, when `mcvqoe` is installed:
 * requests
 * pillow
 
-To install the package, clone this repository and run the following from the 
+To install the package run the following:
+```
+pip install mcvqoe
+```
+
+
+Alternatively, one could clone this repository and run the following from the 
 root of the git repository:
 
 ```
