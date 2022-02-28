@@ -38,6 +38,7 @@ setuptools.setup(
         'requests',
         'pillow',
         'scipy',
+        'werkzeug<2.1'
     ],
     entry_points={
         'gui_scripts':[
