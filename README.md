@@ -24,8 +24,7 @@ The `mcvqoe` GUI package depends on the following other PSCR published packages:
 * <https://github.com/usnistgov/intelligibility>
 * <https://github.com/usnistgov/MCV-QOE-TVO>
 
-They must be installed before the `mcvqoe` package is installed. In addition the 
-following dependencies can be found in the Python Package index (PyPi) and will 
+In addition the following dependencies can be found in the Python Package index (PyPI) and will 
 be downloaded automatically, if needed, when `mcvqoe` is installed:
 
 * numpy
@@ -40,7 +39,7 @@ To install the package run the following:
 ```
 pip install mcvqoe
 ```
-
+This is the easiest way to install all MCV QoE measurement software, as all the above packages are dependencies, and will be installed via PyPI.
 
 Alternatively, one could clone this repository and run the following from the 
 root of the git repository:
