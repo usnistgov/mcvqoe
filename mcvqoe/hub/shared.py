@@ -5,24 +5,24 @@ Created on Wed Jun  9 11:03:39 2021
 @author: MkZee
 """
 
-from os import path
-
 import importlib.resources
 import sys
-import tkinter as tk
-from tkinter import ttk
-import tkinter.filedialog as fdl
-from PIL import Image, ImageTk
 #used to catch errors from tk
 import _tkinter
 
-import mcvqoe.hub.loadandsave as loadandsave
+from mcvqoe.simulation import QoEsim
+from os import path
+from PIL import Image, ImageTk
 from .tk_threading import show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from _tkinter import TclError
+from tkinter import ttk
 
+import mcvqoe.hub.loadandsave as loadandsave
 import scipy.stats as sps
-from mcvqoe.simulation import QoEsim
+import tkinter as tk
+import tkinter.filedialog as fdl
+
 
 PADX = 10
 PADY = 10
@@ -98,17 +98,6 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.yview_scroll(-delta, 'units')
 
 
-
-
-
-
-
-
-
-
-
-
-
 class TestCfgFrame(ttk.LabelFrame):
 
     """
@@ -133,17 +122,13 @@ class TestCfgFrame(ttk.LabelFrame):
 
     text = ''
 
-
-
     def __init__(self, btnvars, *args, **kwargs):
 
         kwargs['text'] = self.text
         super().__init__(*args, **kwargs)
 
-
         #option functions will get and store their values in here
         self.btnvars = btnvars
-
 
         #sets what controls will be in this frame
         controls = self.get_controls()
@@ -157,7 +142,6 @@ class TestCfgFrame(ttk.LabelFrame):
 
     def update_title(self, title):
         self.configure(text = title)
-
 
     def get_controls(self) -> iter:
         """
@@ -178,7 +162,6 @@ class TestCfgFrame(ttk.LabelFrame):
         return tuple()
 
 
-
 class SubCfgFrame(TestCfgFrame):
     """Base class to make a subframe for controls grouped together.
 
@@ -197,17 +180,12 @@ class SubCfgFrame(TestCfgFrame):
 
     def __init__(self, master, row, *args, **kwargs):
 
-
-
         super().__init__(master.btnvars, master, *args, **kwargs)
-
 
         self.grid(column=0, row=row, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
 
         master.controls.update(self.controls)
-
-
 
     def get_controls(self) -> iter:
         """see TestCfgFrame.get_controls"""
@@ -231,7 +209,6 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     use_scrollbar = False
 
     def __init__(self, master, btnvars, *args, **kwargs):
-
 
         super().__init__(master, *args, **kwargs)
         #hide the window
@@ -331,8 +308,6 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # return key closes window
         self.bind('<Return>', lambda *args : self.destroy())
 
-
-
     def get_controls(self):
         pass
 
@@ -347,6 +322,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # remove tcl variable traces (prevents errors in simulation settings)
         for var, trace_id in container.traces_:
             var.trace_remove('write', trace_id)
+
 
 class DescriptionBlock:
     """
@@ -497,7 +473,6 @@ class LabeledControl:
         pass
 
 
-
     def __init__(self, master, row):
         self.master = master
 
@@ -513,7 +488,6 @@ class LabeledControl:
         # get tcl variable
         if self.__class__.__name__ in master.btnvars:
             self.btnvar = master.btnvars[self.__class__.__name__]
-
 
         # help button
         if self.__class__.__doc__:
@@ -548,7 +522,6 @@ class LabeledControl:
             self.m_ctrl.grid(
                 column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
 
-
         # Right-most control
         if self.RCtrl:
             #add command to button
@@ -569,6 +542,7 @@ class LabeledControl:
             lst.append(line.strip())
 
         return '\n'.join(lst)
+
 
     def destroy(self):
 
@@ -601,6 +575,7 @@ class LabeledControl:
                 self.h_ctrl.destroy()
             self.h_ctrl = None
 
+
     def on_button(self):
         """The function to run when the user presses the button on the right
         of the control.
@@ -609,7 +584,6 @@ class LabeledControl:
 
         """
         pass
-
 
 
 class HelpIcon(ttk.Button):
@@ -686,6 +660,7 @@ class HelpIcon(ttk.Button):
         self.tw.destroy()
         self.tw = None
 
+
 def _get_master(m, targets = (tk.Tk, tk.Toplevel)):
     """
     given a tkinter widget, goes up the chain of hierarchy until it finds
@@ -744,7 +719,6 @@ class ToolTip(tk.Toplevel):
     def show(self):self.deiconify()
 
 
-
 class LabeledEntry(LabeledControl):
     """
     A convenient text-entry control
@@ -756,10 +730,6 @@ class LabeledEntry(LabeledControl):
         a user-friendly name for the parameter
 
     """
-
-
-
-
 
 
 class LabeledNumber(LabeledControl):
@@ -784,6 +754,7 @@ class LabeledNumber(LabeledControl):
 
 
     """
+
     RCtrl = None
 
     MCtrl = ttk.Spinbox
@@ -860,7 +831,6 @@ class LabeledSlider(LabeledControl):
             super().set(f'{s}%')
 
 
-
 class _MultiChoice_Frame(tk.Frame):
     def __init__(self, *args, association, textvariable, **kwargs):
 
@@ -879,9 +849,6 @@ class _MultiChoice_Frame(tk.Frame):
     def configure(self, *args, **kwargs):
         for ctrl in self.controls:
             ctrl.configure(*args, **kwargs)
-
-
-
 
 
 class MultiChoice(LabeledControl):
@@ -908,6 +875,7 @@ class MultiChoice(LabeledControl):
 
 
     """
+
     association = {}
     do_font_scaling = False
     MCtrl = _MultiChoice_Frame
@@ -917,7 +885,6 @@ class MultiChoice(LabeledControl):
         self.MCtrlkwargs['association'] = self.association
 
         super().__init__(*args, **kwargs)
-
 
 
 class LabeledCheckbox(LabeledControl):
@@ -949,7 +916,6 @@ class LabeledCheckbox(LabeledControl):
 
 
         super().__init__(*args, **kwargs)
-
 
 
 class EntryWithButton(LabeledControl):
@@ -990,9 +956,6 @@ class EntryWithButton(LabeledControl):
         super().__init__(*args, **kwargs)
 
 
-
-
-
 class advanced(EntryWithButton):
     """Base class for singular-button 'advanced' controls.
 
@@ -1028,31 +991,7 @@ class advanced(EntryWithButton):
         self.toplevel(master=self.master, btnvars=self.master.btnvars)
 
 
-
-
-
-
-
-
-
-
-
-
 #---------------------------controls------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class audio_files(EntryWithButton):
@@ -1065,7 +1004,6 @@ class audio_files(EntryWithButton):
     button_text = 'Browse...'
 
 
-
     def on_button(self):
 
         initpath = self.master.btnvars['audio_path'].get()
@@ -1074,7 +1012,6 @@ class audio_files(EntryWithButton):
             # load cached folder
             initpath = loadandsave.fdl_cache[
                 f'{self.master.__class__.__name__}.audio_path']
-
 
         fp = fdl.askopenfilenames(parent=self.master,
                 initialdir=initpath,
@@ -1095,8 +1032,6 @@ class audio_files(EntryWithButton):
 
 
 
-
-
 class audio_path(EntryWithButton):
     """The source folder containing the audio files."""
 
@@ -1114,7 +1049,6 @@ class audio_path(EntryWithButton):
             # load cached folder
             initpath = loadandsave.fdl_cache[
                 f'{self.master.__class__.__name__}.audio_path']
-
 
         fp = fdl.askdirectory(initialdir = initpath)
         if fp:
@@ -1176,7 +1110,6 @@ class outdir(EntryWithButton):
         super().__init__(*args, **kwargs)
 
 
-
 class overplay(LabeledNumber):
     """The number of seconds to play silence after the audio is complete.
     This allows for all of the audio to be recorded when there is delay
@@ -1186,7 +1119,6 @@ class overplay(LabeledNumber):
     text='Overplay Time (sec):'
 
     increment = 0.01
-
 
 
 class ptt_gap(LabeledNumber):
@@ -1211,9 +1143,8 @@ class SaveAudio(MultiChoice):
                    }
 
 
-
-
 # --------------------------- the following 3 are all for pause_trials--------
+
 class RadioCheck(SubCfgFrame):
 
     text = 'Regular Radio Checks'
@@ -1251,6 +1182,7 @@ class _limited_trials(LabeledCheckbox):
 
         self.master.btnvars['pause_trials'].set(val)
 
+
     def update(self, *args, **kwargs):
 
         v = self.master.btnvars['pause_trials'].get()
@@ -1265,9 +1197,6 @@ class _limited_trials(LabeledCheckbox):
             self.btnvar.set(other)
 
 
-
-
-
 class pause_trials(LabeledNumber):
     """Number of trials to run before pausing to perform a radio check."""
 
@@ -1277,12 +1206,8 @@ class pause_trials(LabeledNumber):
     min_ = 1
 
 
-
-
-
 class time_expand(SubCfgFrame):
     text = 'Time Expand'
-
 
 
     def __init__(self, master, row, **kwargs):
@@ -1295,6 +1220,7 @@ class time_expand(SubCfgFrame):
             _time_expand_i,
             _time_expand_f,
             )
+
 
 class _time_expand_i(LabeledNumber):
     """Length of time, in seconds, of extra
@@ -1316,7 +1242,6 @@ class _time_expand_f(LabeledNumber):
     increment = 0.01
 
 
-
 class bgnoise_file(EntryWithButton):
     """This is used to read in a noise file to be mixed with the
     test audio. Default is no background noise."""
@@ -1333,7 +1258,6 @@ class bgnoise_file(EntryWithButton):
             self.btnvar.set(fp)
 
 
-
 class bgnoise_snr(LabeledNumber):
     """Signal to noise ratio for voice vs noise file."""
 
@@ -1341,6 +1265,7 @@ class bgnoise_snr(LabeledNumber):
     min_ = -5
     max_ = 120
     increment = 0.1
+
 
 class ptt_wait(LabeledNumber):
     """The amount of time to wait, in seconds, between pushing the
@@ -1350,17 +1275,6 @@ class ptt_wait(LabeledNumber):
     text = 'PTT Wait Time:'
 
     increment = 0.01
-
-
-
-
-
-
-
-
-
-
-
 
 
 class _advanced_submit(advanced):
@@ -1386,10 +1300,6 @@ class BgNoise(SubCfgFrame):
                 bgnoise_snr)
 
 
-
-
-
-
 # ----------------------- Device delay characterization -----------------------
 
 
@@ -1413,7 +1323,6 @@ class dev_dly(LabeledNumber):
             CharDevDly()
 
 
-
 class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
 
     def __init__(self, *args, **kwargs):
@@ -1432,7 +1341,6 @@ class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
 characterization test is a Mouth-to-Ear test that is run with the audio
 output directly fed into the input, as shown below.
 """).pack(fill=tk.X, padx=10, pady=10)
-
 
         # open image
         max_width = 600
@@ -1461,17 +1369,14 @@ output directly fed into the input, as shown below.
         self.finished = False
 
 
-
-
     def continue_btn(self):
 
         _get_master(self, tk.Tk).selected_test.set('DevDlyCharFrame')
         self.destroy()
 
 
-
-
 #------------------------ Global settings for hdw/simulation------------------
+
 
 class _HdwPrototype:
     """Contains the default audioplayer settings.
@@ -1486,6 +1391,7 @@ class _HdwPrototype:
     buffersize=20
     overplay=1.0
     timecode_type='IRIGB_timecode'
+
 
 #HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
@@ -1504,11 +1410,13 @@ class HdwSettings(AdvancedConfigGUI):
             _restore_defaults,
             )
 
+
 class radioport(LabeledControl):
     """Port to use for radio interface. Defaults to the first
     port where a radio interface is detected"""
 
     text = 'Radio Port:'
+
 
 class default_radio(LabeledControl):
     """PTT output number to use for test."""
@@ -1517,6 +1425,7 @@ class default_radio(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2}
 
+
 class timecode_type(LabeledControl):
     """type of timecode to use for two location tests"""
 
@@ -1524,12 +1433,14 @@ class timecode_type(LabeledControl):
     MCtrl = ttk.Combobox
     MCtrlkwargs = {'values' : ('IRIGB_timecode','soft_timecode')}
 
+
 class AudioSettings(SubCfgFrame):
 
     text = 'Audio Settings'
 
     def get_controls(self):
         return (blocksize, buffersize)
+
 
 class blocksize(LabeledControl):
     """Block size for transmitting audio, must be a power of 2"""
@@ -1546,8 +1457,8 @@ class buffersize(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':1, 'to':2**15 -1}
 
-class _restore_defaults(LabeledControl):
 
+class _restore_defaults(LabeledControl):
 
     MCtrl = None
     RCtrl = ttk.Button
@@ -1566,14 +1477,15 @@ class _restore_defaults(LabeledControl):
             if hasattr(from_obj, k):
                 tk_var.set(getattr(from_obj, k))
 
+
 class _SimPrototype(QoEsim):
     def __init__(self):
         QoEsim.__init__(self)
         self._impairment_plugin = ''
 
+
 #SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
-
 
     text = 'Simulation Settings'
 
@@ -1599,6 +1511,7 @@ class SimSettings(AdvancedConfigGUI):
             ImpairmentsSelect,
             _restore_defaults,
             )
+
 
 class channel_tech(LabeledControl):
     """Technology to use for the simulated channel. Channel technologies are
@@ -1627,6 +1540,7 @@ class channel_tech(LabeledControl):
                 self.menu.add_command(label=tech_,
                         command=tk._setit(self.btnvar, tech_))
 
+
 class channel_rate(LabeledControl):
     """Rate to simulate channel at. Each channel tech handles this differently.
     When set to None the default rate is used."""
@@ -1650,7 +1564,6 @@ class channel_rate(LabeledControl):
 
         #fill menu with options
         self.update()
-
 
 
     def update(self, *args, **kwargs):
@@ -1690,6 +1603,7 @@ class PTT_sig_freq(LabeledControl):
     text = 'PTT Signal Frequency:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_':0, 'to' : 2**15-1, 'increment':0.1}
+
 
 class PTT_sig_amplitude(LabeledControl):
     """Amplitude of the PTT signal from the play_record method."""
@@ -1777,6 +1691,7 @@ class ChannelImpairment(LabeledControl):
         if failed:
             self.master.btnvars['channel_tech'].set('None')
 
+
 # BUG: Garbage collection issue in these delay controls
 # ---Reproduce---
 # * Open Simulation Settings
@@ -1795,6 +1710,7 @@ class ChannelImpairment(LabeledControl):
 # ---Notes---
 # This affects all the below delay controls (m2e latency, access delay, device delay)
 
+
 class m2e_latency_cfg(SubCfgFrame):
     '''
     Config to control m2e latency
@@ -1809,6 +1725,7 @@ class m2e_latency_cfg(SubCfgFrame):
             m2e_latency_sigma,
             m2e_latency_range,
             )
+
 
 class DistributionType(LabeledControl):
     """Control to get the type of a distrobution"""
@@ -1849,6 +1766,7 @@ class m2e_latency(LabeledControl):
     text = 'Value:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
 
 class m2e_latency_sigma(LabeledControl):
     """
@@ -1970,6 +1888,7 @@ class access_delay(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.001}
 
+
 class access_delay_cfg(SubCfgFrame):
     '''
     Config to control access delay
@@ -1985,10 +1904,12 @@ class access_delay_cfg(SubCfgFrame):
             access_delay_range,
             )
 
+
 class access_delay_type(DistributionType):
     """Type of access delay"""
     # TODO: Add exponential + constant
     pass
+
 
 class access_delay_sigma(LabeledControl):
     """
@@ -2002,6 +1923,7 @@ class access_delay_sigma(LabeledControl):
     text = '\u03C3:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
 
 class access_delay_range(RangeDisplay):
     """display of the range of access delay"""
@@ -2031,10 +1953,12 @@ class device_delay_cfg(SubCfgFrame):
             device_delay_range,
             )
 
+
 class device_delay_type(DistributionType):
     """Type of mouth to ear latency"""
     #nothing else needs to be configured
     pass
+
 
 class device_delay_sigma(LabeledControl):
     """
@@ -2049,12 +1973,14 @@ class device_delay_sigma(LabeledControl):
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
 
+
 class device_delay(LabeledControl):
     """Simulated device delay in seconds."""
 
     text = 'Device Delay:'
     MCtrl = ttk.Spinbox
     MCtrlkwargs = {'from_': 0, 'to': 2**15-1, 'increment':0.0001}
+
 
 class device_delay_range(RangeDisplay):
     """display of the range of the mouth to ear latency"""
@@ -2212,6 +2138,7 @@ class ImpairmentSettings(SubCfgFrame):
         #else:
         #    self.update_title('')
 
+
 class ChannelImpairmentSettings(ImpairmentSettings):
 
     def __init__(self, master, row, *args, **kwargs):
@@ -2219,6 +2146,7 @@ class ChannelImpairmentSettings(ImpairmentSettings):
         self.impairment_name = 'ChannelImpairment'
 
         super().__init__(master, row, *args, **kwargs)
+
 
 class PreImpairment(LabeledControl):
     """impairment to use before audio goes into the channel"""
@@ -2249,6 +2177,7 @@ class PreImpairment(LabeledControl):
                 self.menu.add_command(label=i,
                         command=tk._setit(self.btnvar, i))
 
+
 class PreImpairmentSettings(ImpairmentSettings):
 
     def __init__(self, master, row, *args, **kwargs):
@@ -2256,6 +2185,7 @@ class PreImpairmentSettings(ImpairmentSettings):
         self.impairment_name = 'PreImpairment'
 
         super().__init__(master, row, *args, **kwargs)
+
 
 class PostImpairment(LabeledControl):
     """impairment to use after audio goes through the channel"""
@@ -2286,6 +2216,7 @@ class PostImpairment(LabeledControl):
                 self.menu.add_command(label=i,
                         command=tk._setit(self.btnvar, i))
 
+
 class PostImpairmentSettings(ImpairmentSettings):
 
     def __init__(self, master, row, *args, **kwargs):
@@ -2295,8 +2226,8 @@ class PostImpairmentSettings(ImpairmentSettings):
         super().__init__(master, row, *args, **kwargs)
 
 
-
 # ---------------------------------- Misc ------------------------------------
+
 
 class SignalOverride():
 
@@ -2304,6 +2235,7 @@ class SignalOverride():
         #override signal's ability to close the application
 
         raise Abort_by_User()
+
 
 def format_audio_files(path_= '', files=[]):
     """
@@ -2349,6 +2281,7 @@ def format_audio_files(path_= '', files=[]):
     newfiles = [path.relpath(f, newpath) for f in files]
 
     return newpath, newfiles
+
 
 class test(MultiChoice):
     """M2E test to perform. Options are: 1 Location (m2e_1loc),
