@@ -23,13 +23,13 @@ from .shared import audio_files, outdir, ptt_gap, time_expand
 from .shared import BgNoise
 from .shared import dev_dly, RadioCheck, audio_path, SaveAudio
 
-
-        
+      
 class auto_stop(LabeledCheckbox):
     """Enable checking for access and stopping the test when it is detected."""
     
     middle_text = 'Enable Auto-Stop'
-    
+
+
 class stop_rep(LabeledNumber):
     """Number of times that access must be detected in a row before the
     test is completed."""
@@ -38,12 +38,7 @@ class stop_rep(LabeledNumber):
     
     min_ = 1
     
-    
-    
-    
-    
-    
-    
+      
 class ptt_delay(SubCfgFrame):
     text = 'PTT Delay (sec)'
     
@@ -54,7 +49,8 @@ class ptt_delay(SubCfgFrame):
             _ptt_delay_min,
             _ptt_delay_max
             )
-    
+
+
 class _ptt_delay_min(LabeledNumber):
     """The smallest ptt_delay"""
     
@@ -80,16 +76,13 @@ class ptt_step(LabeledNumber):
     increment = 0.01
     
 
-
 class ptt_rep(LabeledNumber):
     """Number of times to repeat a given PTT delay value. If auto_stop is
     used, this must be greater than 15."""
     
     text = 'Repeats per Step:'
     
-    
 
-    
 class s_thresh(LabeledNumber):
     """The threshold of A-weight power for P2, in dB, below which a trial
     is considered to have no audio."""
@@ -99,13 +92,13 @@ class s_thresh(LabeledNumber):
     min_ = -2**15 +1
     max_ = 0
 
+
 class s_tries(LabeledNumber):
     """Number of times to retry the test before giving up."""
     
     text = 'Retry Attempts:'
     
-    
-    
+  
 class data_file(EntryWithButton):
     """A temporary datafile to use to restart a test. If this is
     given all other parameters are ignored and the settings of the original
@@ -125,7 +118,6 @@ class data_file(EntryWithButton):
             self.btnvar.set(fp)
 
 
-
 class AutoStop(SubCfgFrame):
     text = 'Auto-Stop'
     
@@ -135,10 +127,7 @@ class AutoStop(SubCfgFrame):
             stop_rep,
             )
     
-
-    
-
-        
+  
 class DetectFailure(SubCfgFrame):
     text = 'Detecting Failed Transmission'   
     
@@ -148,11 +137,13 @@ class DetectFailure(SubCfgFrame):
             s_tries,
             )
 
+
 class zip_audio(LabeledCheckbox):
     """ If checked audio will be zipped after test completes."""
 
     middle_text = "Zip Audio"
     
+
 class bisect_midpoint(LabeledCheckbox):
     """If checked PTT times will be determined iteratively and will attempt to 
     converge around the PTT time associated with the intelligibility midpoint
@@ -166,7 +157,9 @@ class bisect_midpoint(LabeledCheckbox):
     """
     text = "Bisect Midpoint"
 
+
 # ------------------------ The main configuration frame -----------------------
+
 
 class AccssDFrame(TestCfgFrame):
     text = 'Access Delay Test'
@@ -188,7 +181,9 @@ class AccssDFrame(TestCfgFrame):
             advanced,
             )
 
+
 # -------------------------- The advanced window ------------------------------
+
 
 class AccDlyAdvanced(AdvancedConfigGUI):
     text = 'Access Delay - Advanced'
@@ -211,20 +206,11 @@ class AccDlyAdvanced(AdvancedConfigGUI):
     
 class advanced(shared_advanced):
     toplevel = AccDlyAdvanced
-    
-    
-
-
-
-
-
-
 
 
 class Access_fromGui(SignalOverride, adly.measure):
     pass
     
-
 
 class Access_Eval_from_GUI(SignalOverride, adly.evaluate):
     
@@ -232,6 +218,3 @@ class Access_Eval_from_GUI(SignalOverride, adly.evaluate):
         # future-proofing this param-check override
         if hasattr(super(), 'param_check'):
             super().param_check()
-    
-
-
