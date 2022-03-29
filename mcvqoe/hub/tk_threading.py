@@ -50,8 +50,6 @@ def in_thread(thread, wait=True, except_ = None):
     if not wait or exceptions is None:
         exceptions = tuple()
 
-
-
     if thread not in ('MainThread', 'GuiThread'):
         raise ValueError(f'Thread {thread} does not exist')
 
@@ -59,9 +57,6 @@ def in_thread(thread, wait=True, except_ = None):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-
-
-
 
             if thread == threading.current_thread().getName():
                 # we are already in that thread!!
@@ -74,7 +69,6 @@ def in_thread(thread, wait=True, except_ = None):
                 main.callback(switch_obj.callbacker)
             elif thread == 'GuiThread':
                 main.gui_thread.callback(switch_obj.callbacker)
-
 
             if wait:
                 # wait until function is finished if applicable
@@ -90,9 +84,9 @@ def in_thread(thread, wait=True, except_ = None):
 
                 return switch_obj.return_val
 
-
         return wrapper
     return decorator
+
 
 class _dec_return:
     def __init__(self, func, args, kwargs, exceptions):
@@ -119,7 +113,6 @@ class _dec_return:
         self.finished = True
 
 
-
 class GuiThread(Thread):
 
     def callback(self, function):
@@ -133,7 +126,6 @@ class GuiThread(Thread):
         """
         self._callbacks.insert(0, function)
 
-
     def __init__(self, win_class=tk.Tk):
         super().__init__()
 
@@ -143,8 +135,6 @@ class GuiThread(Thread):
         self._callbacks = []
         self.win_class = win_class
         self.win = None
-
-
 
     def run(self):
         # construct window
@@ -168,7 +158,6 @@ class GuiThread(Thread):
             except Exception as e:
                 #don't crash in case of error
                 show_error(e)
-
 
         #run this function again
         self.win.after(100, self._main_loop_ext)
@@ -213,8 +202,6 @@ class Main():
         """
         self._callbacks.insert(0, function)
 
-
-
     def main_loop(self):
         while True:
             if self._break:
@@ -232,9 +219,6 @@ class Main():
                     self.is_running = True
                     f()
 
-
-
-
             except Abort_by_User:pass
 
             except SystemExit:
@@ -242,22 +226,16 @@ class Main():
 
             except KeyboardInterrupt:pass
 
-
             except Exception as e:
 
                 # prints exception without exiting main thread
                 show_error(e)
 
-
-
         #thread is ending
         self.is_running = False
 
-
         self.gui_thread.join()
         return
-
-
 
     def stop(self):
         self._break = True
@@ -343,11 +321,9 @@ def show_error(exc=None, err_func=None):
         else:
             _show_error(err_name, msg)
 
-
 def format_error(exc):
     msg = str(exc)
     err_name = exc.__class__.__name__
-
 
     if not msg and isinstance(exc, Exception):
         if 'error' in err_name.lower():
@@ -361,12 +337,10 @@ def format_error(exc):
 
         msg = f'{article} "{err_name}"{descriptor} occurred.'
 
-
         err_name = 'Error'
     elif isinstance(exc, Abort_by_User):
         err_name = 'Measurement Stopped'
         msg = 'Aborted by user.'
-
 
     return err_name, msg
 
@@ -391,5 +365,3 @@ class Abort_by_User(BaseException):
     """
     def __init__(self, *args, **kwargs):
         super().__init__('Measurement aborted by user', *args, **kwargs)
-
-
