@@ -12,7 +12,6 @@ from .shared import TestCfgFrame
 from .shared import advanced as shared_advanced
 from .shared import AdvancedConfigGUI, MultiChoice, SignalOverride, test
 
-
 import csv
 import numpy as np
   
@@ -36,16 +35,6 @@ class advanced(shared_advanced):
     toplevel = M2EAdvancedConfigGUI
 
 
-
-
-
-
-
-
-
-
-
-
 # -------------------------- The mouth-to-ear frame ---------------------------
 
 class M2eFrame(TestCfgFrame):
@@ -65,21 +54,11 @@ class M2eFrame(TestCfgFrame):
             advanced
             )
     
-    
-    
-
-
-
-
-
-
-
 
 # --------------------- using the m2e measure class ---------------------------
 
 class M2E_fromGui(SignalOverride, m2e.measure):
 
-        
     def get_mean_and_std(self,name=None):
         
         if( not name):
@@ -97,32 +76,25 @@ class M2E_fromGui(SignalOverride, m2e.measure):
         #convert to numpy array
         m2e_dat=np.array(m2e_dat)
         
-        
         # Overall mean delay
         ovrl_dly = np.mean(m2e_dat)
-        
         
         # Get standard deviation
         std_delay = np.std(m2e_dat, dtype=np.float64)
         std_delay = std_delay*(1e6)
         
-        
         return ovrl_dly, std_delay
         
 
-
-
-
-
 class M2E_Eval_from_GUI(SignalOverride, mcvqoe.mouth2ear.evaluate):
     pass
+
 
 #-----------------------------Dev dly characterization------------------------
 
 class DevDlyCharFrame(M2eFrame):
     
     text = 'Device Delay Characterization'
-    
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,12 +113,6 @@ class DevDlyCharFrame(M2eFrame):
                     except: pass
 
 
-
-
-
-
-
-
 # contains the default values for the measurement
 class DevChar_Defaults(m2e.measure):
     def __init__(self, *args, **kwargs):
@@ -158,9 +124,4 @@ class DevChar_Defaults(m2e.measure):
         self.ptt_gap  = 0.31
         
 
-
-
 class DevChar_fromGui(M2E_fromGui): pass
-    
-
-
