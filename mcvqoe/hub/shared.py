@@ -2239,8 +2239,6 @@ class SignalOverride():
 
 def format_audio_files(path_= '', files=[]):
     """
-
-
     Parameters
     ----------
     path_ : str, optional
@@ -2254,7 +2252,6 @@ def format_audio_files(path_= '', files=[]):
         the absolute path containing all the files.
     newfiles : list of str
         the paths relative to newpath containing the files.
-
     """
 
     if not files:
@@ -2284,8 +2281,8 @@ def format_audio_files(path_= '', files=[]):
 
 
 class test(MultiChoice):
-    """M2E test to perform. Options are: 1 Location (m2e_1loc),
-    2 Location transmit (m2e_2loc_tx), and 2 Location receive (m2e_2loc_rx)."""
+    """Test to perform. Options are: 1 Location,
+    2 Location transmit, and 2 Location receive."""
 
     text = 'Location Type:'
 
