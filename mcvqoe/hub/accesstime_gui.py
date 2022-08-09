@@ -176,8 +176,7 @@ class AccssDFrame(TestCfgFrame):
             RadioCheck,
             dev_dly,
             data_file,
-            #uncomment to add two location selector
-            #test,
+            test,
             advanced,
             )
 
