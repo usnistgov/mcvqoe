@@ -15,13 +15,12 @@ from .tk_threading import InvalidParameter
 
 import numpy as np
 
+
 class TkVarDict(dict):
 
     """A dict of tk variables with initial values given
 
     Used to save, load, and get states of tkinter widgets
-
-
     """
 
     def __init__(self, **initials):
@@ -55,14 +54,11 @@ class TkVarDict(dict):
     def set(self, dict_):
         """sets the values of the vars to the values given
 
-
         Parameters
         ----------
         dict_ : dict
-
-
-
         """
+
         for k, v in dict_.items():
             if k in self:
                 self[k].set(v)
@@ -70,13 +66,11 @@ class TkVarDict(dict):
     def get(self):
         """converts the values back into a dict
 
-
         Returns
         -------
         dict_ : dict
-
-
         """
+
         dict_ = {}
         for k, v in self.items():
             try:
@@ -105,9 +99,7 @@ class TkVarDict(dict):
 
 
 class Config(dict):
-    """loads and saves a json file in the user's appdir folder
-
-    """
+    """loads and saves a json file in the user's appdir folder"""
 
     appinf = {'appname': 'mcvqoe', 'appauthor': 'NIST'}
 
