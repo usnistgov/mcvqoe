@@ -17,7 +17,6 @@ import numpy as np
 
 
 class TkVarDict(dict):
-
     """A dict of tk variables with initial values given
 
     Used to save, load, and get states of tkinter widgets
