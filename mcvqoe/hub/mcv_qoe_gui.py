@@ -16,7 +16,6 @@ if hasattr(ctypes, 'windll'):
     # remove dpi scaling (otherwise text is blurry)
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
-
     # allows icon setting on taskbar
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
@@ -45,7 +44,6 @@ from tempfile import TemporaryDirectory
 from mcvqoe.utilities import reprocess
 from mcvqoe.timing import two_loc_process
 
-
 import sounddevice as sd
 import sys
 import time
@@ -68,28 +66,24 @@ import re
 from pkg_resources import resource_filename
 
 
-
 #                       -----------------------------
 # !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
 #                       -----------------------------
 
 #---------------------------- The main window class---------------------------
+
 class MCVQoEGui(tk.Tk):
     """The main window.
 
     This window serves as both the initial loading window and the primary
     window of the application (there were problems with having multiple
     instances of tk.Tk)
-
-
     """
 
     def __init__(self, *args, **kwargs):
         """Initializes the window as a loading window.
 
         Use self.init_as_mainwindow() to switch to the primary gui
-
-
         """
 
         super().__init__(*args, **kwargs)
@@ -101,7 +95,7 @@ class MCVQoEGui(tk.Tk):
 
         try:
             # on windows, add alwaysontop
-            self.attributes('-topmost',True)
+            self.attributes('-topmost', True)
         except:
             pass
 
@@ -109,9 +103,9 @@ class MCVQoEGui(tk.Tk):
         screenw = self.winfo_screenwidth()
         screenh = self.winfo_screenheight()
 
-        #get height of text
+        # get height of text
         txt_h = tk.font.Font(font='TkDefaultFont').metrics('linespace')
-        #make sure we have room
+        # make sure we have room
         txt_h *= 2
 
         w = 470
@@ -130,12 +124,12 @@ class MCVQoEGui(tk.Tk):
         # set the dpi scaling based on the window size
         dpi_scaling()
 
-        #add MCV sticker logo
-        sticker = StickerFrame(self, width = w, height = h - txt_h)
+        # add MCV sticker logo
+        sticker = StickerFrame(self, width=w, height=(h - txt_h))
         sticker.pack()
 
         self.text = tk.StringVar(value='Loading Libraries...')
-        ttk.Label(self, textvariable = self.text).pack(
+        ttk.Label(self, textvariable=self.text).pack(
             side=tk.BOTTOM)
 
     def load_progress(self, text):
@@ -145,20 +139,18 @@ class MCVQoEGui(tk.Tk):
 
     @in_thread('GuiThread')
     def init_as_mainwindow(self):
-        """Creates the primary widgets of the gui.
-
-
-        """
+        """Creates the primary widgets of the gui."""
 
         # prevents random window flashing
         self.withdraw()
 
-        #show titlebar and taskbar items
+        # show titlebar and taskbar items
         self.overrideredirect(False)
         try:
             # on windows, revoke alwaysontop
-            self.attributes('-topmost',False)
-        except: pass
+            self.attributes('-topmost', False)
+        except:
+            pass
 
         # clear old widgets
         for name_, widget in self.children.copy().items():
@@ -204,7 +196,7 @@ class MCVQoEGui(tk.Tk):
 
         # --------binding keyboard shortcuts-----------
 
-        #save (as), open, close
+        # save (as), open, close
         self.bind('<Control-s>', self.save)
         self.bind('<Control-S>', self.save)
         self.bind('<Control-o>', self.open_)
@@ -214,7 +206,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Control-w>', self.restore_defaults)
         self.bind('<Control-W>', self.restore_defaults)
 
-        #back, next
+        # back, next
         nxt = lambda *a, **k: self.BottomButtons._nxt_btn_wgt.invoke()
         self.bind('<Control-Return>', nxt)
         self.bind('<Alt-n>', nxt)
@@ -224,7 +216,7 @@ class MCVQoEGui(tk.Tk):
         self.bind('<Alt-b>', bck)
         self.bind('<Alt-B>', bck)
 
-        #scrolling the scrollbar
+        # scrolling the scrollbar
         self.bind('<MouseWheel>', self.RightFrame.scroll)
         self.bind('<Button-5>', self.RightFrame.scroll)
         self.bind('<Button-4>', self.RightFrame.scroll)
@@ -258,9 +250,9 @@ class MCVQoEGui(tk.Tk):
                     'in Access Time.')
 
     def _disable_left_frame(self, disabled : bool):
-        """ updates the state of the buttons on the left frame based on
-        whether or not a measurement is currenlty running.
-
+        """
+        Updates the state of the buttons on the left frame based on
+        whether or not a measurement is currently running.
         """
         state = ('!disabled', 'disabled')[disabled]
 
@@ -275,9 +267,8 @@ class MCVQoEGui(tk.Tk):
                 w.configure(state=state)
 
     def _rm_waits_in_sim(self):
-        """ disables ptt_wait and ptt_gap, etc controls in case of a simulation
-
-        """
+        """ disables ptt_wait and ptt_gap, etc controls in case of a simulation"""
+        
         # !disabled means not disabled
         state = ('!disabled', 'disabled')[self.is_simulation.get()]
 
@@ -382,9 +373,7 @@ class MCVQoEGui(tk.Tk):
         _get_dev_dly()
 
     def _set_dimensions(self):
-        """Algorithm to place and size the window on the screen.
-
-        """
+        """Algorithm to place and size the window on the screen."""
 
         # which frames should set the minimum size
         important_frame_types = (
@@ -495,9 +484,7 @@ class MCVQoEGui(tk.Tk):
                     pass
 
     def _cache_dimensions(self):
-        """saves the window's placement and dimensions to a cache for later
-
-        """
+        """saves the window's placement and dimensions to a cache for later"""
         loadandsave.dim_cache.update(
                            x = self.winfo_x(),
                            y = self.winfo_y(),
@@ -506,27 +493,24 @@ class MCVQoEGui(tk.Tk):
             )
 
     def _select_test(self):
-        """called when the user changes the 'Choose test:' radiobutton
-        """
+        """called when the user changes the 'Choose test:' radiobutton"""
 
         # close the current config if the user is changing measurements
         new = self.selected_test.get()
         old = self._old_selected_test
 
         if old != new:
-            #temporarily select old frame becore performing save
+            # temporarily select old frame becore performing save
             self.selected_test.set(self._old_selected_test)
 
             if old != 'EmptyFrame' and self.restore_defaults():
                 # True if cancelled: return to old.
                 new = self._old_selected_test
 
-
             self.selected_test.set(new)
 
             if self.step in ('empty', 'config'):
                 self.set_step('config')
-
 
         self._old_selected_test = new
 
@@ -535,14 +519,12 @@ class MCVQoEGui(tk.Tk):
         """shows the specified frame on the right side of the gui.
         the frame must be in self.frames
 
-
         Parameters
         ----------
         framename : str
             the name of the frame's class (used as the key in self.frames)
-
-
         """
+        
         # first hide the showing widget
         self.currentframe.pack_forget()
         try:
@@ -563,9 +545,8 @@ class MCVQoEGui(tk.Tk):
         return self.currentframe == self.frames['EmptyFrame']
 
     def on_change(self, *args, **kwargs):
-        """called when the user changes a parameter.
-
-        """
+        """called when the user changes a parameter"""
+        
         # indicate that the config is not saved
         self.set_saved_state(False)
 
@@ -573,13 +554,11 @@ class MCVQoEGui(tk.Tk):
         """Closes the window and stops the program.
 
         This is called when the user presses the close button on the window
-
         """
 
         if self._is_closing:
             # if the user already pressed close
             self._is_force_closing = True
-
 
         self._is_closing = True
 
@@ -588,7 +567,6 @@ class MCVQoEGui(tk.Tk):
 
         # cache window dimensions and placement for later recovery
         self._cache_dimensions()
-
 
         # save hardware settings for later session
         try:
@@ -600,7 +578,7 @@ class MCVQoEGui(tk.Tk):
         # end the main-thread's event loop
         loader.tk_main.stop()
 
-        #waits for main thread to close gracefully
+        # waits for main thread to close gracefully
         while loader.tk_main.is_running:
 
             # if get_post_notes() gets called, or if the measurement is aborting,
@@ -608,8 +586,6 @@ class MCVQoEGui(tk.Tk):
             if self.step in ('aborting', 'post-notes'):
                 self._wait_to_destroy()
                 return
-
-
 
             time.sleep(0.1)
 
@@ -631,10 +607,8 @@ class MCVQoEGui(tk.Tk):
         self.destroy()
 
     def _wait_to_destroy(self):
-        """Waits for the abort to complete and then closes the application
-
-
-        """
+        """Waits for the abort to complete and then closes the application"""
+        
         if self.step == 'in-progress':
             # user canceled abort
             self._is_closing = False
@@ -650,7 +624,7 @@ class MCVQoEGui(tk.Tk):
             self.after(50, self._wait_to_destroy)
 
         else:
-            #destroy elements from ppf to avoid some errors
+            # destroy elements from ppf to avoid some errors
             self.frames['PostProcessingFrame'].reset()
             gc.collect(2)
 
@@ -669,7 +643,6 @@ class MCVQoEGui(tk.Tk):
         cancelled : bool
 
             if the operation was cancelled by the user
-
         """
 
         for fname, f in self.frames.items():
@@ -683,8 +656,7 @@ class MCVQoEGui(tk.Tk):
         return False
 
     def open_(self, *args, **kwargs):
-        """Button to load the parameters from a .json file
-        """
+        """Button to load the parameters from a .json file"""
 
         if self.step not in ('empty', 'config'):
             raise RuntimeError("Can't load while measurement is running.")
@@ -692,7 +664,6 @@ class MCVQoEGui(tk.Tk):
         fpath = fdl.askopenfilename(
             filetypes=[('json files', '*.json')],
             initialdir = loadandsave.fdl_cache['main']
-
         )
 
         if not fpath:
@@ -708,7 +679,6 @@ class MCVQoEGui(tk.Tk):
 
         # change selected test frame
         self.selected_test.set(dct['selected_test'])
-
 
         # fill in parameters
         for frame_name, frame in self.frames.items():
@@ -746,11 +716,12 @@ class MCVQoEGui(tk.Tk):
         -------
         cancelled : bool
             True if the save was cancelled.
-
         """
+        
         fp = fdl.asksaveasfilename(filetypes=[('json files', '*.json')],
                                    defaultextension='.json',
                                    initialdir = loadandsave.fdl_cache['main'])
+        
         if fp:
 
             # set the current open filepath
@@ -773,8 +744,8 @@ class MCVQoEGui(tk.Tk):
         -------
         cancelled : bool
             True if the save was cancelled.
-
         """
+        
         # if user hasnt saved or loaded a configuration, fall back to save_as
         if not self.cnf_filepath:
             return self.save_as()
@@ -784,7 +755,6 @@ class MCVQoEGui(tk.Tk):
         with open(self.cnf_filepath, mode='w') as fp:
 
             json.dump(obj, fp)
-
 
         self.set_saved_state(True)
         return False
@@ -796,7 +766,6 @@ class MCVQoEGui(tk.Tk):
         ----------
         is_saved : bool, optional
             Is the config yet unmodified by the user?. The default is True.
-
         """
         self.is_saved = is_saved
 
@@ -805,7 +774,6 @@ class MCVQoEGui(tk.Tk):
             self.title(f'{TITLE_}')
         else:
             self.title(f'{TITLE_}*')
-
 
     @in_thread('GuiThread', wait=True, except_=Exception)
     def get_cnf(self) -> dict:
@@ -818,8 +786,8 @@ class MCVQoEGui(tk.Tk):
             sorted into sub-dicts by their location.
 
             Obeys the same structure as the global variable DEFAULTS.
-
         """
+        
         obj = {
             'is_simulation': self.is_simulation.get(),
             'selected_test': self.selected_test.get(),
@@ -836,7 +804,6 @@ class MCVQoEGui(tk.Tk):
 
     @in_thread('GuiThread', wait=False)
     def show_invalid_parameter(self, e : InvalidParameter):
-
         """Highlights an offending parameter in red, if its value is invalid.
 
         Is called when an InvalidParameter is raised from somewhere in run()
@@ -897,17 +864,17 @@ class MCVQoEGui(tk.Tk):
             x = x + ctrl.winfo_rootx() - tw.winfo_width()
             y = y + cy + ctrl.winfo_rooty() + 27
 
-            #ensure tooltip does not fall off left edge of window
+            # ensure tooltip does not fall off left edge of window
             if x < rootx + 20: x = rootx + 20
 
             # set position of tooltip
             tw.wm_geometry("+%d+%d" % (x, y))
             ctrl.bind('<FocusOut>', lambda _e: tw.destroy())
 
-            #show tooltip
+            # show tooltip
             tw.show()
 
-            #focus the offending control
+            # focus the offending control
             ctrl.focus_force()
 
             # save reference to be made not red again later
@@ -916,8 +883,6 @@ class MCVQoEGui(tk.Tk):
         finally:
             # back to config
             self.set_step('config')
-
-
 
     @in_thread('GuiThread', wait=True)
     def pretest(self, root_cfg):
@@ -949,31 +914,27 @@ class MCVQoEGui(tk.Tk):
         self.set_step('pre-notes')
 
     def _pretest_submit(self):
-        """Button to submit the pre-test notes
-
-
-
-        """
+        """Button to submit the pre-test notes"""
+        
         # get test info from entry controls
         self._pre_notes = self.frames['TestInfoGuiFrame'].btnvars.get()
 
         txt_box = self.frames['TestInfoGuiFrame'].pre_notes
+        
         # gets 'Pre Test Notes' from text widget
         self._pre_notes['Pre Test Notes'] = txt_box.get(1.0, tk.END)
 
         self._pre_notes_wait = False
 
     def _pretest_cancel(self):
-        """Button to cancel pre-test-notes submission and return to configuration
-
-        """
+        """Button to cancel pre-test-notes submission and return to configuration"""
 
         self._pre_notes_wait = False
 
         self.set_step('config')
 
     def run(self):
-        """ Button to submit the configuration and start the measurement
+        """Button to submit the configuration and start the measurement
 
         calls the main run() function.
         """
@@ -982,7 +943,7 @@ class MCVQoEGui(tk.Tk):
         gui_progress_update('pre', 0, 0)
 
         try:
-            #retrieve parameters from entries
+            # retrieve parameters from entries
             root_cfg = self.get_cnf()
 
         except InvalidParameter as e:
@@ -990,10 +951,8 @@ class MCVQoEGui(tk.Tk):
                 self.show_invalid_parameter(e)
                 return
 
-        #runs the test
+        # runs the test
         run(root_cfg)
-
-
 
     def abort(self):
         """Prompts the user to abort the test.
@@ -1012,17 +971,13 @@ class MCVQoEGui(tk.Tk):
             # indicates cancelled by user
             return True
 
-
-
     def _post_test_submit(self):
-        """Button to submit post-test-notes
-
-        """
+        """Button to submit post-test-notes"""
+        
         txt_box = self.frames['PostTestGuiFrame'].post_test
 
         # retrieve post_notes
         self.post_test_info = {'Post Test Notes': txt_box.get(1.0, tk.END)}
-
 
     def set_step(self, step, extra=None):
         """Sets which part of the measurement the program is on.
@@ -1081,13 +1036,13 @@ class MCVQoEGui(tk.Tk):
 
         back_btn_txt = 'Back'
         disable_config = True
-        #states for back and next button
+        # states for back and next button
         next_btn_state = None
         back_btn_state = None
         selected_test = self.selected_test.get()
         if step == 'config':
             disable_config = False
-            #check if a post processing step was selected
+            # check if a post processing step was selected
             if selected_test == 'ProcessDataFrame':
                 self.show_frame(self.selected_test.get())
                 next_btn_txt = 'Finish'
@@ -1095,11 +1050,11 @@ class MCVQoEGui(tk.Tk):
                 back_btn = lambda: self.set_step('empty')
 
             elif selected_test == 'SyncSetupFrame':
-                #change step to sync
+                # change step to sync
                 step = 'sync-setup'
 
             elif selected_test == 'ReprocessFrame':
-                #change step to reprocess
+                # change step to reprocess
                 step = 'reprocess'
             elif selected_test == 'DiagnosticsFrame':
                 step = 'diagnose'
@@ -1109,7 +1064,8 @@ class MCVQoEGui(tk.Tk):
                 next_btn_txt = 'Next'
                 next_btn = self.run
                 back_btn = lambda : self.set_step('empty')
-        #step can be changed above, start if-else over here
+                
+        # step can be changed above, start if-else over here
         if step == 'sync-progress':
             self.show_frame('SyncProgressFrame')
             next_btn_txt = 'Finish'
@@ -1120,12 +1076,13 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = None
                 back_btn_txt = None
-            #buttons start disabled
+            # buttons start disabled
             next_btn_state = False
             back_btn_state = False
+            
         elif step == 'reprocess':
             self.show_frame('ReprocessFrame')
-            #TODO : set buttons appropriately
+            # TODO : set buttons appropriately
             rpf = loader.tk_main.win.frames['ReprocessFrame']
             next_btn_txt = 'Reprocess'
             next_btn = lambda : rpf.do_reprocess()
@@ -1135,6 +1092,7 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = lambda : self.set_step('empty')
                 back_btn_txt = 'Back'
+                
         elif step == 'diagnose':
             self.show_frame('DiagnosticsFrame')
             dpf = loader.tk_main.win.frames['DiagnosticsFrame']
@@ -1146,6 +1104,7 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = lambda : self.set_step('empty')
                 back_btn_txt = 'Back'
+                
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1204,21 +1163,22 @@ class MCVQoEGui(tk.Tk):
             # blank window
             self.selected_test.set('EmptyFrame')
             next_btn_txt = 'Next'
-            next_btn = None #disabled
+            next_btn = None # disabled
             back_btn = None
             disable_config = False
 
         elif step == 'config':
-            #already handled
+            # already handled
             pass
+        
         else:
             # invalid step
             raise ValueError(f'"{step}" is not a known step')
 
-        #changes function and text of the next button
+        # changes function and text of the next button
         self.set_next_btn(next_btn_txt, next_btn, state=next_btn_state)
 
-        #changes back button
+        # changes back button
         self.set_back_btn(back_btn_txt, back_btn, state=back_btn_state)
 
         # disable or enable leftmost buttons depending on if they are functional
@@ -1254,7 +1214,7 @@ class MCVQoEGui(tk.Tk):
 
 # --------------------- END OF CLASS MCVQOEGUI -------------------------------
 
-#sticker frame for MCV logo on loading screen
+# sticker frame for MCV logo on loading screen
 class StickerFrame(tk.Canvas):
 
     def __init__(self, master, width=150, height=170, *args, **kwargs):
@@ -1265,32 +1225,29 @@ class StickerFrame(tk.Canvas):
                          **kwargs)
 
         try:
-            with importlib.resources.path('mcvqoe.hub','MCV-logo.png') as sticker:
+            with importlib.resources.path('mcvqoe.hub', 'MCV-logo.png') as sticker:
                 self.stickerimg = ImageTk.PhotoImage(file=sticker)
                 self.create_image(
                     width // 2, height // 2 + 10,
                     image=self.stickerimg
                 )
         except FileNotFoundError:
-            #fallback text
+            # fallback text
             self.create_text(width // 2, height // 2 + 10,
                         text="MCV logo not found")
 
-
 # -------------------------------appearance-----------------------------------
+
 def set_font(**cfg):
     """Globally changes the font on all tkinter windows.
 
     Accepts parameters like size, weight, font, etc.
-
     """
     font.nametofont('TkDefaultFont').config(**cfg)
-
 
 def set_styles():
     """modifies the appearance and size of tkinter.ttk widgets to make the gui
     look sweeeeet.
-
     """
 
     f = ttk.Style().configure
@@ -1310,9 +1267,9 @@ def set_styles():
                 background='white', relief='groove',)
     f('audio_drop.TMenubutton', font=('TkDefaultFont',
                                    round(shared.FONT_SIZE*0.75)))
-#red highlight for missing or invalid controls
+    # red highlight for missing or invalid controls
 
-    #for Entry
+    # for Entry
     g("Error.TEntry",
                    [('Entry.plain.field', {'children': [(
                        'Entry.background', {'children': [(
