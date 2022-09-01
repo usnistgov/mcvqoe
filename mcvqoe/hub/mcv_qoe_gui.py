@@ -35,7 +35,7 @@ from .tk_threading import Main, in_thread
 from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
 from .tk_threading import SingletonWindow
 from .shared import add_mcv_icon
-#import for save locations
+# import for save locations
 from .common import save_dir, old_save_dir
 from .version import version as gui_version
 import mcvqoe.hub.shared as shared
@@ -346,7 +346,6 @@ class MCVQoEGui(tk.Tk):
         for F in frame_types:
 
             # construct tcl variables for parameters and populate with default values
-            
             btnvars = loadandsave.TkVarDict(**DEFAULTS[F.__name__])
 
             # determine master based on whether it should have a scrollbar
@@ -1013,7 +1012,6 @@ class MCVQoEGui(tk.Tk):
 
         post-process
             showing results, plots, outdir, etc
-
 
 
         Parameters
@@ -3506,7 +3504,7 @@ class PostProcessingFrame(ttk.Frame):
         If the button is not needed, remove.
         """
 
-        if path.exists(path.join(self.outdir,test_copy.settings_name)):
+        if path.exists(path.join(self.outdir, test_copy.settings_name)):
             self.add_element(ttk.Button,
                        text="Copy Test Data",
                        command = self.copy_tests,
@@ -3525,7 +3523,7 @@ class PostProcessingFrame(ttk.Frame):
             spf.clear_progress()
 
             # switch to sync-progress step, go back to post processing when done
-            loader.tk_main.win.set_step('sync-progress',extra='post-process')
+            loader.tk_main.win.set_step('sync-progress', extra='post-process')
 
             test_copy.copy_test_files(self.outdir, progress_update=spf.gui_progress_update)
             # test_copy.copy_test_files(self.outdir)
@@ -3547,7 +3545,7 @@ class PostProcessingFrame(ttk.Frame):
             widget = ttk.Label(self, text=element)
 
         else:
-            widget = element(self,**kwargs)
+            widget = element(self, **kwargs)
 
         widget.pack(fill=tk.X, padx=10, pady=10)
 
@@ -3900,6 +3898,7 @@ def test_audio(root_cfg, on_finish=None):
     ValueError
         Audio file could not be found.
     """
+    
     try:
 
         # get selected test
@@ -4169,7 +4168,6 @@ def run(root_cfg):
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
 
-
         # set progress update callback
         my_obj.progress_update = gui_progress_update
 
@@ -4187,7 +4185,7 @@ def run(root_cfg):
         
         my_obj.info = get_pre_notes(root_cfg)
         if my_obj.info is None:
-            #user pressed 'back' in test info gui
+            #u ser pressed 'back' in test info gui
             return
 
         #------------- Set up progress and post-process frames ----------------
@@ -4216,8 +4214,7 @@ def run(root_cfg):
                 return
 
         #------------------- Show post-processing data ------------------------
-        
-        
+         
         # Use ppf.add_element() to add something to the post-processing-frame.
         
         # See PostProcessingFrame.add_element.__doc__ for details
@@ -4274,6 +4271,7 @@ def run(root_cfg):
                             'with intelligibility threshold of {threshold}:\n{mean}')
             ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
             ppf.add_element('Click Show Plots to see more details on measurement.')
+            
         elif sel_tst == accesstime:
             outname = my_obj.data_filenames
             try:
@@ -5143,15 +5141,13 @@ def load_defaults():
         tvo: [
             'audio_files',
             'audio_path',
-            # TODO: add dev_volume,
-            # dev_volume,
+            'dev_volume',
             'outdir',
-            'save_tx_audio',
-            'save_audio',
             'ptt_wait',
             'ptt_gap',
             'ptt_rep',
-            'dev_volume',
+            'save_tx_audio',
+            'save_audio',
             'smax',
             'tol',
             '_enable_Fixed_Volumes',
@@ -5321,7 +5317,6 @@ def load_defaults():
     # Delete lim so it doesn't mess other stuff up
     DEFAULTS[tvo].pop('lim', None)
     
-
     # ---Processing Frame---
 
     DEFAULTS[process]['data_files'] = ''
