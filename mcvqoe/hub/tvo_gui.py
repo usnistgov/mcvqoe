@@ -26,6 +26,7 @@ class ptt_rep(LabeledNumber):
     
     text = 'Repeats per volume level:'
 
+
 class dev_volume(LabeledNumber):
     """
     Volume level of audio output from the audio interface. This is typically
@@ -36,10 +37,12 @@ class dev_volume(LabeledNumber):
     min_=-100
     text = "Audio Interface Output Volume (dB)"
     
+
 class smax(LabeledNumber):
     """Maximum number of sample volumes to use."""
     
     text = 'Max sample values'
+
 
 class tol(LabeledNumber):
     """
@@ -52,6 +55,8 @@ class tol(LabeledNumber):
     text = 'Volume tolerance (dB):'
 
 # ----------------Volume Levels---------------------------
+
+
 class Volumes(SubCfgFrame):
     
     text = 'Volume Levels'
@@ -90,6 +95,8 @@ class Volumes(SubCfgFrame):
         #         continue
             
             ctrl.m_ctrl.configure(state=state)
+
+
 class _enable_Fixed_Volumes(LabeledCheckbox):
     """
     Use fixed volumes defined by minimum, maximum, and number of volumes below.
@@ -100,6 +107,7 @@ class _enable_Fixed_Volumes(LabeledCheckbox):
     Initial volumes for consideration will be between the minimum and maximum 
     volumes set here.
     """
+
     text = 'Use fixed volume levels'
 
 
@@ -110,12 +118,14 @@ class _min_volume(LabeledNumber):
     max_ = 0
     text = "Minimum volume to evaluate"
 
+
 class _max_volume(LabeledNumber):
     """
     TODO: Write this
     """
     max_ = 0
     text = "Maximum volume to evaluate"
+
 
 class _num_volumes(LabeledNumber):
     """
@@ -124,7 +134,9 @@ class _num_volumes(LabeledNumber):
     min_ = 2
     max_ = 30
     text = "Number of volumes"
+
 # ---------------------- The main config frame --------------------------------
+
 
 class TVOFrame(TestCfgFrame):
     
@@ -141,6 +153,7 @@ class TVOFrame(TestCfgFrame):
             advanced,
             )
     
+
 class TVOAdvanced(AdvancedConfigGUI):
     
     text = 'TVO - Advanced'
@@ -152,15 +165,14 @@ class TVOAdvanced(AdvancedConfigGUI):
             smax,
             tol,
             Volumes,
-            # TODO: volumes
-            # volumes,
-            # Scaling, smax, tol
             )
+
 
 class advanced(shared_advanced):
     toplevel = TVOAdvanced
     
 #-------------------------Running the test------------------------------------
+
 
 class TVO_fromGui(SignalOverride, tvo.measure):
     
