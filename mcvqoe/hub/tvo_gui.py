@@ -180,3 +180,6 @@ class TVO_fromGui(SignalOverride, tvo.measure):
         # future-proofing this param-check override
         if hasattr(super(), 'param_check'):
             super().param_check()
+
+class TVO_eval_from_GUI(SignalOverride, tvo.evaluate):
+    pass

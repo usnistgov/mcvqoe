@@ -807,7 +807,6 @@ class MCVQoEGui(tk.Tk):
 
         Is called when an InvalidParameter is raised from somewhere in run()
 
-
         This currently does not work for parameters in advanced,
         hardware settings, or simulation settings.
 
@@ -4080,6 +4079,7 @@ def run(root_cfg):
         accesstime: loader.accesstime_gui.Access_Eval_from_GUI,
         psud : loader.psud_gui.PSuD_Eval_from_GUI,
         intelligibility: loader.intelligibility_gui.Intell_eval_from_GUI,
+        tvo: loader.tvo_gui.TVO_eval_from_GUI,
         }
 
     # extract test configuration:
@@ -4166,7 +4166,7 @@ def run(root_cfg):
         #-------------------- Setting Callbacks -------------------------------
 
         # set post_notes callback
-        my_obj.get_post_notes=get_post_notes
+        my_obj.get_post_notes = get_post_notes
 
         # set progress update callback
         my_obj.progress_update = gui_progress_update
@@ -4185,7 +4185,7 @@ def run(root_cfg):
         
         my_obj.info = get_pre_notes(root_cfg)
         if my_obj.info is None:
-            #u ser pressed 'back' in test info gui
+            # user pressed 'back' in test info gui
             return
 
         #------------- Set up progress and post-process frames ----------------
@@ -4225,6 +4225,7 @@ def run(root_cfg):
             if my_obj.test == '2loc_tx':
                 ppf.add_element('Data collection complete, you may now stop data\n' +
                             'collection on the receiving end')
+                
         # intelligibility estimate
         elif sel_tst == intelligibility:
             # ppf.add_element(f'Intelligibility Estimate: {result}')
@@ -4272,6 +4273,21 @@ def run(root_cfg):
             ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")}')
             ppf.add_element('Click Show Plots to see more details on measurement.')
             
+        elif sel_tst == tvo:
+            
+            outname = my_obj.data_filename
+            
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+            
+            # Grab array with optimum volume and intervals
+            opt_array = eval_obj.opt_data(outname)
+            
+            # Display Optimum Volume and Optimum Interval
+            ppf.add_element(f"Optimum Volume [dB]: {opt_array[0]}")
+            ppf.add_element(f"Optimum interval [dB]: {opt_array[1]}, {opt_array[2]}")
+            ppf.add_element('Click Show Plots to see more details on measurement.')
+        
         elif sel_tst == accesstime:
             outname = my_obj.data_filenames
             try:
