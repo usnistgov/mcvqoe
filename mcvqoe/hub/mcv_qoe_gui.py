@@ -4946,7 +4946,7 @@ def _set_values_from_cfg(my_obj, cfg):
         if hasattr(my_obj, k):
             setattr(my_obj, k, v)
 
-def _get_dev_dly(ignore_error = True):
+def _get_dev_dly(ignore_error=True):
     """
     Parameters
     ----------
@@ -4972,7 +4972,7 @@ def _get_dev_dly(ignore_error = True):
 
         return dev_dly
 
-def calculate_dev_dly(test_obj, is_simulation = False):
+def calculate_dev_dly(test_obj, is_simulation=False):
     """Calculates the device delay using the data found in test_obj
 
     Parameters
@@ -4993,7 +4993,7 @@ def calculate_dev_dly(test_obj, is_simulation = False):
 
     if not is_simulation: # simulations don't show real dev_dly!!!
         # save the device delay to file
-        loadandsave.Config('dev_dly.json', dev_dly = dev_dly).dump()
+        loadandsave.Config('dev_dly.json', dev_dly=dev_dly).dump()
 
         # put value into field
         loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
@@ -5386,7 +5386,7 @@ def main():
             if path.exists(save_dir):
                 raise RuntimeError(f'Both \'{old_save_dir}\' and \'{save_dir}\' exist!')
             # copy files to new location
-            os.renames(old_save_dir,save_dir)
+            os.renames(old_save_dir, save_dir)
         except:
             show_error(err_func=tk.messagebox.showerror)
             raise SystemExit(1)
