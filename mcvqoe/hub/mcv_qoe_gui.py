@@ -259,7 +259,7 @@ class MCVQoEGui(tk.Tk):
 
     def _disable_left_frame(self, disabled : bool):
         """ updates the state of the buttons on the left frame based on
-        whether or not a measurement is currenlty running.
+        whether or not a measurement is currently running.
 
         """
         state = ('!disabled', 'disabled')[disabled]
@@ -949,17 +949,16 @@ class MCVQoEGui(tk.Tk):
         self.set_step('pre-notes')
 
     def _pretest_submit(self):
-        """Button to submit the pre-test notes
-
-
-
-        """
+        """Button to submit the pre-test notes"""
+        
         # get test info from entry controls
         self._pre_notes = self.frames['TestInfoGuiFrame'].btnvars.get()
 
         txt_box = self.frames['TestInfoGuiFrame'].pre_notes
         # gets 'Pre Test Notes' from text widget
         self._pre_notes['Pre Test Notes'] = txt_box.get(1.0, tk.END)
+        
+        self.frames["PostTestGuiFrame"].set_pre_test(self._pre_notes["Pre Test Notes"])
 
         self._pre_notes_wait = False
 
@@ -2034,28 +2033,33 @@ class TestInfoGuiFrame(ttk.Labelframe):
         self.rowconfigure(ct, weight=1)
 
 class PostTestGuiFrame(ttk.Labelframe):
-    """Replacement for PostTestGui. Collects post-test notes.
-
-    """
+    """Replacement for PostTestGui. Collects post-test notes."""
 
     def __init__(self, btnvars, *args, **kwargs):
         super().__init__(*args, text='Test Information', **kwargs)
         self.btnvars = btnvars
 
-
         self.error_text = tk.StringVar()
 
-        ttk.Label(self, textvariable=self.error_text).grid(row=1,
-            padx=shared.PADX, pady=shared.PADY, sticky='W')
+        ttk.Label(self, textvariable=self.error_text).grid(
+            row=1, padx=shared.PADX, pady=shared.PADY, sticky='W'
+        )
 
-        ttk.Label(self, text='Please enter post-test notes.').grid(row=0,
-            padx=shared.PADX, pady=shared.PADY, sticky='W')
-
+        ttk.Label(self, text='Please enter post-test notes.').grid(
+            row=0, padx=shared.PADX, pady=shared.PADY, sticky='W'
+        )
 
         self.post_test = tk.Text(self)
-        self.post_test.grid(padx=shared.PADX, pady=shared.PADY,
-            sticky='NSEW', row=2)
-        self.rowconfigure(2, weight=1)
+        self.post_test.grid(padx=shared.PADX, pady=shared.PADY, sticky='NSEW', row=2)
+        
+        ttk.Label(self, text="Pre-test Notes (Reference Only)").grid(
+            padx=shared.PADX, pady=shared.PADY, sticky="NSEW", row=3
+        )
+        self.pre_test = tk.Text(self, state="disabled")
+        self.pre_test.grid(padx=shared.PADX, pady=shared.PADY, sticky="NSEW", row=4)
+        
+        
+        self.rowconfigure(4, weight=1)
         self.columnconfigure(0, weight=1)
 
     def set_error(self, error):
@@ -2066,6 +2070,12 @@ class PostTestGuiFrame(ttk.Labelframe):
 
         else:
             self.error_text.set('')
+            
+    def set_pre_test(self, pre_notes: str):
+        self.pre_test.configure(state="normal")
+        self.pre_test.delete(1.0, tk.END)
+        self.pre_test.insert(1.0, pre_notes)
+        self.pre_test.configure(state="disable")
 
 class TestProgressFrame(tk.LabelFrame):
     """Reports on the measurement's progress by handling progress_update events.
