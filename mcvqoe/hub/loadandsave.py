@@ -224,7 +224,6 @@ class BaseCache(Config):
         except KeyError:
             return self.default
 
-
 class FdlCache(BaseCache):
 
     def put(self, key, filepath):

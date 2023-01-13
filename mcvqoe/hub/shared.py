@@ -7,7 +7,7 @@ Created on Wed Jun  9 11:03:39 2021
 
 import importlib.resources
 import sys
-# used to catch errors from tk
+#used to catch errors from tk
 import _tkinter
 
 from mcvqoe.simulation import QoEsim
@@ -29,14 +29,14 @@ PADY = 10
 
 FONT_SIZE = 10
 
-# find MCV icon and add set as window icon
+#find MCV icon and add set as window icon
 def add_mcv_icon(win):
     img_ext = 'ico' if sys.platform.startswith('win') else 'png'
     with importlib.resources.path('mcvqoe.hub','MCV-sm.'+img_ext) as icon:
         if icon:
             try:
                 if img_ext == 'ico':
-                    # set the title- and taskbar icon
+                    #set the title- and taskbar icon
                     win.iconbitmap(icon)
                 else:
                     logo = tk.PhotoImage(file=icon)
@@ -127,13 +127,13 @@ class TestCfgFrame(ttk.LabelFrame):
         kwargs['text'] = self.text
         super().__init__(*args, **kwargs)
 
-        # option functions will get and store their values in here
+        #option functions will get and store their values in here
         self.btnvars = btnvars
 
-        # sets what controls will be in this frame
+        #sets what controls will be in this frame
         controls = self.get_controls()
 
-        # initializes controls
+        #initializes controls
         self.controls = {}
         for row in range(len(controls)):
             c = controls[row](master=self, row=row)
@@ -141,7 +141,7 @@ class TestCfgFrame(ttk.LabelFrame):
             self.controls[c.__class__.__name__] = c
 
     def update_title(self, title):
-        self.configure(text=title)
+        self.configure(text = title)
 
     def get_controls(self) -> iter:
         """
@@ -211,9 +211,9 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
     def __init__(self, master, btnvars, *args, **kwargs):
 
         super().__init__(master, *args, **kwargs)
-        # hide the window
+        #hide the window
         self.withdraw()
-        # as soon as possible (after app starts) show again
+        #as soon as possible (after app starts) show again
         self.after(0,self.deiconify)
 
         if self.use_scrollbar:
@@ -235,7 +235,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # sets its title based on class variable 'text'
         self.title(self.text)
 
-        # sets the controls in this window
+        #sets the controls in this window
         control_classes = list(self.get_controls())
 
         self.btnvars = btnvars
@@ -253,7 +253,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         if self.use_scrollbar:
             self.scroll_frame.controls = self.controls
 
-            # what to add the controls to
+            #what to add the controls to
             container = self.scroll_frame
 
             # include the OK button to close the window
@@ -264,10 +264,10 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
             # include the OK button to close the window
             control_classes.append(_advanced_submit)
 
-            # what to add the controls to
+            #what to add the controls to
             container = self
 
-        # initializes controls
+        #initializes controls
         for row in range(len(control_classes)):
             c = control_classes[row](master=container, row=row)
 
@@ -275,32 +275,32 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
             container.controls[c.__class__.__name__] = c
 
         if self.use_scrollbar:
-            # update things so winfo_width returns good values
+            #update things so winfo_width returns good values
             self.scroll_frame.canvas.update_idletasks()
             self.bot_frame.update_idletasks()
             self.bot_frame.update()
 
-            # get scroll region of the canvas, this is the size of the things in it
+            #get scroll region of the canvas, this is the size of the things in it
             scroll_region = self.scroll_frame.canvas.cget('scrollregion').split()
 
-            # compute size of things in the canvas
+            #compute size of things in the canvas
             cwidth = int(scroll_region[2]) - int(scroll_region[0])
             cheight = int(scroll_region[3]) - int(scroll_region[1])
 
-            # get width of scrollbar
+            #get width of scrollbar
             bar_width = self.scroll_frame.scrollbar.winfo_width()
 
-            # get width of the bottom frame
+            #get width of the bottom frame
             bot_height = self.bot_frame.winfo_height()
 
             width = int(cwidth*1.1) + bar_width
 
             height = cheight + int(bot_height*1.1)
 
-            # get the height of the screen
+            #get the height of the screen
             sheight = self.winfo_screenheight()
 
-            # limit maximum height to 80% screen height
+            #limit maximum height to 80% screen height
             height = min(height, int(sheight*0.8))
 
             self.geometry(f"{width}x{height}")
@@ -339,7 +339,7 @@ class DescriptionBlock:
     MCtrlargs = []
     MCtrlkwargs = {}
 
-    # usually the browse button
+    #usually the browse button
     RCtrl = None
     RCtrlkwargs = {}
 
@@ -358,13 +358,13 @@ class DescriptionBlock:
 
     def destroy(self):
 
-        # destroy all the things
+        #destroy all the things
         if hasattr(self,'description') and self.description is not None:
-            # make sure widget exists
+            #make sure widget exists
             if self.description.winfo_exists():
                 self.description.grid_forget()
                 self.description.destroy()
-            # mark as destroyed
+            #mark as destroyed
             self.description = None
 
 
@@ -456,7 +456,7 @@ class LabeledControl:
 
     variable_arg = 'textvariable'
 
-    # usually the browse button
+    #usually the browse button
     RCtrl = None
     RCtrlkwargs = {}
 
@@ -496,7 +496,7 @@ class LabeledControl:
                 column=1, row=row, padx=0, pady=self.pady, sticky='NW')
 
         self.setup()
-        # some controls require more flexibility, so they don't use self.MCtrl
+        #some controls require more flexibility, so they don't use self.MCtrl
         if self.MCtrl:
             try:
                 btnvar = self.btnvar
@@ -524,7 +524,7 @@ class LabeledControl:
 
         # Right-most control
         if self.RCtrl:
-            # add command to button
+            #add command to button
             if self.RCtrl in (ttk.Button, tk.Button):
                 RCtrlkwargs['command'] = self.on_button
 
@@ -546,30 +546,30 @@ class LabeledControl:
 
     def destroy(self):
 
-        # destroy all the things
+        #destroy all the things
         if hasattr(self,'l_ctrl') and self.l_ctrl is not None:
-            # make sure window exists
+            #make sure window exists
             if self.l_ctrl.winfo_exists():
                 self.l_ctrl.grid_forget()
                 self.l_ctrl.destroy()
             self.l_ctrl = None
 
         if hasattr(self,'m_ctrl') and self.m_ctrl is not None:
-            # make sure window exists
+            #make sure window exists
             if self.m_ctrl.winfo_exists():
                 self.m_ctrl.grid_forget()
                 self.m_ctrl.destroy()
             self.m_ctrl = None
 
         if hasattr(self,'r_ctrl') and self.r_ctrl is not None:
-            # make sure window exists
+            #make sure window exists
             if self.r_ctrl.winfo_exists():
                 self.r_ctrl.grid_forget()
                 self.r_ctrl.destroy()
             self.r_ctrl = None
 
         if hasattr(self,'h_ctrl') and self.h_ctrl is not None:
-            # make sure window exists
+            #make sure window exists
             if self.h_ctrl.winfo_exists():
                 self.h_ctrl.grid_forget()
                 self.h_ctrl.destroy()
@@ -631,13 +631,13 @@ class HelpIcon(ttk.Button):
         x = x + self.winfo_rootx() - self.tw.winfo_width()
         y = y + cy + self.winfo_rooty() + 27
 
-        # ensure tooltip does not fall off left edge of window
+        #ensure tooltip does not fall off left edge of window
         if x < rootx + 20: x = rootx + 20
 
         # set position of tooltip
         self.tw.wm_geometry("+%d+%d" % (x, y))
 
-        # show tooltip
+        #show tooltip
         self.tw.show()
 
 
@@ -697,7 +697,7 @@ class ToolTip(tk.Toplevel):
 
         try:
             # on windows, add alwaysontop
-            self.attributes('-topmost', True)
+            self.attributes('-topmost',True)
         except: pass
 
 
@@ -707,7 +707,7 @@ class ToolTip(tk.Toplevel):
         ttk.Label(lf, text=text, style=style).pack(
             padx=PADX, pady=PADY)
 
-        # removes window title-bar, taskbar icon, etc
+        #removes window title-bar, taskbar icon, etc
         self.wm_overrideredirect(1)
 
         # temporarily hides window to prevent sudden movement
@@ -808,7 +808,7 @@ class LabeledSlider(LabeledControl):
             column=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
 
     def on_change(self, *args, **kwargs):
-        # updates the percentage to match the value of the slider
+        #updates the percentage to match the value of the slider
         self.txtvar.set(self.btnvar.get())
 
     class _percentage(tk.StringVar):
@@ -837,7 +837,7 @@ class _MultiChoice_Frame(tk.Frame):
         super().__init__(*args, **kwargs)
         self.controls = []
 
-        # initialize
+        #initialize
         for val, text in association.items():
             c = ttk.Radiobutton(self, variable=textvariable, value=val,
                 text=text)
@@ -1094,7 +1094,7 @@ class trials(LabeledNumber):
 class outdir(EntryWithButton):
     """Location to store all output files"""
 
-    text = 'Output Folder:'
+    text='Output Folder:'
 
     button_text = 'Browse...'
 
@@ -1116,7 +1116,7 @@ class overplay(LabeledNumber):
     in the system"""
 
 
-    text = 'Overplay Time (sec):'
+    text='Overplay Time (sec):'
 
     increment = 0.01
 
@@ -1207,7 +1207,6 @@ class pause_trials(LabeledNumber):
 
 
 class time_expand(SubCfgFrame):
-    
     text = 'Time Expand'
 
 
@@ -1280,7 +1279,7 @@ class ptt_wait(LabeledNumber):
 
 class _advanced_submit(advanced):
 
-    # closes the advanced window
+    #closes the advanced window
 
     button_text = 'OK'
 
@@ -1324,14 +1323,14 @@ class dev_dly(LabeledNumber):
             CharDevDly()
 
 
-class CharDevDly(tk.Toplevel, metaclass=SingletonWindow):
+class CharDevDly(tk.Toplevel, metaclass = SingletonWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # hide the window
+        #hide the window
         self.withdraw()
-        # as soon as possible (after app starts) show again
-        self.after(0, self.deiconify)
+        #as soon as possible (after app starts) show again
+        self.after(0,self.deiconify)
 
         add_mcv_icon(self)
 
@@ -1347,12 +1346,12 @@ output directly fed into the input, as shown below.
         max_width = 600
         max_height = 500
 
-        canvas = tk.Canvas(self, width=max_width, height=max_height)
+        canvas = tk.Canvas(self,width=max_width, height=max_height)
 
         with importlib.resources.path('mcvqoe.hub','dev_dly_char_example.png') as name:
             img = Image.open(name)
 
-        img.thumbnail((max_width, max_height), resample=Image.LANCZOS, reducing_gap=None)
+        img.thumbnail((max_width,max_height),resample=Image.LANCZOS, reducing_gap=None)
 
         canvas.crestimg = ImageTk.PhotoImage(img)
         canvas.create_image(
@@ -1364,7 +1363,8 @@ output directly fed into the input, as shown below.
 
         ttk.Label(self, text='Once finished, enter the device delay below')
 
-        ttk.Button(self, text='Continue', command=self.continue_btn).pack()
+        ttk.Button(self, text='Continue', command = self.continue_btn
+                   ).pack()
 
         self.finished = False
 
@@ -1387,13 +1387,13 @@ class _HdwPrototype:
     """
     radioport = ''
     default_radio = 1
-    blocksize = 512
-    buffersize = 20
-    overplay = 1.0
-    timecode_type = 'IRIGB_timecode'
+    blocksize=512
+    buffersize=20
+    overplay=1.0
+    timecode_type='IRIGB_timecode'
 
 
-# HARDWARE SETTINGS WINDOW
+#HARDWARE SETTINGS WINDOW
 class HdwSettings(AdvancedConfigGUI):
     text = 'Hardware Settings'
 
@@ -1484,7 +1484,7 @@ class _SimPrototype(QoEsim):
         self._impairment_plugin = ''
 
 
-# SIMULATION SETTINGS WINDOW
+#SIMULATION SETTINGS WINDOW
 class SimSettings(AdvancedConfigGUI):
 
     text = 'Simulation Settings'
@@ -1558,11 +1558,11 @@ class channel_rate(LabeledControl):
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
 
-        # track selection of channel_tech
+        #track selection of channel_tech
         id = self.master.btnvars['channel_tech'].trace_add('write', self.update)
         self.master.traces_.append((self.master.btnvars['channel_tech'], id))
 
-        # fill menu with options
+        #fill menu with options
         self.update()
 
 
@@ -1580,7 +1580,7 @@ class channel_rate(LabeledControl):
                 self.btnvar.set(default)
 
             for rate in rates:
-                # add a dropdown list option
+                #add a dropdown list option
                 self.menu.add_command(label=str(rate),
                             command=tk._setit(self.btnvar, str(rate)))
         except Exception as e:
@@ -1649,11 +1649,11 @@ class ChannelImpairment(LabeledControl):
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
 
-        # track selection of channel_tech
+        #track selection of channel_tech
         id = self.master.master.btnvars['channel_tech'].trace_add('write', self.update)
         self.master.master.traces_.append((self.master.btnvars['channel_tech'], id))
 
-        # fill menu with options
+        #fill menu with options
         self.update()
 
 
@@ -1667,21 +1667,21 @@ class ChannelImpairment(LabeledControl):
             if chan_tech == 'None':
                 failed = True
             else:
-                # get channel type
+                #get channel type
                 chan_type = QoEsim().get_channel_type(chan_tech)
 
-                # get list of impairments for the channel type
+                #get list of impairments for the channel type
                 impairments = QoEsim.get_impairment_names(chan_type)
 
                 old = self.btnvar.get()
                 if old not in impairments:
                     self.btnvar.set('None')
 
-                # add None to the list
+                #add None to the list
                 self.menu.add_command(label='None',
                                       command=tk._setit(self.btnvar, 'None'))
                 for i in impairments:
-                    # add a dropdown list option
+                    #add a dropdown list option
                     self.menu.add_command(label=i,
                                 command=tk._setit(self.btnvar, i))
         except Exception as e:
@@ -1742,20 +1742,20 @@ class DistributionType(LabeledControl):
         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         self.m_ctrl.configure(menu=self.menu)
 
-        # fill menu with options
+        #fill menu with options
         self.update()
 
     def update(self, *args, **kwargs):
 
         for t in ('constant', 'Normal', 'Exponential'):
-            # add a drop down list option
+            #add a drop down list option
             self.menu.add_command(label=t,
                         command=tk._setit(self.btnvar, t))
 
 
 class m2e_latency_type(DistributionType):
     """Type of mouth to ear latency"""
-    # nothing else needs to be configured
+    #nothing else needs to be configured
     pass
 
 
@@ -1802,15 +1802,15 @@ class RangeDisplay:
         self.m_ctrl.grid(
             column=2, columnspan=2, row=row, padx=self.padx, pady=self.pady, sticky='WE')
 
-        # track selection of type
+        #track selection of type
         id = self.master.master.btnvars[self.var_base + '_type'].trace_add('write', self.update)
         self.master.master.traces_.append((self.master.btnvars[self.var_base + '_type'], id))
 
-        # track selection of value
+        #track selection of value
         id = self.master.master.btnvars[self.var_base].trace_add('write', self.update)
         self.master.master.traces_.append((self.master.btnvars[self.var_base], id))
 
-        # track selection of sigma
+        #track selection of sigma
         id = self.master.master.btnvars[self.var_base + '_sigma'].trace_add('write', self.update)
         self.master.master.traces_.append((self.master.btnvars[self.var_base + '_sigma'], id))
 
@@ -1821,15 +1821,15 @@ class RangeDisplay:
         try:
             dist_type = self.master.btnvars[self.var_base + '_type'].get()
             if dist_type != 'constant':
-                # enable sigma control
+                #enable sigma control
                 self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='!disabled')
                 dist_sigma  = self.master.btnvars[self.var_base + '_sigma'].get()
             else:
-                # disable sigma control
+                #disable sigma control
                 self.master.controls[self.var_base + '_sigma'].m_ctrl.configure(state='disabled')
             dly_val  = self.master.btnvars[self.var_base].get()
         except TclError:
-            # failed to get values, clear range
+            #failed to get values, clear range
             self.update_rng('')
             return
 
@@ -1839,12 +1839,12 @@ class RangeDisplay:
 
             if dly_val == 'minimum':
                 dly_val = 0
-                # set to zero
-                # TODO : should this be something else?
+                #set to zero
+                #TODO : should this be something else?
                 self.master.btnvars['m2e_latency'].set(0)
 
             try:
-                # convert values to float
+                #convert values to float
                 dly_val = float(dly_val)
                 dist_sigma = float(dist_sigma)
                 if dist_type == 'Normal':
@@ -1854,11 +1854,11 @@ class RangeDisplay:
 
                 lower = round(dist.ppf(0.025), 4)
                 upper = round(dist.ppf(0.975), 4)
-                # update range
+                #update range
                 self.update_rng(f'from {lower} to {upper} sec')
             except ValueError:
-                # ignore value errors (partially entered number)
-                # clear range
+                #ignore value errors (partially entered number)
+                #clear range
                 self.update_rng('')
 
 
@@ -1956,7 +1956,7 @@ class device_delay_cfg(SubCfgFrame):
 
 class device_delay_type(DistributionType):
     """Type of mouth to ear latency"""
-    # nothing else needs to be configured
+    #nothing else needs to be configured
     pass
 
 
@@ -2001,7 +2001,7 @@ class ImpairmentSettings(SubCfgFrame):
 
         self.text = ''
 
-        self.impairment = ''
+        self.impairment=''
 
         self.row_num = row
 
@@ -2009,7 +2009,7 @@ class ImpairmentSettings(SubCfgFrame):
 
         super().__init__(master, row, *args, **kwargs)
 
-        # track selection of channel impairment
+        #track selection of channel impairment
         id = self.master.btnvars[self.impairment_name].trace_add('write', self.update)
         self.master.traces_.append((self.master.btnvars[self.impairment_name], id))
 
@@ -2017,7 +2017,7 @@ class ImpairmentSettings(SubCfgFrame):
 
     def get_controls(self):
 
-        # empty list for controls
+        #empty list for controls
         controls = []
 
         if self.impairment and self.impairment != 'None' and self.winfo_exists():
@@ -2026,7 +2026,7 @@ class ImpairmentSettings(SubCfgFrame):
             description = QoEsim.get_impairment_description(self.impairment)
 
 
-            # get the name of this class
+            #get the name of this class
             cls_name = self.__class__.__name__
 
             descC = type(f'{cls_name}_Desc',(DescriptionBlock,),{
@@ -2034,17 +2034,17 @@ class ImpairmentSettings(SubCfgFrame):
                                                       }
                         )
 
-            # append description control to list
+            #append description control to list
             controls.append(descC)
 
             for name,info in params.items():
-                # create type name from class and parameter name
+                #create type name from class and parameter name
                 type_name = f'{cls_name}_{name}'
 
                 # check if a value exists
                 if type_name not in self.master.btnvars:
-                    # add default
-                    self.master.btnvars.add_entry(type_name, info.value_type(info.default))
+                    #add default
+                    self.master.btnvars.add_entry(type_name,info.value_type(info.default))
 
                 if info.choice_type in ('range', 'positive'):
 
@@ -2058,13 +2058,13 @@ class ImpairmentSettings(SubCfgFrame):
                     if hasattr(info,'description'):
                         class_vals['__doc__'] = info.description
 
-                    # create a control class
+                    #create a control class
                     cc = type(type_name,(LabeledNumber,),class_vals)
-                    # add to list of controls
+                    #add to list of controls
                     controls.append(cc)
                 elif info.choice_type == 'file':
 
-                    # function to run when browse is clicked
+                    #function to run when browse is clicked
                     def brows_files(self):
                         fp = fdl.askopenfilename(parent=self.master,
                                 filetypes=info.filetypes)
@@ -2083,9 +2083,9 @@ class ImpairmentSettings(SubCfgFrame):
                     if hasattr(info,'description'):
                         class_vals['__doc__'] = info.description
 
-                    # create a control class
+                    #create a control class
                     cc = type(type_name,(EntryWithButton,),class_vals)
-                    # add to list of controls
+                    #add to list of controls
                     controls.append(cc)
                 else:
                     print(f'unknown choice type {info.choice_type}')
@@ -2094,7 +2094,7 @@ class ImpairmentSettings(SubCfgFrame):
 
     def update(self, *args, **kwargs):
 
-        # update impairment name
+        #update impairment name
         self.impairment = self.master.btnvars[self.impairment_name].get()
 
         cls_name = self.__class__.__name__
@@ -2103,27 +2103,27 @@ class ImpairmentSettings(SubCfgFrame):
             if n.startswith(cls_name) and n != cls_name:
                 c.destroy()
 
-        # sets what controls will be in this frame
+        #sets what controls will be in this frame
         control_classes = self.get_controls()
 
         if not self.winfo_exists():
-            # window is invalid, bail out here
+            #window is invalid, bail out here
             return
 
-        # remove remaining widgets from grid
+        #remove remaining widgets from grid
         for c in self.grid_slaves():
             c.grid_forget()
 
-        # remove from grid and forget settings
+        #remove from grid and forget settings
         if self.impairment == 'None':
             self.grid_forget()
         else:
-            # add back to grid
+            #add back to grid
             self.grid(column=0, row=self.row_num, columnspan=4, sticky='NSEW',
                   padx=PADX, pady=PADY)
             self.set_name(self.impairment)
 
-        # initializes controls
+        #initializes controls
         controls = {}
         for row in range(len(control_classes)):
             c = control_classes[row](master=self, row=row)
@@ -2169,7 +2169,7 @@ class PreImpairment(LabeledControl):
             show_error(e)
 
         else:
-            # add None to the list
+            #add None to the list
             self.menu.add_command(label='None',
                                   command=tk._setit(self.btnvar, 'None'))
             # get channel_techs to use as menu options
@@ -2208,7 +2208,7 @@ class PostImpairment(LabeledControl):
             show_error(e)
 
         else:
-            # add None to the list
+            #add None to the list
             self.menu.add_command(label='None',
                                   command=tk._setit(self.btnvar, 'None'))
             # get channel_techs to use as menu options
@@ -2232,7 +2232,7 @@ class PostImpairmentSettings(ImpairmentSettings):
 class SignalOverride():
 
     def sig_handler(self, *args, **kwargs):
-        # override signal's ability to close the application
+        #override signal's ability to close the application
 
         raise Abort_by_User()
 

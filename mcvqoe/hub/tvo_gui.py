@@ -33,8 +33,8 @@ class dev_volume(LabeledNumber):
     set using controls specific to individual audio interfaces, and cannot be
     set programatically.
     """
-    max_ = 0
-    min_ = -100
+    max_=0
+    min_=-100
     text = "Audio Interface Output Volume (dB)"
     
 
@@ -113,7 +113,7 @@ class _enable_Fixed_Volumes(LabeledCheckbox):
 
 class _min_volume(LabeledNumber):
     """
-    Minimum dB threshold for a TVO test. (-40.0 dB default)
+    TODO: write this
     """
     max_ = 0
     text = "Minimum volume to evaluate"
@@ -121,7 +121,7 @@ class _min_volume(LabeledNumber):
 
 class _max_volume(LabeledNumber):
     """
-    Maximum dB threshold for a TVO test. (0.0 dB default)
+    TODO: Write this
     """
     max_ = 0
     text = "Maximum volume to evaluate"
@@ -129,7 +129,7 @@ class _max_volume(LabeledNumber):
 
 class _num_volumes(LabeledNumber):
     """
-    Number of volumes to evaluate if 'Use fixed volume levels' selected
+    Number of volumes to evaluate if use fixed volumes selected
     """
     min_ = 2
     max_ = 30
