@@ -188,7 +188,7 @@ class SubCfgFrame(TestCfgFrame):
         return tuple()
 
 
-class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
+class AdvancedConfigGUI(tk.Toplevel, metaclass=SingletonWindow):
     """A Toplevel window containing advanced/other parameters.
 
     Used as a base class for all advanced windows, as well as
@@ -210,7 +210,7 @@ class AdvancedConfigGUI(tk.Toplevel, metaclass = SingletonWindow):
         # hide the window
         self.withdraw()
         # as soon as possible (after app starts) show again
-        self.after(0,self.deiconify)
+        self.after(0, self.deiconify)
 
         if self.use_scrollbar:
             self.scroll_frame = ScrollableFrame(master=self)
@@ -394,12 +394,10 @@ class LabeledControl:
     text : str
         a user-friendly name for the parameter
 
-
     do_font_scaling : bool
         whether the middle control has user-modifiable text that can be font-scaled
 
         set this to false for things like radiobuttons and checkboxes
-
 
     MCtrl : tkinter.ttk widget class
         the class of tkinter widget to use for the middle control
@@ -417,7 +415,6 @@ class LabeledControl:
 
         change this to 'variable' for controls like sliders, checkboxes, radiobuttons, etc
         that don't have user-modifiable text
-
 
     RCtrl : tkinter.ttk widget class
         the right-most control (usually a button)
@@ -1493,7 +1490,7 @@ class SimSettings(AdvancedConfigGUI):
         
 #         super().__init__(master, row, *args, **kwargs)
         
-#         self.menu - tk.Menu(self.m_ctrl, tearoff=False)
+#         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
         
 #         self.m_ctrl.configure(menu=self.menu)
         

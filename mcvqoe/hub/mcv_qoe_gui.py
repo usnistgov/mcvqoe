@@ -141,10 +141,7 @@ class MCVQoEGui(tk.Tk):
 
     @in_thread('GuiThread')
     def init_as_mainwindow(self):
-        """Creates the primary widgets of the gui.
-
-
-        """
+        """Creates the primary widgets of the gui."""
 
         # prevents random window flashing
         self.withdraw()
@@ -791,7 +788,6 @@ class MCVQoEGui(tk.Tk):
     @in_thread('GuiThread', wait=True, except_=Exception)
     def get_cnf(self) -> dict:
         """
-
         Returns
         -------
         root_cfg : dict
@@ -802,11 +798,11 @@ class MCVQoEGui(tk.Tk):
         """
         
         obj = {
-            'is_simulation': self.is_simulation.get(),
-            'selected_test': self.selected_test.get(),
-            'SimSettings'  : self.simulation_settings.get(),
-            'HdwSettings'  : self.hardware_settings.get(),
-            'audio_device': self.audio_device.get(),
+            'is_simulation'   : self.is_simulation.get(),
+            'selected_test'   : self.selected_test.get(),
+            'SimSettings'     : self.simulation_settings.get(),
+            'HdwSettings'     : self.hardware_settings.get(),
+            'audio_device'    : self.audio_device.get(),
             'audio_test_warn' : self.level_check_var.get(),
         }
 
@@ -1771,7 +1767,7 @@ class TestTypeFrame(tk.Frame):
 
         ttk.Separator(self).pack(fill=tk.X, pady=15)
 
-        ttk.Label(self, text = 'Audio Device').pack(fill=tk.X)
+        ttk.Label(self, text='Audio Device').pack(fill=tk.X)
         
         dev = self.initial_device()
         
@@ -4738,7 +4734,6 @@ class RandomDelay:
 
 def get_interfaces(root_cfg):
     """Construct and configure the hardware interfaces or QoEsim object
-
 
     Parameters
     ----------
