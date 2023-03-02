@@ -1479,26 +1479,6 @@ class SimSettings(AdvancedConfigGUI):
             )
 
 
-# class QoE_Box(LabeledControl):
-#     """Provides dropdown menu for adding QoE Box number to pre-test notes"""
-    
-#     def __init__(self, master, row, *args, **kwargs):
-        
-#         self.text = 'Qoe Box Number:'
-#         self.MCtrl = ttk.Menubutton
-#         self.do_font_scaling = False
-        
-#         super().__init__(master, row, *args, **kwargs)
-        
-#         self.menu = tk.Menu(self.m_ctrl, tearoff=False)
-        
-#         self.m_ctrl.configure(menu=self.menu)
-        
-#         for x in range(1, 11):
-#             self.menu.add_command(label=x,
-#                                   command=tk._setit(self.btnvar, x))
-
-
 class channel_tech(LabeledControl):
     """Technology to use for the simulated channel. Channel technologies are
     handled by plugins. The only tech that is available by default is 'clean'.
