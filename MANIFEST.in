@@ -1,2 +1,3 @@
 recursive-include mcvqoe/hub *.png
 recursive-include mcvqoe/hub *.ico
+recursive-include mcvqoe/hub *.csv

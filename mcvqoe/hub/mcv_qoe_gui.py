@@ -45,7 +45,7 @@ from tempfile import TemporaryDirectory
 from mcvqoe.utilities import reprocess
 from mcvqoe.timing import two_loc_process
 
-
+import csv
 import sounddevice as sd
 import sys
 import time
@@ -233,6 +233,7 @@ class MCVQoEGui(tk.Tk):
         self.is_destroyed = False
         self._is_closing = False
         self._is_force_closing = False
+        # Variable to act as self.info from the measurements
         self._pre_notes = None
         self._old_selected_test = 'EmptyFrame'
         self.set_step('empty')
@@ -919,6 +920,7 @@ class MCVQoEGui(tk.Tk):
                 'System'    : system,
                 'Test Loc'  : 'N/A',
                 })
+        # Variable to act as self.info from the tests
         self._pre_notes = None
         self._pre_notes_wait = True
         self.set_step('pre-notes')
@@ -932,6 +934,12 @@ class MCVQoEGui(tk.Tk):
         txt_box = self.frames['TestInfoGuiFrame'].pre_notes
         # gets 'Pre Test Notes' from text widget
         self._pre_notes['Pre Test Notes'] = txt_box.get(1.0, tk.END)
+        
+        # Collect dropdown variables for log
+        for col in self.frames['TestInfoGuiFrame'].columns:
+            self._pre_notes[col] = self.frames['TestInfoGuiFrame'].tkstrings[col].get()
+        
+        #self._pre_notes['MCVQoE Box'] = self.frames['TestInfoGuiFrame'].mcvboxselection.get()
         
         self.frames["PostTestGuiFrame"].set_pre_test(self._pre_notes["Pre Test Notes"])
 
@@ -1992,7 +2000,63 @@ class TestInfoGuiFrame(ttk.Labelframe):
                 column=1, row=ct, sticky='W', padx=padx, pady=pady)
 
             ct += 1
-
+            
+        # Pull csv values for dropdown menu(s)
+        with importlib.resources.path('mcvqoe.hub','TestEquipment.csv') as csv_wp:
+            with open(csv_wp.__str__(), "r", newline='') as csv_file:
+                reader = csv.DictReader(csv_file)
+                # Dictionary to store {<column title>, [values]}
+                self.columns = {}
+                for row in reader:
+                        for fieldname in reader.fieldnames:
+                            if row.get(fieldname):
+                                self.columns.setdefault(fieldname, []).append(row.get(fieldname))
+                    
+        # Dictionary to hold tk.StringVar()
+        self.tkstrings = {}
+        
+        # Dictionary to hold tkinter optionmenus
+        self.optionmenus = {}
+        
+        # Create each dropdown based on csv columns
+        for col in self.columns:
+            self.tkstrings[col] = tk.StringVar(value='')
+            
+            ttk.Label(self, text=col).grid(
+                column=0, row=ct, sticky='W', padx=padx, pady=pady)
+            
+            self.optionmenus[col] = ttk.OptionMenu(
+                self,
+                self.tkstrings[col],
+                self.columns[col][0],
+                *self.columns[col],
+                style='audio_drop.TMenubutton',
+                )
+            
+            self.optionmenus[col].grid(column=1, row=ct, sticky='W', padx=padx, pady=pady)
+            
+            ct += 1
+        
+        # self.mcvboxselection = tk.StringVar(value='1')
+        
+        # ttk.Label(self, text="MCVQoE Box #").grid(
+        #         column=0, row=ct, sticky='W', padx=padx, pady=pady)
+        
+        # self.mcvboxnum = ('1', '2', '3', '4', '5',
+        #                   '6', '7', '8', '9', '10')
+        
+        # self.mcvqoebox = ttk.OptionMenu(
+        #     self,
+        #     self.mcvboxselection,
+        #     self.mcvboxnum[0],
+        #     *self.mcvboxnum,
+        #     style='audio_drop.TMenubutton',
+        #     )
+        
+        # self.mcvqoebox.grid(column=1, row=ct, sticky='W', padx=padx, pady=pady)
+        
+        # ct += 1
+        
         ttk.Label(self, text='Please enter notes on pre-test conditions').grid(
             columnspan=2, row=ct)
 
