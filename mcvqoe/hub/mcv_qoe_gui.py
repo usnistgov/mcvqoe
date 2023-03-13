@@ -5305,6 +5305,8 @@ def load_defaults():
     DEFAULTS[intelligibility]['pause_trials'] = str(int(DEFAULTS[intelligibility]['pause_trials']))
 
     DEFAULTS[accesstime]['dev_dly'] = ''
+    DEFAULTS[m2e]['dev_dly'] = ''
+    DEFAULTS[dev_dly_char]['dev_dly'] = ''
 
     DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
     DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
