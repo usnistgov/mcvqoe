@@ -18,7 +18,7 @@ import numpy as np
 #------------------------------- Controls -------------------------------------
 
 from .shared import audio_files, audio_path
-from .shared import BgNoise, SaveAudio
+from .shared import BgNoise, SaveAudio, dev_dly
 from .shared import trials, ptt_wait, ptt_gap, outdir
 
 
@@ -45,6 +45,7 @@ class M2eFrame(TestCfgFrame):
         return (
             audio_files,
             audio_path,
+            dev_dly,
             outdir,
             trials,
             ptt_wait,
