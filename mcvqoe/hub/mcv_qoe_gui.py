@@ -915,10 +915,7 @@ class MCVQoEGui(tk.Tk):
             # auto-fill pre-test-notes
             self.frames['TestInfoGuiFrame'].btnvars.set({
                 'Test Type' : 'Simulation',
-                'Tx Device' : 'None',
-                'Rx Device' : 'None',
-                'System'    : system,
-                'Test Loc'  : 'N/A',
+                'Test Loc'  : 'PSCR Lab',
                 })
         # Variable to act as self.info from the tests
         self._pre_notes = None
@@ -1977,10 +1974,7 @@ class TestInfoGuiFrame(ttk.Labelframe):
 
         labels = {
             'Test Type': 'Test Type:',
-            'Tx Device': 'Transmit Device:',
-            'Rx Device': 'Receive Device:',
-            'System': 'System:',
-            'Test Loc': 'Test Location:'
+            'Test Loc': 'Test Loc:'
             }
 
         self.btnvars = btnvars
@@ -5124,9 +5118,6 @@ def load_defaults():
 
         'TestInfoGuiFrame': [
                 'Test Type',
-                'Tx Device',
-                'Rx Device',
-                'System',
                 'Test Loc'
                 ],
 
