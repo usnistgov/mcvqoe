@@ -936,8 +936,6 @@ class MCVQoEGui(tk.Tk):
         for col in self.frames['TestInfoGuiFrame'].columns:
             self._pre_notes[col] = self.frames['TestInfoGuiFrame'].tkstrings[col].get()
         
-        #self._pre_notes['MCVQoE Box'] = self.frames['TestInfoGuiFrame'].mcvboxselection.get()
-        
         self.frames["PostTestGuiFrame"].set_pre_test(self._pre_notes["Pre Test Notes"])
 
         self._pre_notes_wait = False
@@ -1002,7 +1000,6 @@ class MCVQoEGui(tk.Tk):
 
         the current step can be accessed in self.step
 
-
         STEPS
         -----
 
@@ -1032,8 +1029,6 @@ class MCVQoEGui(tk.Tk):
         post-process
             showing results, plots, outdir, etc
 
-
-
         Parameters
         ----------
         step : str
@@ -1059,6 +1054,7 @@ class MCVQoEGui(tk.Tk):
         next_btn_state = None
         back_btn_state = None
         selected_test = self.selected_test.get()
+        
         if step == 'config':
             disable_config = False
             # check if a post processing step was selected
@@ -1083,6 +1079,7 @@ class MCVQoEGui(tk.Tk):
                 next_btn_txt = 'Next'
                 next_btn = self.run
                 back_btn = lambda : self.set_step('empty')
+                
         # step can be changed above, start if-else over here
         if step == 'sync-progress':
             self.show_frame('SyncProgressFrame')
@@ -1097,6 +1094,7 @@ class MCVQoEGui(tk.Tk):
             # buttons start disabled
             next_btn_state = False
             back_btn_state = False
+            
         elif step == 'reprocess':
             self.show_frame('ReprocessFrame')
             # TODO : set buttons appropriately
@@ -1109,6 +1107,7 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = lambda : self.set_step('empty')
                 back_btn_txt = 'Back'
+                
         elif step == 'diagnose':
             self.show_frame('DiagnosticsFrame')
             dpf = loader.tk_main.win.frames['DiagnosticsFrame']
@@ -1120,6 +1119,7 @@ class MCVQoEGui(tk.Tk):
             else:
                 back_btn = lambda : self.set_step('empty')
                 back_btn_txt = 'Back'
+                
         elif step == 'pre-notes':
             # test info gui
             self.show_frame('TestInfoGuiFrame')
@@ -1157,7 +1157,6 @@ class MCVQoEGui(tk.Tk):
             next_btn = self._post_test_submit
             back_btn = None
 
-
         elif step == 'post-process':
             self.show_frame('PostProcessingFrame')
             next_btn_txt = 'Finish'
@@ -1185,6 +1184,7 @@ class MCVQoEGui(tk.Tk):
         elif step == 'config':
             # already handled
             pass
+        
         else:
             # invalid step
             raise ValueError(f'"{step}" is not a known step')
@@ -1202,7 +1202,6 @@ class MCVQoEGui(tk.Tk):
         # Note: can kill evaluate server here if we want
         self.set_step('empty')
 
-
     @in_thread('GuiThread', wait=False)
     def clear_old_entries(self):
         """
@@ -1213,7 +1212,6 @@ class MCVQoEGui(tk.Tk):
         # clears pre_test and post_test notes
         self.frames['TestInfoGuiFrame'].pre_notes.delete(1.0, tk.END)
         self.frames['PostTestGuiFrame'].post_test.delete(1.0, tk.END)
-
 
         # clear any previous invalid parameters of redness
         for ctrl in self._red_controls:
@@ -1482,7 +1480,7 @@ class McvQoeAbout(tk.Toplevel, metaclass = SingletonWindow):
         # save this so things aren't so long...
         sim = loader.simulation.QoEsim
 
-        # seperate dict for now
+        # separate dict for now
         chan_versions = {}
 
         # get channel plugin versions
@@ -1688,9 +1686,8 @@ class LeftFrame(tk.Frame):
             self.MenuFrame.pack(side=tk.LEFT, fill=tk.Y)
 
     def on_button(self):
-        """Button to toggle the state
-
-        """
+        """Button to toggle the state"""
+        
         if self.MenuVisible:
             self.MenuVisible = False
             self.MenuFrame.pack_forget()
@@ -2031,26 +2028,6 @@ class TestInfoGuiFrame(ttk.Labelframe):
             
             ct += 1
         
-        # self.mcvboxselection = tk.StringVar(value='1')
-        
-        # ttk.Label(self, text="MCVQoE Box #").grid(
-        #         column=0, row=ct, sticky='W', padx=padx, pady=pady)
-        
-        # self.mcvboxnum = ('1', '2', '3', '4', '5',
-        #                   '6', '7', '8', '9', '10')
-        
-        # self.mcvqoebox = ttk.OptionMenu(
-        #     self,
-        #     self.mcvboxselection,
-        #     self.mcvboxnum[0],
-        #     *self.mcvboxnum,
-        #     style='audio_drop.TMenubutton',
-        #     )
-        
-        # self.mcvqoebox.grid(column=1, row=ct, sticky='W', padx=padx, pady=pady)
-        
-        # ct += 1
-        
         ttk.Label(self, text='Please enter notes on pre-test conditions').grid(
             columnspan=2, row=ct)
 
@@ -2165,7 +2142,6 @@ class TestProgressFrame(tk.LabelFrame):
     def check_for_abort(self):
         """Checks to see if the user pressed abort, and if so, aborts.
 
-
         Raises
         ------
         Abort_by_User
@@ -2188,7 +2164,6 @@ class TestProgressFrame(tk.LabelFrame):
                 file='',
                 new_file=''
                 ) -> bool:
-
         """ see gui_progress_update() in the main namespace
         """
 
@@ -2247,8 +2222,8 @@ class TestProgressFrame(tk.LabelFrame):
                 # if on trial 0, start timer
                 self.stopwatch.reset()
                 self.time_estimate_.set('')
+            
             else:
-
                 # get time estimate
                 time_left, time_unit = self.stopwatch.estimate_remaining(
                     current_trial, num_trials)
@@ -2597,10 +2572,10 @@ class ReprocessFrame(ttk.Labelframe):
             measurement_class = reprocess.get_module(module_name=measurement, datafile=in_file)
 
             # object to reprocess with
-            process_obj=measurement_class()
+            process_obj = measurement_class()
 
             # use GUI for progress updates
-            process_obj.progress_update=gui_progress_update
+            process_obj.progress_update = gui_progress_update
 
 
             # set split_audio_dest on measurement class
@@ -2683,6 +2658,7 @@ class ReprocessFrame(ttk.Labelframe):
             ppf.outdir = path.dirname(path.dirname(path.dirname(out_name)))
             # go to post processing frame
             loader.tk_main.win.set_step('post-process')
+            
         except:
             # go back to reprocess
             loader.tk_main.win.set_step('reprocess')
@@ -2690,6 +2666,7 @@ class ReprocessFrame(ttk.Labelframe):
             raise
 
     def get_file(self):
+        
         initial = self.btnvars['datafile'].get()
         if initial:
             # strip filename from path
@@ -2712,6 +2689,7 @@ class ReprocessFrame(ttk.Labelframe):
             self.pretty_type.set(self.meas_types[self.btnvars['measurement_type'].get()])
 
     def save_file(self):
+        
         initial = self.btnvars['savefile'].get()
         if initial:
             # strip filename from path
@@ -2926,6 +2904,7 @@ class DiagnosticsFrame(ttk.Labelframe):
             ppf.outdir = path.dirname(path.dirname(path.dirname(out_name)))
             # #go to post processing frame
             loader.tk_main.win.set_step('post-process')
+            
         except:
             # go back to reprocess
             loader.tk_main.win.set_step('diagnose')
@@ -3433,9 +3412,8 @@ class SyncProgressFrame(tk.LabelFrame):
         return True
 
     def remove_warning(self, w):
-        '''
-        Remove `w` from the list of warnings.
-        '''
+        """Remove `w` from the list of warnings."""
+        
         self.warnings.remove(w)
 
 
@@ -3528,9 +3506,7 @@ class _StopWatch:
 
 
 class WarningBox(tk.Frame):
-    """
-    A colored warning box that shows a message and an X button
-    """
+    """A colored warning box that shows a message and an X button"""
     
     def __init__(self, master, text, color='yellow', **kwargs):
         super().__init__(master, background=color)
@@ -4188,9 +4164,11 @@ def run(root_cfg):
     my_obj = constructors[sel_tst]()
 
     #-------------- Begin try statement for error handling --------------------
+    
     try:
 
         #---------------------- open interfaces -------------------------------
+        
         try:
             ri, ap = get_interfaces(root_cfg)
         except (RuntimeError, ValueError) as e:
@@ -4206,6 +4184,7 @@ def run(root_cfg):
         )
 
         #---------------------- Set Device delay for Sims ----------------------
+        
         if 'dev_dly' in cfg and is_sim:
             # try to use value from config
             try:
@@ -4215,6 +4194,7 @@ def run(root_cfg):
                 cfg['dev_dly'] = float(ap.device_delay)
 
         #--------------------------- Recovery ---------------------------------
+        
         if sel_tst == accesstime:
             # if the program closes between now and end of function,
             # prompt for recovery on next session.
@@ -4258,7 +4238,6 @@ def run(root_cfg):
         # set post_notes callback
         my_obj.get_post_notes=get_post_notes
 
-
         # set progress update callback
         my_obj.progress_update = gui_progress_update
 
@@ -4273,6 +4252,7 @@ def run(root_cfg):
         tpf.rec_stop = ap.rec_stop
 
         # ----------- Gather pretest notes and parameters ---------------------
+        
         my_obj.info = get_pre_notes(root_cfg)
         if my_obj.info is None:
             # user pressed 'back' in test info gui
@@ -4303,8 +4283,8 @@ def run(root_cfg):
             if loader.tk_main.win._is_force_closing:
                 return
 
+        #------------------- Show post-processing data ------------------------\
 
-        #------------------- Show post-processing data ------------------------
         """
         use ppf.add_element() to add something to the post-processing-frame.
 
@@ -4882,9 +4862,11 @@ def get_interfaces(root_cfg):
                                               )
 
     #--------------------- Check for 2 location simulation ---------------------
+    
     if is_sim and 'test' in cfg and cfg['test'] != '1loc':
         # 2loc_rx test not allowed in simulated
         raise ValueError('A 2-location test cannot be simulated.')
+        
     #------------------------- set channels -----------------------------------
 
     # check for 2 loc Rx first, all are the same

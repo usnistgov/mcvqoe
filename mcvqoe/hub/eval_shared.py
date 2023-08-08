@@ -786,7 +786,13 @@ def measurement_plots(measurement):
             ]
     elif measurement == 'intell':
         children = [
-            # ------------[Scatter Plot]---------------------
+            # -----------------[Bar Graph]------------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-bar',
+                          figure=blank_fig(),
+                          ),
+                ]),
+            # ----------------[Scatter Plot]----------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',
                           figure=blank_fig(),
@@ -1041,6 +1047,7 @@ def failed_process(measurement, msg=('', )):
                                             measurement=measurement)
         fig_scatter = blank_fig()
         fig_histogram = blank_fig()
+        fig_bar = blank_fig()
         talker_options = none_dropdown
         session_options = none_dropdown
             # )
@@ -1049,6 +1056,7 @@ def failed_process(measurement, msg=('', )):
                 res_formatting,
                 fig_scatter,
                 fig_histogram,
+                fig_bar,
                 talker_options,
                 session_options
                 )

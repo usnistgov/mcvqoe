@@ -64,6 +64,7 @@ def format_intell_results(intell_eval, digits=6):
     Output(f'{measurement}-measurement-formatting', 'children'),
     Output(f'{measurement}-scatter', 'figure'),
     Output(f'{measurement}-hist', 'figure'),
+    Output(f'{measurement}-bar', 'figure'),
     Output(f'{measurement}-talker-select', 'options'),
     Output(f'{measurement}-session-select', 'options'),
     Input(f'{measurement}-json-data', 'data'),
@@ -124,6 +125,10 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
                 talkers=talker_select,
                 test_name=session_select,
                 )
+            fig_bar = intell_eval.bar(
+                talkers=talker_select,
+                test_name=session_select,
+                )
             
             
             
@@ -148,6 +153,7 @@ def update_plots(jsonified_data, talker_select, session_select, x, meas_digits):
                 res_formatting,
                 fig_scatter,
                 fig_histogram,
+                fig_bar,
                 talker_options,
                 session_options
                 )
