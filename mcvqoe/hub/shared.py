@@ -69,7 +69,6 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-
     def _on_resize(self, e):
         self.canvas.configure(
                     scrollregion=self.canvas.bbox("all")

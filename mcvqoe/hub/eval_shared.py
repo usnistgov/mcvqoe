@@ -791,7 +791,7 @@ def measurement_plots(measurement):
                 dcc.Graph(id=f'{measurement}-bar',
                           figure=blank_fig(),
                           ),
-                ]),
+                ], style={'text-align': 'center'}),
             # ----------------[Scatter Plot]----------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',

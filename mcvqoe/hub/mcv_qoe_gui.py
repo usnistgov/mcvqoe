@@ -16,7 +16,6 @@ if hasattr(ctypes, 'windll'):
     # remove dpi scaling (otherwise text is blurry)
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
-
     # allows icon setting on taskbar
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
@@ -549,9 +548,7 @@ class MCVQoEGui(tk.Tk):
         return self.currentframe == self.frames['EmptyFrame']
 
     def on_change(self, *args, **kwargs):
-        """called when the user changes a parameter.
-
-        """
+        """called when the user changes a parameter."""
         
         # indicate that the config is not saved
         self.set_saved_state(False)
@@ -616,6 +613,7 @@ class MCVQoEGui(tk.Tk):
     def _wait_to_destroy(self):
         """Waits for the abort to complete and then closes the application
         """
+        
         if self.step == 'in-progress':
             # user canceled abort
             self._is_closing = False
@@ -672,7 +670,6 @@ class MCVQoEGui(tk.Tk):
         fpath = fdl.askopenfilename(
             filetypes=[('json files', '*.json')],
             initialdir = loadandsave.fdl_cache['main']
-
         )
 
         if not fpath:
@@ -688,7 +685,6 @@ class MCVQoEGui(tk.Tk):
 
         # change selected test frame
         self.selected_test.set(dct['selected_test'])
-
 
         # fill in parameters
         for frame_name, frame in self.frames.items():
@@ -2632,7 +2628,7 @@ class ReprocessFrame(ttk.Labelframe):
                     audio_path = None
 
             else:
-                raise RuntimeError(f'Unexpecte reprocess type \'{reprocess_type}\'')
+                raise RuntimeError(f'Unexpected reprocess type \'{reprocess_type}\'')
 
             # reprocess file
             out_name = reprocess.reprocess_file(process_obj, in_file, save_file,
@@ -4236,7 +4232,7 @@ def run(root_cfg):
         #-------------------- Setting Callbacks -------------------------------
 
         # set post_notes callback
-        my_obj.get_post_notes=get_post_notes
+        my_obj.get_post_notes = get_post_notes
 
         # set progress update callback
         my_obj.progress_update = gui_progress_update
@@ -5064,7 +5060,6 @@ class GuiRecStop:
     def stop(self):
         self._stopped = True
 
-
     def __enter__(self, *args, **kwargs):
         self._stopped = False
         return self
@@ -5073,7 +5068,6 @@ class GuiRecStop:
         return False
 
     def is_done(self):
-
         return self._stopped
 
 
@@ -5273,6 +5267,7 @@ def load_defaults():
         }
 
     # ----------------------load default values from objects-----------------------
+    
     for name_, key_group in control_list.items():
 
         DEFAULTS[name_] = {}
@@ -5382,7 +5377,6 @@ def load_defaults():
     # Delete lim so it doesn't mess other stuff up
     DEFAULTS[tvo].pop('lim', None)
     
-
     # ---Processing Frame---
 
     DEFAULTS[process]['data_files'] = ''
