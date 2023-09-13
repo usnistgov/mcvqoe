@@ -97,9 +97,11 @@ def parse_contents(contents, filename):
         Data stored as dataframe.
 
     """
+    
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     fname, ext = os.path.splitext(filename)
+    
     try:
         if ext == '.csv':
             # Load in data in fpath
@@ -395,7 +397,6 @@ for measurement in measurements:
                         optimal = None
                     
                     data_df = pd.concat(data_df, ignore_index=True)
-
 
                     # Store in dictionary used by mcvqoe.accesstime.load_json()
                     prep_json = {

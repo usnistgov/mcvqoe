@@ -3135,7 +3135,7 @@ class SyncSetupFrame(ttk.Labelframe):
                 # clear out old progress info
                 spf.clear_progress()
                 # switch to sync-progress step
-                loader.tk_main.win.set_step('sync-progress',extra=next_step)
+                loader.tk_main.win.set_step('sync-progress', extra=next_step)
 
                 if selection == 'existing':
                     # get folder
