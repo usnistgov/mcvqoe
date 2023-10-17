@@ -51,6 +51,7 @@ class M2eFrame(TestCfgFrame):
             ptt_wait,
             ptt_gap,
             SaveAudio,
+            dev_dly,
             test,
             advanced
             )

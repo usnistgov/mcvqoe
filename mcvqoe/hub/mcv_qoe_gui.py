@@ -4579,15 +4579,15 @@ def param_modify(root_cfg):
 
     # device delay should be either entered manually or characterized.
     if 'dev_dly' in cfg and not is_sim:
+        if sel_tst != dev_dly_char:
+            bad = False
 
-        bad = False
+            try: cfg['dev_dly'] = float(cfg['dev_dly'])
+            except ValueError: bad = True
 
-        try: cfg['dev_dly'] = float(cfg['dev_dly'])
-        except ValueError: bad = True
-
-        if bad: raise InvalidParameter('dev_dly',
-            message='Make sure to calibrate your device delay (recommended)\n\n'+
-            'Or, enter your known device delay here.')
+            if bad: raise InvalidParameter('dev_dly',
+                message='Make sure to calibrate your device delay (recommended)\n\n'+
+                'Or, enter your known device delay here.')
 
     # audio files should exist and should be .wav files
     if 'audio_files' in cfg and 'audio_path' in cfg:
@@ -5015,7 +5015,8 @@ def _get_dev_dly(ignore_error = True):
     else:
         # put value into dev_dly entry
         loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
-
+        loader.tk_main.win.frames[m2e].btnvars['dev_dly'].set(dev_dly)
+        
         return dev_dly
 
 def calculate_dev_dly(test_obj, is_simulation = False):
@@ -5045,7 +5046,7 @@ def calculate_dev_dly(test_obj, is_simulation = False):
 
         # put value into field
         loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
-
+        loader.tk_main.win.frames[m2e].btnvars['dev_dly'].set(dev_dly)
 
     return dev_dly
 
