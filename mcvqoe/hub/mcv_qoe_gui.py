@@ -1934,7 +1934,7 @@ class LogoFrame(tk.Canvas):
                 img = Image.open(crest)
                 img = img.resize(
                     (width, height),
-                    Image.ANTIALIAS
+                    Image.Resampling.LANCZOS
                 )
                 self.crestimg = ImageTk.PhotoImage(img)
                 self.create_image(
