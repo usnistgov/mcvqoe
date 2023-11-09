@@ -5184,6 +5184,7 @@ def load_defaults():
 
         intelligibility: [
             'trials',
+            'iterations',
             'outdir',
             'ptt_wait',
             'ptt_gap',

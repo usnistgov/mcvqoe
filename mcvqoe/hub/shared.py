@@ -1059,6 +1059,14 @@ class trials(LabeledNumber):
     min_ = 1
 
 
+class iterations(LabeledNumber):
+    """Number of tests to run consecutively"""
+    
+    text = 'Test Iterations'
+    
+    min_ = 1
+    
+
 class outdir(EntryWithButton):
     """Location to store all output files"""
 
