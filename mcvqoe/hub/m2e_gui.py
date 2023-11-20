@@ -8,7 +8,7 @@ Created on Wed Jun  2 08:52:09 2021
 import mcvqoe.mouth2ear.m2e as m2e
 import mcvqoe.mouth2ear
 
-from .shared import TestCfgFrame
+from .shared import TestCfgFrame, iterations
 from .shared import advanced as shared_advanced
 from .shared import AdvancedConfigGUI, MultiChoice, SignalOverride, test
 
@@ -48,6 +48,7 @@ class M2eFrame(TestCfgFrame):
             dev_dly,
             outdir,
             trials,
+            iterations,
             ptt_wait,
             ptt_gap,
             SaveAudio,

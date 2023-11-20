@@ -10,7 +10,7 @@ import tkinter as tk
 import tkinter.filedialog as fdl
 
 from .shared import LabeledSlider, TestCfgFrame, AdvancedConfigGUI, SignalOverride
-from .shared import Audio_Set
+from .shared import Audio_Set, iterations
 from .shared import format_audio_files, test
 from .shared import advanced as shared_advanced
 
@@ -116,6 +116,7 @@ class PSuDFrame(TestCfgFrame):
             psud_audio_path,
             outdir,
             psud_trials,
+            iterations,
             SaveAudio,
             ptt_wait,
             ptt_gap,

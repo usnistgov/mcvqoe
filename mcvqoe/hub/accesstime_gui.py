@@ -11,8 +11,8 @@ import mcvqoe.accesstime as adly
 
 import tkinter as tk
 
-from .shared import TestCfgFrame, SubCfgFrame
-from .shared import LabeledNumber,LabeledCheckbox,EntryWithButton,AdvancedConfigGUI,SignalOverride, test
+from .shared import TestCfgFrame, SubCfgFrame, SignalOverride, test
+from .shared import LabeledNumber, LabeledCheckbox, EntryWithButton, AdvancedConfigGUI
 from .shared import advanced as shared_advanced
 from .loadandsave import Vec1Or2Var
 
@@ -20,7 +20,7 @@ from .loadandsave import Vec1Or2Var
 #------------------------------controls--------------------------------------
 
 from .shared import audio_files, outdir, ptt_gap, time_expand
-from .shared import BgNoise
+from .shared import BgNoise, iterations
 from .shared import dev_dly, RadioCheck, audio_path, SaveAudio
 
       
@@ -170,6 +170,7 @@ class AccssDFrame(TestCfgFrame):
             audio_files,
             audio_path,
             outdir,
+            iterations,
             ptt_step,
             ptt_gap,
             SaveAudio,
