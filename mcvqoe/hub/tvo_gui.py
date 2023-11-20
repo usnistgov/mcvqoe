@@ -17,7 +17,7 @@ from .shared import advanced as shared_advanced
 #----------------------------controls-----------------------------------------
 
 from .shared import trials, audio_files, audio_path, outdir
-from .shared import ptt_wait, ptt_gap, time_expand, iterations
+from .shared import ptt_wait, ptt_gap, time_expand
 from .shared import SaveAudio, MultiChoice
 
 
@@ -147,7 +147,6 @@ class TVOFrame(TestCfgFrame):
             audio_files,
             audio_path,
             outdir,
-            iterations,
             SaveAudio,
             ptt_wait,
             ptt_gap,
