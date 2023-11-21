@@ -5162,7 +5162,7 @@ def load_defaults():
             's_tries',
             'stop_rep',
             'pause_trials',
-            #'iterations',
+            'iterations',
             'save_tx_audio',
             'save_audio',
             'zip_audio',
