@@ -5204,7 +5204,7 @@ def load_defaults():
             'audio_files',
             'audio_path',
             'outdir',
-            #'iterations',
+            'iterations',
             'save_tx_audio',
             'save_audio',
             'ptt_wait',
