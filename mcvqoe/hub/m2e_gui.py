@@ -8,7 +8,7 @@ Created on Wed Jun  2 08:52:09 2021
 import mcvqoe.mouth2ear.m2e as m2e
 import mcvqoe.mouth2ear
 
-from .shared import TestCfgFrame
+from .shared import TestCfgFrame, iterations
 from .shared import advanced as shared_advanced
 from .shared import AdvancedConfigGUI, MultiChoice, SignalOverride, test
 
@@ -48,6 +48,7 @@ class M2eFrame(TestCfgFrame):
             dev_dly,
             outdir,
             trials,
+            iterations,
             ptt_wait,
             ptt_gap,
             SaveAudio,
@@ -61,22 +62,22 @@ class M2eFrame(TestCfgFrame):
 
 class M2E_fromGui(SignalOverride, m2e.measure):
 
-    def get_mean_and_std(self,name=None):
+    def get_mean_and_std(self, name=None):
         
-        if( not name):
-            name=self.data_filename
+        if(not name):
+            name = self.data_filename
         
-        with open(name,'rt') as csv_f:
-            #create dict reader
-            reader=csv.DictReader(csv_f)
-            #empty list for M2E data
-            m2e_dat=[]
+        with open(name, 'rt') as csv_f:
+            # create dict reader
+            reader = csv.DictReader(csv_f)
+            # empty list for M2E data
+            m2e_dat = []
             #
             for row in reader:
                 m2e_dat.append(float(row['m2e_latency']))
 
-        #convert to numpy array
-        m2e_dat=np.array(m2e_dat)
+        # convert to numpy array
+        m2e_dat = np.array(m2e_dat)
         
         # Overall mean delay
         ovrl_dly = np.mean(m2e_dat)

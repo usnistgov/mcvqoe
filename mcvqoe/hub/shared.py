@@ -69,7 +69,6 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-
     def _on_resize(self, e):
         self.canvas.configure(
                     scrollregion=self.canvas.bbox("all")
@@ -1059,6 +1058,14 @@ class trials(LabeledNumber):
 
     min_ = 1
 
+
+class iterations(LabeledNumber):
+    """Number of tests to run consecutively"""
+    
+    text = 'Test Iterations'
+    
+    min_ = 1
+    
 
 class outdir(EntryWithButton):
     """Location to store all output files"""

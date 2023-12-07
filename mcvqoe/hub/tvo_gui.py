@@ -18,7 +18,7 @@ from .shared import advanced as shared_advanced
 
 from .shared import trials, audio_files, audio_path, outdir
 from .shared import ptt_wait, ptt_gap, time_expand
-from .shared import SaveAudio, MultiChoice
+from .shared import SaveAudio, MultiChoice, iterations
 
 
 class ptt_rep(LabeledNumber):
@@ -147,6 +147,7 @@ class TVOFrame(TestCfgFrame):
             audio_files,
             audio_path,
             outdir,
+            iterations,
             SaveAudio,
             ptt_wait,
             ptt_gap,

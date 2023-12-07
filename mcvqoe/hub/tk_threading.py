@@ -149,17 +149,17 @@ class GuiThread(Thread):
     def _main_loop_ext(self):
 
         try:
-            #grab a function
+            # grab a function
             f = self._callbacks.pop()
         except IndexError:pass
         else:
             try:
                 f()
             except Exception as e:
-                #don't crash in case of error
+                # don't crash in case of error
                 show_error(e)
 
-        #run this function again
+        # run this function again
         self.win.after(100, self._main_loop_ext)
 
     @in_thread('GuiThread')
@@ -212,7 +212,7 @@ class Main():
                 try:
                     f = self._callbacks.pop()
                 except IndexError:
-                    #if no callbacks to be called
+                    # if no callbacks to be called
                     self.is_running = False
                     time.sleep(0.2)
                 else:
@@ -231,7 +231,7 @@ class Main():
                 # prints exception without exiting main thread
                 show_error(e)
 
-        #thread is ending
+        # thread is ending
         self.is_running = False
 
         self.gui_thread.join()
@@ -256,19 +256,19 @@ class SingletonWindow(type):
     >>>    pass
     """
     
-    #dict to hold existing class instances
+    # dict to hold existing class instances
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
-        #check if class is in list and still exists
+        # check if class is in list and still exists
         if cls not in cls._instances or not cls._instances[cls].winfo_exists():
-            #create new instance of the class
+            # create new instance of the class
             cls._instances[cls] = super(SingletonWindow, cls).__call__(*args, **kwargs)
         else:
-            #already exists, focus window
+            # already exists, focus window
             cls._instances[cls].focus_force()
             cls._instances[cls].bell()
-        #Return class instance, either old or newly created
+        # Return class instance, either old or newly created
         return cls._instances[cls]
 
 @in_thread('GuiThread')
@@ -279,23 +279,23 @@ def show_error(exc=None, err_func=None):
 
     err_time = datetime.datetime.now()
 
-    #dir for traceback.log file
+    # dir for traceback.log file
     base_fold = save_dir
-    #full path to log file
+    # full path to log file
     err_log = os.path.join(base_fold,'traceback.log')
 
     try:
-        #get traceback info in a string
+        # get traceback info in a string
         tb_str = traceback.format_exc()
-        #make sure directory exists
+        # make sure directory exists
         os.makedirs(base_fold, exist_ok=True)
 
         with open(err_log, 'at') as f:
-            #write Heading for start of traceback
+            # write Heading for start of traceback
             f.write(f'##Error Encountered on {err_time.strftime("%c")}:\n')
-            #write traceback
+            # write traceback
             f.write(tb_str)
-            #add an extra newline for seperation
+            # add an extra newline for seperation
             f.write('\n')
     except (OSError, IOError):
         print('Unable to write traceback.log')
@@ -308,7 +308,7 @@ def show_error(exc=None, err_func=None):
         exc = exc[1]
 
     if not exc:
-        #no error
+        # no error
         return
 
     if isinstance(exc, InvalidParameter) and err_func is None:

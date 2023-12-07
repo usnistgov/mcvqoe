@@ -97,9 +97,11 @@ def parse_contents(contents, filename):
         Data stored as dataframe.
 
     """
+    
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     fname, ext = os.path.splitext(filename)
+    
     try:
         if ext == '.csv':
             # Load in data in fpath
@@ -395,7 +397,6 @@ for measurement in measurements:
                         optimal = None
                     
                     data_df = pd.concat(data_df, ignore_index=True)
-
 
                     # Store in dictionary used by mcvqoe.accesstime.load_json()
                     prep_json = {
@@ -786,7 +787,13 @@ def measurement_plots(measurement):
             ]
     elif measurement == 'intell':
         children = [
-            # ------------[Scatter Plot]---------------------
+            # -----------------[Bar Graph]------------------
+            html.Div([
+                dcc.Graph(id=f'{measurement}-bar',
+                          figure=blank_fig(),
+                          ),
+                ], style={'text-align': 'center'}),
+            # ----------------[Scatter Plot]----------------
             html.Div([
                 dcc.Graph(id=f'{measurement}-hist',
                           figure=blank_fig(),
@@ -1041,6 +1048,7 @@ def failed_process(measurement, msg=('', )):
                                             measurement=measurement)
         fig_scatter = blank_fig()
         fig_histogram = blank_fig()
+        fig_bar = blank_fig()
         talker_options = none_dropdown
         session_options = none_dropdown
             # )
@@ -1049,6 +1057,7 @@ def failed_process(measurement, msg=('', )):
                 res_formatting,
                 fig_scatter,
                 fig_histogram,
+                fig_bar,
                 talker_options,
                 session_options
                 )

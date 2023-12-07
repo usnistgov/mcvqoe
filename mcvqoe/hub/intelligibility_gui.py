@@ -16,7 +16,7 @@ from .shared import AdvancedConfigGUI, test
 #--------------------------Controls-------------------------------------------
 
 from .shared import BgNoise, trials, outdir, ptt_wait
-from .shared import ptt_gap, RadioCheck, SaveAudio
+from .shared import ptt_gap, RadioCheck, SaveAudio, iterations
 
 class intell_trials(trials):
     """
@@ -58,6 +58,7 @@ class IgtibyFrame(TestCfgFrame):
         return (
             outdir,
             intell_trials,
+            iterations,
             ptt_wait,
             ptt_gap,
             SaveAudio,
