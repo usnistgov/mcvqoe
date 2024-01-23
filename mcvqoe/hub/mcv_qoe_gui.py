@@ -2422,7 +2422,9 @@ class ReprocessFrame(ttk.Labelframe):
         btn_frame = ttk.LabelFrame(self, text='Measurement Type')
 
         self.add_widgets('Measurement Type', (dropdown,),
-                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+                            help_txt="The type of measurement that the data file points to. \n"\
+                            "In many cases this can be determined automatically, \n"\
+                            "if not select the correct measurement from the list.")
 
         # === Save file ===
 
@@ -2432,7 +2434,7 @@ class ReprocessFrame(ttk.Labelframe):
 
         self.add_widgets('Save File', (fold_entry, fold_button),
                             group='meas_only',
-                            help_txt='File to save reprocessed data to. If this is empty, the name is chosen automatically.')
+                            help_txt='File to save reprocessed data to. If this is empty, \nthe name is chosen automatically.')
 
         # === Audio Path ===
 
@@ -2442,7 +2444,7 @@ class ReprocessFrame(ttk.Labelframe):
 
         self.add_widgets('Audio Path', (fold_entry, fold_button),
                             group='meas_only',
-                            help_txt='Folder to find audio clips in. If this is empty, the files will be found automatically.')
+                            help_txt='Folder to find audio clips in. If this is empty, \nthe files will be found automatically.')
 
         # === Split Audio Path ===
 
@@ -2451,7 +2453,8 @@ class ReprocessFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=lambda : self.get_fold('split_audio_path'))
 
         self.add_widgets('Split Audio Path', (fold_entry, fold_button),
-                            help_txt='Folder to write split Rx audio files to. If this is empty, split audio will not be written. Only used for Access Time and PSuD.')
+                            help_txt='Folder to write split Rx audio files to. If this is empty, \n'\
+                            'split audio will not be written. Only used for Access Time and PSuD.')
 
         # === Two Location Reprocess type ===
 
@@ -2489,8 +2492,8 @@ class ReprocessFrame(ttk.Labelframe):
                                  textvariable=self.btnvars['extraplay'])
 
         self.add_widgets('Extra Play', (extraplay,), group='2loc',
-                        help_txt='Duration of extra audio to add after tx clip '
-                        'stopped. This mayb be used, in some cases, to correct '
+                        help_txt='Duration of extra audio to add after tx clip\n'
+                        'stopped. This mayb be used, in some cases, to correct\n'
                         'for data that was recorded with a poorly chosen overplay.')
 
         # call on_type_change here so things default to the right state
@@ -2793,7 +2796,9 @@ class DiagnosticsFrame(ttk.Labelframe):
         dropdown.configure(menu=menu)
 
         self.add_widgets('Measurement Type', (dropdown,),
-                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+                            help_txt='The type of measurement that the data file points to.\n'\
+                            'In many cases this can be determined automatically,\n'\
+                            'if not select the correct measurement from the list.')
         
     def add_widget(self, w, column=0, padx=None, pady=None):
         """Add a single widget that spans 4 columnspan"""
@@ -2957,7 +2962,7 @@ class SyncSetupFrame(ttk.Labelframe):
         computer_name = ttk.Entry(self, textvariable=self.btnvars['computer_name'])
 
         self.add_widgets('setup', 'Computer Name', (computer_name,),
-                            help_txt='Name of this computer.'\
+                            help_txt='Name of this computer. '\
                             'This will be added to the log file name')
 
         # === direct checkbox ==
@@ -2965,7 +2970,7 @@ class SyncSetupFrame(ttk.Labelframe):
 
         self.add_widgets('setup', 'Direct sync', (direct,),
                             help_txt='If checked, data will be synced '\
-                            'directly to the destination, instead of going '\
+                            'directly to the destination,\ninstead of going '\
                             'through a removable drive.')
 
         # === Destination directory ===
@@ -3044,7 +3049,7 @@ class SyncSetupFrame(ttk.Labelframe):
 
         self.add_widgets('upload', 'Thorough', (thorough,),
                             help_txt='If checked, a more thorough sync will be '\
-                            'performed. This will take longer, but catch '\
+                            'performed.\nThis will take longer, but catch '\
                             'missing files in subfolders')
 
         #update state of widgets
@@ -3753,7 +3758,9 @@ class ProcessDataFrame(ttk.LabelFrame):
                                  )
 
         self.add_widgets('Measurement Type', (dropdown, plot_button),
-                            help_txt='The type of measurement that the data file points to. In many cases this can be determined automatically, if not select the correct measurement from the list.')
+                            help_txt='The type of measurement that the data file points to.\n'+
+                            'In many cases this can be determined automatically,\n'+
+                            'if not select the correct measurement from the list.')
         
         # === Evaluation server homepage ===
         home_button = ttk.Button(self,
