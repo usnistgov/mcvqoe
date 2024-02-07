@@ -2375,8 +2375,8 @@ class ReprocessFrame(ttk.Labelframe):
 
         fold_button = ttk.Button(self, text='Browse', command=self.get_file)
 
-        self.add_widgets('Data File', (fold_entry, fold_button),
-                            help_txt='Data file from test to reprocess.')
+        self.add_widgets('Data File (.csv)', (fold_entry, fold_button),
+                            help_txt='Data file (.csv) from test to reprocess.')
 
         # === Measurement Reprocess type ===
 
@@ -2473,8 +2473,8 @@ class ReprocessFrame(ttk.Labelframe):
 
         rx_button = ttk.Button(self, text='Browse', command=self.get_rx)
 
-        self.add_widgets('Rx file', (rx_entry, rx_button), group='2loc',
-                            help_txt='Rx recording. If not given it will be determined automatically')
+        self.add_widgets('Rx file (.wav)', (rx_entry, rx_button), group='2loc',
+                            help_txt='Rx recording (.wav). If not given it will be determined automatically')
 
         # === Outdir ===
 
@@ -2493,7 +2493,7 @@ class ReprocessFrame(ttk.Labelframe):
 
         self.add_widgets('Extra Play', (extraplay,), group='2loc',
                         help_txt='Duration of extra audio to add after tx clip\n'
-                        'stopped. This mayb be used, in some cases, to correct\n'
+                        'stopped. This may be used, in some cases, to correct\n'
                         'for data that was recorded with a poorly chosen overplay.')
 
         # call on_type_change here so things default to the right state
@@ -2576,7 +2576,6 @@ class ReprocessFrame(ttk.Labelframe):
             # use GUI for progress updates
             process_obj.progress_update = gui_progress_update
 
-
             # set split_audio_dest on measurement class
             process_obj.split_audio_dest = split_audio
 
@@ -2592,16 +2591,18 @@ class ReprocessFrame(ttk.Labelframe):
                 if not outdir:
                     # try to guess outdir from input name
 
-                    # strip filename
+                    # strip filename and get outdir
                     outdir = path.dirname(in_file)
-                    # strip measurement folder
                     outdir = path.dirname(outdir)
-                    # walk back, checking paths
-                    for expected_name in reprocess.csv_path_names:
-                        outdir, fold = path.split(outdir)
+                    
+                    # # walk back, checking paths
+                    # for expected_name in reprocess.csv_path_names:
+                        
+                    #     outdir, fold = path.split(outdir)
 
-                        if fold not in expected_name:
-                            raise RuntimeError(f'folder name \'{fold}\' does not match the expected names: {expected_name}')
+                    #     if fold not in expected_name:
+                    #         raise RuntimeError(f'Folder name \'{fold}\' does not match the expected names: {expected_name}/n'+
+                    #                            "Enter the output directory manually")
 
                 extraplay = self.btnvars['extraplay'].get()
 
@@ -2722,7 +2723,9 @@ class ReprocessFrame(ttk.Labelframe):
         else:
             initial = save_dir
 
-        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('csv','*.csv'),))
+        # Make sure we're looking for a .wav
+        file = fdl.askopenfilename(parent=self.master, initialdir=initial, filetypes=(('wav','*.wav'),))
+        
         if file:
             self.btnvars['rx_name'].set(path.normpath(file))
 
@@ -2763,7 +2766,7 @@ class DiagnosticsFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=self.get_dir)
         
         self.add_widgets('Data Directory', (fold_entry, fold_button),
-                            help_txt='Data file from test to reprocess.')
+                            help_txt='Data file (csv) from test to reprocess.')
 
         # === Measurement Type ===
 
@@ -3717,7 +3720,7 @@ class ProcessDataFrame(ttk.LabelFrame):
         fold_button = ttk.Button(self, text='Browse', command=self.get_file)
 
         self.add_widgets('Data File', (fold_entry, fold_button),
-                            help_txt='Data file to process.')
+                            help_txt='Data file (csv) to process.')
 
         
         # === Measurement Type/Plot button ===

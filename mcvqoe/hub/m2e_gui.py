@@ -45,7 +45,6 @@ class M2eFrame(TestCfgFrame):
         return (
             audio_files,
             audio_path,
-            dev_dly,
             outdir,
             trials,
             iterations,
