@@ -1748,7 +1748,6 @@ class TestTypeFrame(tk.Frame):
         ttk.Button(self, textvariable=self.set_btn_txtvar,
                    command=self.settings_btn).pack(fill=tk.X)
 
-
         self._test_btn = ttk.Button(self, text='Test Audio',
                                    command=self.test_audio_btn)
         self._test_btn.pack(fill=tk.X)
@@ -2209,11 +2208,10 @@ class TestProgressFrame(tk.LabelFrame):
         elif prog_type in ('pre', 'proc', 'test', 'compress', 'diagnose'):
             # show current progress on a determinate progress bar
             self.bar.stop()
-            self.bar.configure(value=current_trial, maximum = num_trials,
+            self.bar.configure(value=current_trial, maximum=num_trials,
                                mode='determinate')
 
             # estimate time remaining
-
             if current_trial == 0:
                 # if on trial 0, start timer
                 self.stopwatch.reset()
@@ -2766,10 +2764,9 @@ class DiagnosticsFrame(ttk.Labelframe):
         fold_button = ttk.Button(self, text='Browse', command=self.get_dir)
         
         self.add_widgets('Data Directory', (fold_entry, fold_button),
-                            help_txt='Data file (csv) from test to reprocess.')
+                            help_txt='Data folder of test to reprocess.')
 
         # === Measurement Type ===
-
 
         self.meas_types = {'select':'<select measurement type>',
                            'mcvqoe.mouth2ear':'Mouth-to-Ear',
@@ -3358,8 +3355,8 @@ class SyncProgressFrame(tk.LabelFrame):
         """
         Progress update function for syncing.
 
-        The sync progress updates are a bit diffrent than test progress updates
-        and get their owne function.
+        The sync progress updates are a bit different than test progress updates
+        and get their own function.
         """
 
         #TESTING : print out things
@@ -4307,7 +4304,6 @@ def run(root_cfg):
         elif sel_tst == intelligibility:
             # ppf.add_element(f'Intelligibility Estimate: {result}')
             outname = my_obj.data_filename
-            
             # Initialize evaluation object
             eval_obj = evaluators[sel_tst](outname)
             

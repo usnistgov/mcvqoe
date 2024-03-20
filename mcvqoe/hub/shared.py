@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun  9 11:03:39 2021
-
-@author: MkZee
-"""
-
 import importlib.resources
 import sys
 # used to catch errors from tk
@@ -13,7 +6,7 @@ import _tkinter
 from mcvqoe.simulation import QoEsim
 from os import path
 from PIL import Image, ImageTk
-from .tk_threading import show_error, Abort_by_User, InvalidParameter
+from .tk_threading import show_error, Abort_by_User
 from .tk_threading import SingletonWindow
 from _tkinter import TclError
 from tkinter import ttk
@@ -1633,7 +1626,9 @@ class ChannelImpairment(LabeledControl):
         self.update()
 
     def update(self, *args, **kwargs):
+        
         failed = False
+        
         try:
             chan_tech = self.master.master.btnvars['channel_tech'].get()
 
@@ -1641,6 +1636,7 @@ class ChannelImpairment(LabeledControl):
 
             if chan_tech == 'None':
                 failed = True
+                
             else:
                 # get channel type
                 chan_type = QoEsim().get_channel_type(chan_tech)

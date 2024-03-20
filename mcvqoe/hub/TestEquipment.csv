@@ -1,27 +1,41 @@
-MCVQoE Box,TX Device,RX Device,System
-1,1,1,700 MHz - Direct
-2,6,6,700 MHz - Trunked
-3,8,8,Lab LTE - Rapid Response
-4,101,101,Lab LTE - FN PTT
-5,102,102,FN LTE - Rapid Response
-6,151,151,FN LTE - FN PTT
-7,152,152,
-8,201,201,
-9,202,202,
-10,203,203,
-,204,204,
-,252,252,
-,501,501,
-,502,502,
-,503,503,
-,591,591,
-,592,592,
-,593,593,
-,711,711,
-,712,712,
-,781,781,
-,782,782,
-,783,783,
-,784,784,
-,851,851,
-,852,852,
+MCVQoE Box,TX Device,TX Cable,RX Device,RX Cable,System,Talkgroup,Engineer
+1,1,AP2,1,AP2,700 MHz - Direct,TG 01,Hunter Culler
+2,6,AP4,6,AP4,700 MHz - Conventional,TG 02,Peter Fink
+3,8,AP5,8,AP5,700 MHz - Trunked,TG 03,Charlsea Hansen
+4,101,AP7,101,AP7,Lab LTE - Nemergent,TG 04,Gary Howarth
+5,102,AP8,102,AP8,FN LTE - Rapid Response,TG 05,Alison Kahn
+6,151,AP9,151,AP9,FN LTE - FN PTT,SWAT-Tactical,Jordan O'Dell
+7,152,AP10,152,AP10,Other (note below),SWAT-Command,Lisa Soucy
+8,211,AP11,211,AP11,,Public Works,Sam Ray
+9,212,TP1,212,TP1,,Police-Chief,Hien Nguyen
+10,201,TP2,201,TP2,,Fire-Battalion C,Justin Sadinski
+Other (note below),202,TM1,202,TM1,,FBI,Other (note below)
+,203,TM2,203,TM2,,DOJ,
+,204,XC2,204,XC2,,DHS,
+,205,XC9,205,XC9,,State Troopers,
+,251,XL1,251,XL1,,MA 1 FRNA-PSCR,
+,252,XL2,252,XL2,,QoE FDMA,
+,253,Other (note below),253,Other (note below),,QoE TDMA,
+,254,,254,,,Other (note below),
+,255,,255,,,,
+,501,,501,,,,
+,502,,502,,,,
+,503,,503,,,,
+,551,,551,,,,
+,592,,592,,,,
+,593,,593,,,,
+,707,,707,,,,
+,708,,708,,,,
+,711,,711,,,,
+,712,,712,,,,
+,721,,721,,,,
+,722,,722,,,,
+,723,,723,,,,
+,724,,724,,,,
+,731,,731,,,,
+,752,,752,,,,
+,901,,901,,,,
+,902,,902,,,,
+,903,,903,,,,
+,904,,904,,,,
+,Other (note below),,Other (note below),,,,
