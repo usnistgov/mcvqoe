@@ -4314,18 +4314,40 @@ def run(root_cfg):
             ppf.add_element('Click Show Plots to see more details on measurement.')
 
         # M2e: mean, std, and plots
-        elif sel_tst in (m2e, dev_dly_char):
-            # show mean and std_dev
+        elif sel_tst == m2e:
+            # Get filename
             outname = my_obj.data_filename
             # Initialize evaluation object
             eval_obj = evaluators[sel_tst](outname)
-            
-            # Display mean and confidence interval
+
+            # Calculate and display mean and confidence interval
             mean, ci = eval_obj.eval()
             ppf.add_element(f'Mouth-to-ear Latency Estimate: {mean} seconds')
             ppf.add_element(f'95% Confidence Interval: {np.array2string(ci, separator=", ")} seconds')
             ppf.add_element('Click Show Plots to see more details on measurement.')
-        
+
+        elif sel_tst == dev_dly_char:
+            # Get filename
+            outname = my_obj.data_filename
+            # Initialize evaluation object
+            eval_obj = evaluators[sel_tst](outname)
+
+            # Calculate and display dev_dly (only want the mean returned here, not ci)
+            dev_dly = eval_obj.eval()[0]
+            ppf.add_element(f'Device Delay: {dev_dly}')
+
+            # Save dev_dly if not sim
+            if is_sim:
+                show_error(Warning('Device Delay will not be saved, ' +
+                                   'because this is a simulation.'))
+            else:
+                # Save to config
+                loadandsave.Config('dev_dly.json', dev_dly=dev_dly).dump()
+
+                # Save to relevant test frames
+                loader.tk_main.win.frames[accesstime].btnvars['dev_dly'].set(dev_dly)
+                loader.tk_main.win.frames[m2e].btnvars['dev_dly'].set(dev_dly)
+
         elif sel_tst == psud:
             outname = my_obj.data_filename
             
@@ -4367,17 +4389,7 @@ def run(root_cfg):
                 msg = default_msg + debug_help
                 ppf.add_element('Access time evaluation object could not be processed')
                 ppf.add_element(msg)
-            
-        # device delay characterization: show new device delay
-        if sel_tst == dev_dly_char:
 
-            dev_dly = calculate_dev_dly(my_obj, is_simulation = is_sim)
-
-            ppf.add_element(f'Device Delay: {dev_dly}')
-
-            if is_sim:
-                show_error(Warning('Device Delay will not be saved, '+
-                                   'because this is a simulation.'))
 
     # ------------------------- Error handling --------------------------------
 
@@ -5347,9 +5359,18 @@ def load_defaults():
     DEFAULTS[accesstime]['pause_trials'] = str(int(DEFAULTS[accesstime]['pause_trials']))
     DEFAULTS[intelligibility]['pause_trials'] = str(int(DEFAULTS[intelligibility]['pause_trials']))
 
-    DEFAULTS[accesstime]['dev_dly'] = ''
-    DEFAULTS[m2e]['dev_dly'] = ''
-    DEFAULTS[dev_dly_char]['dev_dly'] = ''
+    # dev_dly defaults
+    DEFAULTS[accesstime]['dev_dly'] = float(0)
+    DEFAULTS[m2e]['dev_dly'] = float(0)
+    DEFAULTS[dev_dly_char]['dev_dly'] = float(0)
+
+    # Iterations defaults
+    DEFAULTS[dev_dly_char]['iterations'] = 1
+    DEFAULTS[m2e]['iterations'] = 1
+    DEFAULTS[psud]['iterations'] = 1
+    DEFAULTS[accesstime]['iterations'] = 1
+    DEFAULTS[intelligibility]['iterations'] = 1
+    DEFAULTS[tvo]['iterations'] = 1
 
     DEFAULTS['SimSettings']['channel_rate'] = str(DEFAULTS['SimSettings']['channel_rate'])
     DEFAULTS['SimSettings']['m2e_latency'] = 'minimum'
