@@ -310,7 +310,6 @@ class MCVQoEGui(tk.Tk):
         The instances are stored in dictionary self.frames, with their keys
         being their self.__class__.__name__
 
-
         The instance's "btnvars" attribute is a dict of tcl variables for each
         parameter. for instance:
 
@@ -2124,12 +2123,17 @@ class TestProgressFrame(tk.LabelFrame):
         self.clip_name_     = tk.StringVar()
         self.file_          = tk.StringVar()
         self.delay_         = tk.StringVar()
+        
+        # Text for real-time intell averages
+        # Setup for additions to any other test as well
+        self.gui_extras_ = tk.StringVar()
 
         for txt in (self.secondary_text,
                     self.time_estimate_,
                     self.clip_name_,
                     self.file_,
                     self.delay_,
+                    self.gui_extras_,
                     ):
 
             ttk.Label(self, textvariable=txt).pack(padx=10, pady=10, fill='x')
@@ -2157,7 +2161,8 @@ class TestProgressFrame(tk.LabelFrame):
                 clip_name='',
                 delay='',
                 file='',
-                new_file=''
+                new_file='',
+                gui_extras=[]
                 ) -> bool:
         """ see gui_progress_update() in the main namespace
         """
@@ -2183,7 +2188,8 @@ class TestProgressFrame(tk.LabelFrame):
 
             'compress' : ('Compressing audio data...',
                           f'Compressing file {current_trial+1} of {num_trials}'),
-            'diagnose': (f'{msg}...',
+            
+            'diagnose' : (f'{msg}...',
                          f'Trial {current_trial+1} of {num_trials}')
             }
         
@@ -2192,6 +2198,21 @@ class TestProgressFrame(tk.LabelFrame):
             # set text based on above messages
             self.primary_text.set(messages[prog_type][0])
             self.secondary_text.set(messages[prog_type][1])
+
+        # Add real-time intell scores
+        # TODO: If we want to add more tests, maybe have the first item in the list be a string
+        # to tell us what test we're running, then if/else into the correct layout
+        if gui_extras and len(gui_extras)==3:
+            
+            # Set text if we don't have 10 intell scores yet
+            if np.isnan(gui_extras[1]):
+                self.gui_extras_.set(f"Latest intelligibility score: {round(gui_extras[2], 5)}\nLast ten scores"+
+                f" averaged: N/A (Don't have 10 scores yet)\nOverall intelligibility average: "+
+                f"{round(gui_extras[0], 5)}")
+            else:    
+                self.gui_extras_.set(f"Latest intelligibility score: {round(gui_extras[2], 5)}\nLast ten scores"+
+                f" averaged: {round(gui_extras[1], 5)}\nOverall intelligibility average: "+
+                f"{round(gui_extras[0], 5)}")
 
         if not num_trials:
             # make an indeterminate progress bar
@@ -4462,7 +4483,8 @@ def gui_progress_update(prog_type,
              clip_name='',
              delay='',
              file='',
-             new_file=''
+             new_file='',
+             gui_extras=[]
              ) -> bool:
     """
     Parameters
@@ -4483,6 +4505,8 @@ def gui_progress_update(prog_type,
         The default is ''.
     new_file : str, optional
         The default is ''.
+    gui_extras : list, optional
+        Extras for real-time printout in the GUI. Default is an empty list.
 
     RAISES
     ------
@@ -4500,6 +4524,7 @@ def gui_progress_update(prog_type,
                                   delay,
                                   file,
                                   new_file,
+                                  gui_extras,
                                   )
 
 
