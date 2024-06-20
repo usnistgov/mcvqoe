@@ -2164,8 +2164,7 @@ class TestProgressFrame(tk.LabelFrame):
                 new_file='',
                 gui_extras=[]
                 ) -> bool:
-        """ see gui_progress_update() in the main namespace
-        """
+        """See gui_progress_update() in the main namespace"""
 
         self.check_for_abort()
 
@@ -2264,6 +2263,7 @@ class TestProgressFrame(tk.LabelFrame):
 
         if prog_type == 'pre':
             # remove all info from the frame to prepare for next measurement
+            self.gui_extras_.set("")
             self.clip_name_.set('')
             self.file_.set('')
             self.delay_.set('')
