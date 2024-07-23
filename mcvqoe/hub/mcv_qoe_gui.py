@@ -4558,7 +4558,7 @@ def get_post_notes(error_only=False):
 
     if is_showable_error:
         loader.tk_main.last_error = error
-        show_error()
+        show_error(error)
 
     # wait for completion or program close
 
@@ -5095,7 +5095,9 @@ def calculate_dev_dly(test_obj, is_simulation = False):
 
 
 class GuiRecStop:
-    """uses an event generated in the GuiThread to stop the recording in the main-thread
+    """
+    Uses an event generated in the GuiThread to stop the
+    recording in the main-thread
     """
 
     def __init__(self):
@@ -5487,7 +5489,7 @@ def main():
             if path.exists(save_dir):
                 raise RuntimeError(f'Both \'{old_save_dir}\' and \'{save_dir}\' exist!')
             # copy files to new location
-            os.renames(old_save_dir,save_dir)
+            os.renames(old_save_dir, save_dir)
         except:
             show_error(err_func=tk.messagebox.showerror)
             raise SystemExit(1)
@@ -5500,7 +5502,7 @@ def main():
 
     try:
         loader.tk_main.win.init_as_mainwindow()
-    except Exception as e:
+    except:
         show_error(err_func=tk.messagebox.showerror)
         raise SystemExit(1)
 

@@ -17,7 +17,6 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 import re
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 from mcvqoe.hub.common import save_dir as default_data_dir
@@ -979,8 +978,7 @@ def failed_process(measurement, msg=('', )):
         msg = default_msg + msg + debug_help
         res = html.Div(msg)
         res_formatting = measurement_digits('none',
-                                            measurement=measurement,
-                                            )
+                                            measurement=measurement)
         fig_plot = blank_fig()
         fig_intell = blank_fig()
         talker_options = none_dropdown

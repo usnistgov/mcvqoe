@@ -6,17 +6,28 @@ Created on Mon Aug  9 14:51:59 2021
 """
 
 import datetime
-import sys
 import functools
+import os.path
+import sys
 import threading
-from threading import Thread
 import time
 import traceback
+
 import tkinter as tk
-import os.path
 
 from .common import save_dir
+from threading import Thread
 
+
+queue_error_msg = ("A queue.Full error has occured. This is a common error\n"
+                   "that has a few possible reasons for being thrown.\n"
+                   "Here are solutions in order of most helpful:\n\n"
+                   "1) Check for loose cables.\n"
+                   "2) Ensure a blocksize of 512 and a buffersize of 40.\n"
+                   "3) Increase blocksize(power of 2) and buffersize.\n"
+                   "4) Restart your computer and turn off any superfluous\n"
+                   "   software while running the test.\n")
+                    
 
 def in_thread(thread, wait=True, except_ = None):
     """A function decorator to ensure that a function runs in the given thread.
@@ -116,14 +127,15 @@ class _dec_return:
 class GuiThread(Thread):
 
     def callback(self, function):
-        """Calls a function in the GUIThread
-
+        """
+        Calls a function in the GUIThread
 
         Parameters
         ----------
         function : callable
 
         """
+        
         self._callbacks.insert(0, function)
 
     def __init__(self, win_class=tk.Tk):
@@ -187,19 +199,19 @@ class Main():
         self.win = self.gui_thread.win
 
     def callback(self, function):
-        """Calls a function in the main thread.
-
+        """
+        Calls a function in the main thread.
 
         Parameters
         ----------
         function : callable
-
 
         Returns
         -------
         None.
 
         """
+        
         self._callbacks.insert(0, function)
 
     def main_loop(self):
@@ -318,6 +330,8 @@ def show_error(exc=None, err_func=None):
 
         if err_func:
             err_func(err_name, msg)
+        elif err_name == "queue.Full":
+            _show_error(err_name, queue_error_msg)
         else:
             _show_error(err_name, msg)
 
@@ -346,8 +360,7 @@ def format_error(exc):
 
 
 class InvalidParameter(ValueError):
-    """Raised when a user fails to input a required parameter.
-    """
+    """Raised when a user fails to input a required parameter"""
 
     def __init__(self, parameter, message=None, *args, **kwargs):
 
@@ -358,10 +371,12 @@ class InvalidParameter(ValueError):
 
 
 class Abort_by_User(BaseException):
-    """Raised when user presses 'Abort test'
+    """
+    Raised when user presses 'Abort test'
 
     Inherits from BaseException because it is not an error and therefore
-    won't be treated as such
+    won't be treated as such.
     """
+    
     def __init__(self, *args, **kwargs):
         super().__init__('Measurement aborted by user', *args, **kwargs)
