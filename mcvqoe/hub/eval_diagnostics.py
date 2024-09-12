@@ -5,15 +5,10 @@ Created on Fri Dec 10 08:20:53 2021
 @author: cjg2
 """
 from dash import dash_table
-from dash import dcc
 from dash import html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 
 import json
-import numpy as np
-import os
-import pandas as pd
-import tempfile 
 
 from mcvqoe.hub.eval_app import app
 
@@ -91,7 +86,6 @@ def update_plots(jsonified_data,
     -------
     return_vals : TYPE
         DESCRIPTION.
-    
 
     """
     

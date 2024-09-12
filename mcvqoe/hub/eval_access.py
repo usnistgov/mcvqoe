@@ -1,17 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Oct 29 15:59:21 2021
-
-@author: jkp4
-"""
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 12 12:26:08 2021
-
-@author: jkp4
-"""
 from dash import html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from dash import dash_table
 
 import json
@@ -21,7 +9,6 @@ from mcvqoe.hub.eval_app import app
 
 import mcvqoe.hub.eval_shared as eval_shared
 import mcvqoe.accesstime as access
-
 
 
 #-----------------------[Begin layout]---------------------------
@@ -157,7 +144,6 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type, sowc,
                                                  fit_type=fit_type,
                                                  color_palette=eval_shared.plotly_color_palette,
                                                  )
-            
             # Get talker word combos
             filenames = np.unique(access_eval.data['talker_word'])
             # Initialize dropdown options
@@ -186,8 +172,7 @@ def update_plots(jsonified_data, talker_select, show_raw, intell_type, sowc,
             print(e)
             return_vals = eval_shared.failed_process(measurement, msg=e.args)
         
-        
     else:
         return_vals = eval_shared.failed_process(measurement, )
-    
+
     return return_vals

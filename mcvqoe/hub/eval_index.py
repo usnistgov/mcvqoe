@@ -5,33 +5,24 @@ Created on Tue Oct  5 14:59:05 2021
 @author: jkp4
 """
 import argparse
-import base64
 import importlib
 import json
-import os
-import re
 import urllib
-
-import numpy as np
-import pandas as pd
 
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
 from flask import request
-
 from mcvqoe.hub.eval_app import app, server
-from mcvqoe.hub.eval_shared import style_data_filename
 
+import mcvqoe.hub.eval_access as access
+import mcvqoe.hub.eval_diagnostics as diag
 import mcvqoe.hub.eval_intell as intell
 import mcvqoe.hub.eval_measurement_select as measurement_select
 import mcvqoe.hub.eval_m2e as m2e
 import mcvqoe.hub.eval_psud as psud
-import mcvqoe.hub.eval_access as access
 import mcvqoe.hub.eval_tvo as tvo
-import mcvqoe.hub.eval_diagnostics as diag
 
-import mcvqoe.accesstime
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -40,6 +31,7 @@ app.layout = html.Div([
 
 @server.route('/shutdown_request', methods=["GET"])
 def shutdown_request():
+    
     shutdown()
     # As far as I can tell doesn't matter what this returns, just needs to return something that is not None
     return 'shutting down'
@@ -48,6 +40,7 @@ def shutdown():
     """
     Shutdown the server so users do not have to hit CTRL+C in terminal
     """
+    
     func = request.environ.get('werkzeug.server.shutdown')
     if func is None:
         raise RuntimeError('Not running with the Werkzeug Server')
@@ -75,6 +68,7 @@ def format_data(fpaths, cutpoint, measurement):
         JSON string representation of all required data for measurement loading.
 
     """
+    
     # Initialize dictionary for json info
     modules = {'access': 'mcvqoe.accesstime',
                'intell': 'mcvqoe.intelligibility',
@@ -97,9 +91,8 @@ def format_data(fpaths, cutpoint, measurement):
     return final_json
 
 def update_page_data(layout, final_json, measurement):
-    """
-    Update relevant json-data element and initial data flag
-    """
+    """Update relevant json-data element and initial data flag"""
+    
     if final_json is not None:
         for child in layout.children:
             if hasattr(child, 'id'):
@@ -170,7 +163,6 @@ def display_page(pathname):
     else:
         layout = '404'
     return layout
-
 
 
 def main():

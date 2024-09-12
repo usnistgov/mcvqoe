@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 26 11:52:45 2021
-
-@author: jkp4
-"""
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
@@ -27,7 +21,9 @@ import mcvqoe.psud
 import mcvqoe.accesstime
 import mcvqoe.tvo
 
+
 # --------------[Measurement Globals]-----------------------------------
+
 measurements = [
     'm2e',
     'intell',
@@ -36,7 +32,9 @@ measurements = [
     'tvo',
     'diagnostics',
     ]
+
 # --------------[General Style]--------------------------------------------
+
 plotly_default_color = '#edeef0'
 style_links = {
     'width': '240px',
@@ -52,6 +50,7 @@ style_links = {
     'padding': '10px',
     'backgroundColor': '#E5ECF6',
         }
+
 # --------------[Top of Page information]-----------------------
 
 def mcv_headers(measurement):
@@ -76,7 +75,9 @@ def mcv_headers(measurement):
         html.H3(f'{full_meas} data analysis')
         ]
     return children
+
 #---------------[Parsing Data]----------------------------
+
 def parse_contents(contents, filename):
     """
     Parse contents of uploaded data
@@ -100,7 +101,7 @@ def parse_contents(contents, filename):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     fname, ext = os.path.splitext(filename)
-    
+
     try:
         if ext == '.csv':
             # Load in data in fpath
@@ -122,10 +123,10 @@ def parse_contents(contents, filename):
             'There was an error processing this file'
             ])
         return children, None
-    children = format_data_filename(filename)
     
-    return children, df
+    children = format_data_filename(filename)
 
+    return children, df
 
 def load_json_data(jsonified_data, measurement):
     """
@@ -297,6 +298,7 @@ for measurement in measurements:
         State(f'{measurement}-initial-data-passed', 'children'),
         State(f'{measurement}-json-data', 'data'),
         )
+    
     def update_output(list_of_contents, list_of_names,
                       initial_data_flag, initial_data, measurement=measurement):
         """
@@ -319,6 +321,7 @@ for measurement in measurements:
             DESCRIPTION.
     
         """
+        
         # TODO: Add comments for this stuff
         if initial_data_flag == 'True':
             final_json = initial_data
@@ -421,7 +424,9 @@ for measurement in measurements:
         initial_data_flag = html.Div('False')
 
         return children, final_json, initial_data_flag
+    
 # --------------[Data Filename Formattting]-----------------------
+
 style_data_filename = {
             'fontSize': 12,
             }
@@ -432,7 +437,9 @@ def format_data_filename(filename):
         ],
         style=style_data_filename)
     return children
+
 #-------------------[Results Styles]-------------------------------------
+
 style_results = {
     'backgroundColor': plotly_default_color,
     'width': '100%',
@@ -459,6 +466,7 @@ style_result_filters_dropdown = {
     'width': '30%',
     'display': 'inline-block'
     }
+
 def measurement_results_filters(measurement):
     if measurement == 'psud':
         raw_intell_options = np.arange(0.5, 1.01, 0.1)
@@ -561,7 +569,9 @@ def pretty_numbers(x, digits=digit_default):
     else:
         pretty_vals = np.round(x, digits)
     return pretty_vals
+
 #-------------------[Filter Styles]----------------------------------------
+
 radio_button_style = {'width': '15%', 'display': 'inline-block'}
 radio_labels_style = {'display': 'inline-block'}
 dropdown_style = {'width': '45%', 'display': 'inline-block'}
@@ -740,11 +750,12 @@ def radio_filters(measurement):
     else:
          children = [html.Div('Undefined measurement')]   
     return children
+
 #------------------------[Figure and Plots]----------------------------
+
 def blank_fig():
-    """
-    Make a blank plotly figure for a placeholder prior to data load
-    """
+    """Make a blank plotly figure for a placeholder prior to data load"""
+    
     fig = go.Figure(go.Scatter(x=[], y = []))
     fig.update_layout(template = None)
     fig.update_xaxes(showgrid = False, showticklabels = False, zeroline=False)
@@ -769,6 +780,7 @@ plotly_color_palette = [
     
 
 def measurement_plots(measurement):
+    
     if measurement == 'm2e':
         children = [
             # ------------[Scatter Plot]---------------------
@@ -875,8 +887,11 @@ def measurement_plots(measurement):
         
         children = [html.Div('Undefined measurement')]   
     return children
+
 #-------------[Create Layout Template]-------------------------
+
 def layout_template(measurement):
+    
     layout = html.Div([
         # TODO: This should probably be local or session
         # Element to store json representations of data
@@ -967,6 +982,7 @@ def layout_template(measurement):
     return layout
 
 def failed_process(measurement, msg=('', )):
+    
     if measurement == 'access':
         none_dropdown = [{'label': 'N/A', 'value': 'None'}]
         

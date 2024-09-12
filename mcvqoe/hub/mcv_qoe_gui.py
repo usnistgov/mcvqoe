@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 26 15:53:57 2021
-
-@author: marcus.zeender@nist.gov
-
-"""
 # -----------------------------basic config------------------------------------
 TITLE_ = 'MCV QoE'
 appid = 'nist.mcvqoe.gui.1_0_0'
@@ -19,60 +12,56 @@ if hasattr(ctypes, 'windll'):
     # allows icon setting on taskbar
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
-import importlib.resources
-import mcvqoe.utilities.test_copy
-import mcvqoe.base
-import tkinter.messagebox as msb
-import tkinter.filedialog as fdl
-import tkinter.font as font
-from PIL import Image, ImageTk
-from tkinter import ttk
-import tkinter as tk
-import _tkinter
 
-from mcvqoe.utilities import test_copy, sync
-from .tk_threading import Main, in_thread
-from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
-from .tk_threading import SingletonWindow
-from .shared import add_mcv_icon
-# import for save locations
-from .common import save_dir, old_save_dir
-from .version import version as gui_version
-import mcvqoe.hub.shared as shared
-import mcvqoe.hub.loadandsave as loadandsave
-from tempfile import TemporaryDirectory
-from mcvqoe.utilities import reprocess
-from mcvqoe.timing import two_loc_process
-
-import csv
-import sounddevice as sd
-import sys
-import time
 import _thread
+import _tkinter
+import csv
+import gc
+import importlib.resources
 import json
 import math
+import mcvqoe.base
+import mcvqoe.utilities.test_copy
+import os
 import pickle
 import platform
-import os
-import shutil
-from os import path, listdir
-import gc
-import subprocess as sp
-import traceback
-import numpy as np
 import requests
+import sys
+import time
+import traceback
 import urllib.request
 import webbrowser
-import re
+
+import mcvqoe.hub.loadandsave as loadandsave
+import mcvqoe.hub.shared as shared
+import numpy as np
+import sounddevice as sd
+import subprocess as sp
+import tkinter as tk
+import tkinter.filedialog as fdl
+import tkinter.font as font
+
+# import for save locations
+from .common import save_dir, old_save_dir
+from .tk_threading import format_error, show_error, Abort_by_User, InvalidParameter
+from .tk_threading import Main, in_thread
+from .tk_threading import SingletonWindow
+from .shared import add_mcv_icon
+from .version import version as gui_version
+from mcvqoe.timing import two_loc_process
+from mcvqoe.utilities import test_copy, sync
+from mcvqoe.utilities import reprocess
+from os import path, listdir
+from PIL import Image, ImageTk
 from pkg_resources import resource_filename
+from tempfile import TemporaryDirectory
+from tkinter import ttk
 
 
-
-#                       -----------------------------
-# !!!!!!!!!!!!!         MORE IMPORTS BELOW THE CLASS!       !!!!!!!!!!!!!!!!!!!
-#                       -----------------------------
+# More imports below the class!!!
 
 #---------------------------- The main window class---------------------------
+
 class MCVQoEGui(tk.Tk):
     """The main window.
 
@@ -1776,7 +1765,6 @@ class TestTypeFrame(tk.Frame):
             '',
             style='audio_drop.TMenubutton',
             )
-        # TODO: Figure out how to make menu selection text smaller
         self.audio_select['menu'].config(font=(10, ))
         self.audio_select.pack(fill=tk.X)
         self.refresh_audio_devices()
@@ -2914,7 +2902,7 @@ class DiagnosticsFrame(ttk.Labelframe):
             tk.messagebox.showinfo(title='Success!',message='Data reprocessed '
                                         f'to \'{out_name}\'.')
 
-            # TODO: Figure out how to get to an post process frame
+            # TODO: Figure out how to get to a post process frame
             # get post processing frame
             ppf = loader.tk_main.win.frames['PostProcessingFrame']
             # store name of output file
@@ -3704,7 +3692,7 @@ class PostProcessingFrame(ttk.Frame):
             webbrowser.open(data_url)
 
     def open_folder(self, e=None):
-        """open the outdir folder in os file explorer"""
+        """Open the outdir folder in os file explorer"""
         
         dir_ = self.outdir
         try:
@@ -4123,7 +4111,7 @@ def test_audio(root_cfg, on_finish=None):
         show_error(error)
 
     if on_finish is not None:
-        # call the is_finished callback
+        # Call the is_finished callback
         on_finish()
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
