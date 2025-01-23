@@ -7,9 +7,7 @@ Created on Thu Jul  8 16:22:33 2021
 
 import mcvqoe.intelligibility as igtiby
 
-import tkinter.ttk as ttk
-
-from .shared import LabeledSlider, TestCfgFrame, SignalOverride, MultiChoice
+from .shared import TestCfgFrame, SignalOverride
 from .shared import advanced as shared_advanced
 from .shared import AdvancedConfigGUI, test
 
