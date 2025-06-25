@@ -25,7 +25,7 @@ import mcvqoe.psud as psud
 
 
 #-----------------------[Begin layout]---------------------------
-# TODO: Say something about common thinning fctor if data can't be thined
+# TODO: Say something about common thinning factor if data can't be thinned
 
 measurement = 'psud'
 layout = eval_shared.layout_template(measurement)

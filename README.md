@@ -8,7 +8,7 @@ following QoE measurements:
 * [Access Time](https://nvlpubs.nist.gov/nistpubs/ir/2019/NIST.IR.8275.pdf)
 * Probability of Successful Delivery
 * [Intelligibility](https://www.its.bldrdoc.gov/publications/download/Voran-ICASSP17.pdf)
-* [Transmit Volume Optomization](https://doi.org/10.6028/NIST.TN.2171)
+* [Transmit Volume Optimization](https://doi.org/10.6028/NIST.TN.2171)
 
 
 
